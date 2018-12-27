@@ -5,6 +5,7 @@ import discord
 
 from redbot.core import commands
 
+
 class CustomPredicate(Callable[[discord.Reaction, discord.abc.User], bool]):
     """A collection of predicates for reaction events.
 
@@ -117,7 +118,6 @@ class CustomPredicate(Callable[[discord.Reaction, discord.abc.User], bool]):
             and (user is None or u.id == user.id)
         )
 
-
     @classmethod
     def with_emojis(
         cls,
@@ -180,6 +180,7 @@ class CustomPredicate(Callable[[discord.Reaction, discord.abc.User], bool]):
             The event predicate.
 
         """
+
         def predicate(self: CustomPredicate, r: discord.Reaction, u: discord.abc.User) -> bool:
             if u.bot:
                 return False

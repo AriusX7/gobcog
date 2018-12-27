@@ -4,7 +4,7 @@
     "name" : "GobCog",
     "short" : "GoblinsComic inspired RPG bot.",
     "description" : "Play a RPG character and get loot by killing monsters.",
-    "permissions" : ["Manage Messages","Add Reactions"],
+    "permissions" : ["Manage Messages", "Add Reactions"],
     "tags" : ["Games", "Economy", "Fun", "RPG"],
     "min_python_version": [3, 6, 0]
 }
