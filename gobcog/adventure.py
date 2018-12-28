@@ -488,7 +488,6 @@ class Adventure:
                             + "**"
                             + " blessed like a madman but nobody was there to receive it."
                         )
-                        return (attack, diplomacy)
                     if roll == 1:
                         attack -= 5 * len(Adventure.userslist["fight"])
                         diplomacy -= 5 * len(Adventure.userslist["talk"])

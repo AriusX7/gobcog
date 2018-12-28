@@ -530,7 +530,7 @@ class GobCog(BaseCog):
                                 )
                             else:
                                 msg = await ctx.send(
-                                    "```css\n You will lose your pet if you change your class.\nShall I proceed? ```"
+                                    "```css\nYou will lose your pet if you change your class.\nShall I proceed? ```"
                                 )
                             start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
                             pred = ReactionPredicate.yes_or_no(msg, ctx.author)
@@ -558,7 +558,7 @@ class GobCog(BaseCog):
                                         for item in lookup:
                                             del users[str(user.id)]["items"]["backpack"][item]
                                             await ctx.send(
-                                                "```css\n {} has run off to find a new master.\n```".format(
+                                                "```css\n{} has run off to find a new master.\n```".format(
                                                     ", ".join(lookup)
                                                 )
                                             )
