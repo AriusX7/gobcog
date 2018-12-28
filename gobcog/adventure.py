@@ -104,7 +104,7 @@ class Adventure:
                 ctx,
                 [
                     (
-                        "but **a{} {}** just landed in front of you glaring! \n\nWhat will you do and will other heroes be brave enough to help you?\nHeroes have 30s to participate via reaction:"
+                        "but **a{} {}** just landed in front of you glaring! \n\nWhat will you do and will other heroes be brave enough to help you?\nHeroes have 2m to participate via reaction:"
                     ).format(Adventure.attrib, Adventure.challenge)
                 ],
                 {
@@ -119,7 +119,7 @@ class Adventure:
                 ctx,
                 [
                     (
-                        "but **a{} {}** stepped out looking around. \n\nWhat will you do and will other heroes help your cause?\nHeroes have 30s to participate via reaction:"
+                        "but **a{} {}** stepped out looking around. \n\nWhat will you do and will other heroes help your cause?\nHeroes have 1m to participate via reaction:"
                     ).format(Adventure.attrib, Adventure.challenge)
                 ],
                 {
@@ -137,7 +137,7 @@ class Adventure:
                 " all means necessary",
                 " a couple of friends",
                 " a crosseyed squint",
-                " steady pace",
+                " a steady pace",
             ]
             await Adventure.menu(
                 ctx,
@@ -658,9 +658,12 @@ class Adventure:
                     member = discord.utils.find(
                         lambda m: m.display_name == user, ctx.guild.members
                     )
-                    if ".mirror_shield" in users[str(member.id)]["items"]["left"]:
-                        failed = False
-                        break
+                    try:
+                        if ".mirror_shield" in users[str(member.id)]["items"]["left"]:
+                            failed = False
+                            break
+                    except KeyError:
+                        continue
             else:
                 failed = False
             return failed
@@ -883,7 +886,7 @@ class Adventure:
                     (Adventure.users[str(member.id)]["class"]["ability"]["pet"]["bonus"] - 1.0)
                     * 100
                 )
-                phrase = "\n**{}** received a **{}%** reward bonus from his {}.".format(
+                phrase = "\n**{}** received a **{}%** reward bonus from their {}.".format(
                     member.display_name,
                     percent,
                     Adventure.users[str(member.id)]["class"]["ability"]["pet"]["name"],

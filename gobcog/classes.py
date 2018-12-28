@@ -109,10 +109,17 @@ class Classes:
     pets = {
         "flitterwisp": {"name": "flitterwisp", "bonus": 1.05, "cha": 10},
         "hufflepuff": {"name": "hufflepuff", "bonus": 1.1, "cha": 12},
+        "red fox": {"name": "red fox", "bonus": 1.2, "cha": 16},
         "sylvan wolf": {"name": "silvan wolf", "bonus": 1.2, "cha": 16},
         "zephyr cat": {"name": "zephyr cat", "bonus": 1.2, "cha": 16},
-        "giggling imp": {"name": "giggling imp", "bonus": 1.4, "cha": 20},
+        "snow leopard": {"name": "snow leopard", "bonus": 1.2, "cha": 18},
+        "giggling imp": {"name": "giggling imp", "bonus": 1.3, "cha": 20},
+        "sabre tiger": {"name": "sabre tiger", "bonus": 1.3, "cha": 22},
+        "dire wolf": {"name": "dire wolf", "bonus": 1.4, "cha": 24},
+        "striped kestrel": {"name": "striped kestrel", "bonus": 1.4, "cha": 24},
+        "black eagle": {"name": "black eagle", "bonus": 1.4, "cha": 26},
         "pocket dragon": {"name": "pocket dragon", "bonus": 1.5, "cha": 30},
+        "small phoenix": {"name": "small phoenix", "bonus": 1.6, "cha": 35},
     }
 
     async def pet(ctx, users, flag):

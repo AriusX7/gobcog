@@ -8,6 +8,7 @@ from redbot.core.utils.predicates import ReactionPredicate
 from .custompredicate import CustomPredicate
 from redbot.core.commands.context import Context
 from redbot.core import commands, bank, checks, Config
+from redbot.core.utils.chat_formatting import box
 from .adventure import Adventure
 from .treasure import Treasure
 from .classes import Classes
@@ -20,13 +21,46 @@ class GobCog(BaseCog):
 
     def __init__(self, bot):
         self.bot = bot
-        self._last_trade = 0
+        self._last_trade = {}
 
         self.config = Config.get_conf(self, 2710801001, force_registration=True)
 
         default_global = {"users": {}}
+        default_guild = {"cart_channels": []}
 
+        self.config.register_guild(**default_guild)
         self.config.register_global(**default_global)
+
+    @commands.command()
+    @checks.admin_or_permissions(administrator=True)
+    @commands.guild_only()
+    async def cart(self, ctx, *, channel: discord.TextChannel = None):
+        """[Admin] Add or remove a text channel that the Trader cart can appear in.
+           If the channel is already in the list, it will be removed.
+           Use [p]cart with no arguments to show the channel list."""
+        channel_list = await self.config.guild(ctx.guild).cart_channels()
+        if channel is None:
+            msg = "Active Cart Channels:\n"
+            if not channel_list:
+                msg += "None."
+            else:
+                name_list = []
+                for chan_id in channel_list:
+                    name_list.append(self.bot.get_channel(chan_id))
+                msg += "\n".join(chan.name for chan in name_list)
+            return await ctx.send(box(msg))
+        elif not channel_list:
+            channel_list = [channel.id]
+            await ctx.send(f"The {channel} channel has been added to the cart delivery list.")
+            return await self.config.guild(ctx.guild).cart_channels.set(channel_list)
+        elif channel.id in channel_list:
+            new_channels = channel_list.remove(channel.id)
+            await ctx.send(f"The {channel} channel has been removed from the cart delivery list.")
+            return await self.config.guild(ctx.guild).cart_channels.set(new_channels)
+        else:
+            channel_list.append(channel.id)
+            await ctx.send(f"The {channel} channel has been added to the cart delivery list.")
+            await self.config.guild(ctx.guild).cart_channels.set(channel_list)
 
     @commands.command()
     @commands.guild_only()
@@ -306,7 +340,7 @@ class GobCog(BaseCog):
                 "```css\n[{}'s forgeables] \n\n```".format(ctx.author.display_name)
                 + "```css\n"
                 + bkpk
-                + "\n (Reply with the full or partial name of item 1 to select for forging. Try to be specific.)```"
+                + "\n(Reply with the full or partial name of item 1 to select for forging. Try to be specific.)```"
             )
             try:
                 reply = await ctx.bot.wait_for(
@@ -347,7 +381,7 @@ class GobCog(BaseCog):
                         bkpk += (
                             " - "
                             + item
-                            + " -(ATT: "
+                            + " - (ATT: "
                             + str(users[str(user)]["items"]["backpack"][item]["att"] * 2)
                             + " | DPL: "
                             + str(users[str(user)]["items"]["backpack"][item]["cha"] * 2)
@@ -357,7 +391,7 @@ class GobCog(BaseCog):
                 "```css\n[{}'s forgeables] \n\n```".format(ctx.author.display_name)
                 + "```css\n"
                 + bkpk
-                + "\n (Reply with the full or partial name of item 2 to select for forging. Try to be specific.)```"
+                + "\n(Reply with the full or partial name of item 2 to select for forging. Try to be specific.)```"
             )
             try:
                 reply = await ctx.bot.wait_for(
@@ -431,9 +465,8 @@ class GobCog(BaseCog):
     @commands.guild_only()
     @commands.cooldown(rate=1, per=300, type=commands.BucketType.user)
     async def heroclass(self, ctx, clz: str = None, action: str = None):
-        """This allows you to select a class.
-            You need to be level 10 to select one.
-            For information on class use: [p]heroclass "classname" info
+        """This allows you to select a class if you are Level 10 or above.
+           For information on class use: [p]heroclass "classname" info
         """
         users = await self.config.users.get_raw()
         classes = {
@@ -623,9 +656,10 @@ class GobCog(BaseCog):
             else:
                 users[str(user.id)]["items"]["backpack"].update({item["itemname"]: item["item"]})
                 await ctx.send(
-                    "{} put the {} into the backpack.".format(user.display_name, item["itemname"])
+                    "{} put the {} into their backpack.".format(
+                        user.display_name, item["itemname"]
+                    )
                 )
-                await self.config.users.set_raw(value=users)
 
     @commands.command()
     @commands.guild_only()
@@ -670,7 +704,7 @@ class GobCog(BaseCog):
                     equip += (
                         " - "
                         + item
-                        + " -(ATT: "
+                        + " - (ATT: "
                         + str(users[str(user.id)]["items"][slot][item]["att"] * 2)
                         + " | CHA: "
                         + str(users[str(user.id)]["items"][slot][item]["cha"] * 2)
@@ -719,7 +753,7 @@ class GobCog(BaseCog):
         asking: int = 10,
         buyer: discord.Member = None,
     ):
-        """This draws up the contents of your backpack.
+        """This shows the contents of your backpack.
            Selling: [p]backpack sell "(partial) name of item"
            Trading: [p]backpack trade "name of item" cp @buyer
            Equip:   [p]backpack equip "(partial) name of item"
@@ -750,17 +784,17 @@ class GobCog(BaseCog):
                     bkpk += (
                         " - "
                         + item
-                        + " -(ATT: "
+                        + " - (ATT: "
                         + str(users[str(user.id)]["items"]["backpack"][item]["att"] * 2)
                         + " | DPL: "
                         + str(users[str(user.id)]["items"]["backpack"][item]["cha"] * 2)
                         + " [two handed])\n"
                     )
             await ctx.send(
-                "```css\n[{}'s baggage] \n\n```".format(user.display_name)
+                "```css\n[{}'s backpack] \n\n```".format(user.display_name)
                 + "```css\n"
                 + bkpk
-                + '\n (Reply with the name of an item or use {}backpack equip "name of item" to equip it.)```'.format(
+                + '\n(Reply with the name of an item or use {}backpack equip "name of item" to equip it.)```'.format(
                     ctx.prefix
                 )
             )
@@ -983,9 +1017,22 @@ class GobCog(BaseCog):
         """
         users = await self.config.users.get_raw()
         await ctx.send("You feel adventurous, " + ctx.author.display_name + "?")
-        reward, participants = await Adventure.simple(
-            ctx, users
-        )  # Adventure class doesn't change any user info, so no need to return the users object in rewards.
+        try:
+            reward, participants = await Adventure.simple(
+                ctx, users
+            )  # Adventure class doesn't change any user info, so no need to return the users object in rewards.
+        except TypeError:
+            scary_place = [
+                "This place gives you a sense of unease. It would be best to move on.",
+                "There is a massive dragon sleeping here. You very quietly back away and try to find another path to take.",
+                "There is a cave bear foraging in the clearing ahead of you. You decide to try to find treasure in another place.",
+                "A large, angry-looking sabre cat is chewing on a corpse in the field ahead. It looks up from the meal and licks its whiskers. Maybe somewhere else would be safer.",
+                "Large cobwebs cover this clearing. Man-sized spiders don't exactly sound appealing... you backtrack to another path.",
+                "This place makes you feel watched... you back away slowly and find another path.",
+            ]
+            return await ctx.send(random.choice(scary_place))
+            # TypeError occurs when there is a running adventure command in another server when a user uses the adventure command. users var is None at that point.
+            # Added the exception as a cheap workaround till that's addressed.
         if reward is not None:
             for user in reward.keys():
                 member = discord.utils.find(lambda m: m.display_name == user, ctx.guild.members)
@@ -1067,44 +1114,23 @@ class GobCog(BaseCog):
                 + " 🎲({}).".format(versus)
             )
 
-    async def __error(self, ctx: commands.Context, error):
-        if isinstance(error, commands.CommandOnCooldown):
-            m, s = divmod(error.retry_after, 60)
-            h, m = divmod(m, 60)
-            s = int(s)
-            m = int(m)
-            h = int(h)
-            if h == 0 and m == 0:
-                out = "{:02d}s".format(s)
-            elif h == 0:
-                out = "{:02d}:{:02d}s".format(m, s)
-            else:
-                out = "{:01d}:{:02d}:{:02d}s".format(h, m, s)
-            if h == 0 and m < 3:
-                await Adventure.countdown(
-                    ctx,
-                    error.retry_after,
-                    "I feel a little tired now. {}{} is available again in: ".format(
-                        ctx.prefix, ctx.command.qualified_name
-                    ),
-                )
-            else:
-                await ctx.send(
-                    "⏳ "
-                    + "Don't be hasty, {}. You can use {}{} again in: ".format(
-                        ctx.author.display_name, ctx.prefix, ctx.command.qualified_name
-                    )
-                    + out
-                )
-        else:
-            pass
-
     async def on_message(self, message):
         users = await self.config.users.get_raw()
+        channels = await self.config.guild(message.guild).cart_channels()
+        if not channels:
+            return
+        if message.channel.id not in channels:
+            return
         if not message.author.bot:
             await self.update_data(users, message.author)
-            if self._last_trade == 0:  # this shuts hawls bro up for 3 hours after a cog reload
-                self._last_trade = time.time()
+            try:
+                self._last_trade[message.guild.id]
+            except KeyError:
+                self._last_trade[message.guild.id] = 0
+            if (
+                self._last_trade[message.guild.id] == 0
+            ):  # this shuts hawls bro up for 3 hours after a cog reload
+                self._last_trade[message.guild.id] = time.time()
             roll = random.randint(1, 20)
             if roll == 20:
                 ctx = await self.bot.get_context(message)
@@ -1278,7 +1304,7 @@ class GobCog(BaseCog):
                 currency_name = await bank.get_currency_name(ctx.guild)
                 await ctx.send("You do not have enough {}.".format(currency_name))
             try:
-                timeout = self._last_trade + 1200 - time.time()
+                timeout = self._last_trade[ctx.guild.id] + 1200 - time.time()
                 if timeout <= 0:
                     timeout = 0
                 react, user = await ctx.bot.wait_for(
@@ -1299,18 +1325,18 @@ class GobCog(BaseCog):
         react = False
         controls = {em_list[1]: 0, em_list[2]: 1, em_list[3]: 2, em_list[4]: 3}
         text = "```css\n[Hawl's brother is bringing the cart around!]```"
-        if self._last_trade == 0:
-            self._last_trade = time.time()
+        if self._last_trade[ctx.guild.id] == 0:
+            self._last_trade[ctx.guild.id] = time.time()
         elif (
-            self._last_trade >= time.time() - 10800
+            self._last_trade[ctx.guild.id] >= time.time() - 10800
         ):  # trader can return after 3 hours have passed since last visit.
             print(
                 "Last Trade Visit: {}, current time: {}".format(
-                    str(self._last_trade), str(time.time())
+                    str(self._last_trade[ctx.guild.id]), str(time.time())
                 )
             )
             return  # silent return.
-        self._last_trade = time.time()
+        self._last_trade[ctx.guild.id] = time.time()
         stock = await Treasure.trader_get_items()
         currency_name = await bank.get_currency_name(ctx.guild)
         if str(currency_name).startswith("<:"):
@@ -1354,7 +1380,7 @@ class GobCog(BaseCog):
         msg = await ctx.send(text)
         Adventure.start_adding_reactions(msg, controls.keys(), ctx.bot.loop)
         try:
-            timeout = self._last_trade + 1200 - time.time()
+            timeout = self._last_trade[ctx.guild.id] + 1200 - time.time()
             if timeout <= 0:
                 timeout = 0
             Treasure.countdown(

@@ -111,6 +111,8 @@ class Treasure:
                 chance = Treasure.unique
             else:
                 chance = Treasure.rare
+        else:
+            chance = Treasure.common
         itemname = random.choice(list(chance.keys()))
         item = chance[itemname]
         if len(item["slot"]) == 2:  # two handed weapons add their bonuses twice
@@ -157,6 +159,7 @@ class Treasure:
         output = {}
         chest_type = random.randint(1, 100)
         while len(items) < 4:
+            chance = None
             roll = random.randint(1, 100)
             if chest_type <= 60:
                 if roll <= 5:
@@ -222,26 +225,26 @@ class Treasure:
                         )
                 else:
                     chance = Treasure.rare
-            else:
-                chance = Treasure.common
-            itemname = random.choice(list(chance.keys()))
-            item = chance[itemname]
-            if len(item["slot"]) == 2:  # two handed weapons add their bonuses twice
-                hand = "two handed"
-                att = item["att"] * 2
-                cha = item["cha"] * 2
-            else:
-                att = item["att"]
-                cha = item["cha"]
-            if "[" in itemname:
-                price = random.randint(1000, 2000) * max(att + cha, 1)
-            elif "." in itemname:
-                price = random.randint(200, 1000) * max(att + cha, 1)
-            else:
-                price = random.randint(10, 200) * max(att + cha, 1)
-            if itemname not in items:
-                items.update({itemname: {"itemname": itemname, "item": item, "price": price}})
-        print(items)
+
+            if chance != None:
+                itemname = random.choice(list(chance.keys()))
+                item = chance[itemname]
+                if len(item["slot"]) == 2:  # two handed weapons add their bonuses twice
+                    hand = "two handed"
+                    att = item["att"] * 2
+                    cha = item["cha"] * 2
+                else:
+                    att = item["att"]
+                    cha = item["cha"]
+                if "[" in itemname:
+                    price = random.randint(1000, 2000) * max(att + cha, 1)
+                elif "." in itemname:
+                    price = random.randint(200, 1000) * max(att + cha, 1)
+                else:
+                    price = random.randint(10, 200) * max(att + cha, 1)
+                if itemname not in items:
+                    items.update({itemname: {"itemname": itemname, "item": item, "price": price}})
+
         for index, item in enumerate(items):
             output.update({index: items[item]})
         return output
