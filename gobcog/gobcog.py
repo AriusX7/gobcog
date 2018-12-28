@@ -660,6 +660,7 @@ class GobCog(BaseCog):
                         user.display_name, item["itemname"]
                     )
                 )
+                await self.config.users.set_raw(value=users)
 
     @commands.command()
     @commands.guild_only()
@@ -1170,7 +1171,6 @@ class GobCog(BaseCog):
                 users[str(user.id)]["att"] += item["item"]["att"]
                 users[str(user.id)]["cha"] += item["item"]["cha"]
                 await ctx.send("You equipped {}.".format(item["itemname"]))
-                await self.config.users.set_raw(value=users)
             else:
                 olditem = users[str(user.id)]["items"][slot]
                 for oslot in olditem[list(olditem.keys())[0]]["slot"]:
@@ -1188,10 +1188,9 @@ class GobCog(BaseCog):
                         item["itemname"], list(olditem.keys())[0]
                     )
                 )
-                await self.config.users.set_raw(value=users)
         if from_backpack:
             del users[str(user.id)]["items"]["backpack"][item["itemname"]]
-            await self.config.users.set_raw(value=users)
+        await self.config.users.set_raw(value=users)
         users = await self.config.users.get_raw()
         await ctx.send(
             "Your new stats: **Attack**: {} [+{}], **Diplomacy**: {} [+{}].".format(
