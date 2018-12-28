@@ -132,6 +132,7 @@ class GobCog(BaseCog):
            (Adding "rare" or "epic" to command creates rare and epic chests.)
         """
         users = await self.config.users.get_raw()
+        await self.update_data(users, user)
         if user is None:
             user = ctx.author
         if not "treasure" in users[str(user.id)].keys():
@@ -631,6 +632,7 @@ class GobCog(BaseCog):
             return
         users = await self.config.users.get_raw()
         user = ctx.author
+        await self.update_data(users, user)
         if not "treasure" in users[str(user.id)].keys():
             users[str(user.id)]["treasure"] = [0, 0, 0]
         treasure = users[str(user.id)]["treasure"][redux.index(1)]
@@ -677,6 +679,7 @@ class GobCog(BaseCog):
         bal = await bank.get_balance(user)
         currency = await bank.get_currency_name(ctx.guild)
         users = await self.config.users.get_raw()
+        await self.update_data(users, user)
         xp = round(users[str(user.id)]["exp"])
         lvl = users[str(user.id)]["lvl"]
         att = users[str(user.id)]["att"]
@@ -764,6 +767,7 @@ class GobCog(BaseCog):
         if user.bot:
             return
         users = await self.config.users.get_raw()
+        await self.update_data(users, user)
         bkpk = "Items in Backpack: \n"
         if switch == "None":
             for item in users[str(user.id)]["items"][
@@ -1017,6 +1021,7 @@ class GobCog(BaseCog):
            You play by reacting with the offered emojis.
         """
         users = await self.config.users.get_raw()
+        await self.update_data(users, ctx.author)
         await ctx.send("You feel adventurous, " + ctx.author.display_name + "?")
         try:
             reward, participants = await Adventure.simple(
