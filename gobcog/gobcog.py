@@ -217,7 +217,6 @@ class GobCog(BaseCog):
                         ctx
                     )  # reset cooldown so ppl can forage right after taming a new pet.
                     users[str(user)]["class"]["ability"] = {"active": True, "pet": pet}
-                    await self.config.users.set_raw(value=users)
             elif switch == "forage":
                 item = await Classes.pet(ctx, users, switch)
                 if item != None:
@@ -241,9 +240,10 @@ class GobCog(BaseCog):
                                 ctx.author.display_name, item["itemname"]
                             )
                         )
-                        await self.config.users.set_raw(value=users)
             elif switch == "free":
+                ctx.command.reset_cooldown(ctx)
                 await Classes.pet(ctx, users, switch)
+            await self.config.users.set_raw(value=users)
 
     @commands.command()
     @commands.guild_only()
