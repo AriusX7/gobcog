@@ -878,7 +878,7 @@ class GobCog(BaseCog):
                 return
             msg = await ctx.send("Do you want to sell these items {}?".format(str(lookup)))
             start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-            pred = ReactionPredicate.yes_or_no(msg, buyer)
+            pred = ReactionPredicate.yes_or_no(msg, ctx.author)
             await ctx.bot.wait_for("reaction_add", check=pred)
             try:
                 await msg.delete()
@@ -990,6 +990,8 @@ class GobCog(BaseCog):
             )
         spender = ctx.author
         currency = await bank.get_currency_name(ctx.guild)
+        if str(currency).startswith("<:"):
+            currency = "credits"
         if await bank.can_spend(spender, amount):
             bal = await bank.transfer_credits(spender, to, amount)
         else:
