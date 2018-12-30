@@ -396,7 +396,7 @@ class Adventure:
                 member = discord.utils.find(lambda m: m.display_name == user, ctx.guild.members)
                 try:
                     users[str(member.id)]
-                except KeyError:
+                except (KeyError, AttributeError):
                     Adventure.userslist["fight"].remove(user)
 
             if len(Adventure.userslist["fight"]) >= 1:
@@ -471,7 +471,7 @@ class Adventure:
                 member = discord.utils.find(lambda m: m.display_name == user, ctx.guild.members)
                 try:
                     users[str(member.id)]
-                except KeyError:
+                except (KeyError, AttributeError):
                     Adventure.userslist["pray"].remove(user)
 
             for user in Adventure.userslist["pray"]:
@@ -571,7 +571,7 @@ class Adventure:
                 member = discord.utils.find(lambda m: m.display_name == user, ctx.guild.members)
                 try:
                     users[str(member.id)]
-                except KeyError:
+                except (KeyError, AttributeError):
                     Adventure.userslist["talk"].remove(user)
 
             if len(Adventure.userslist["talk"]) >= 1:

@@ -22,6 +22,7 @@ class GobCog(BaseCog):
     def __init__(self, bot):
         self.bot = bot
         self._last_trade = {}
+        self._ranger_forage = {}
 
         self.config = Config.get_conf(self, 2710801001, force_registration=True)
 
@@ -131,10 +132,10 @@ class GobCog(BaseCog):
            will give locastan a normal chest.
            (Adding "rare" or "epic" to command creates rare and epic chests.)
         """
-        users = await self.config.users.get_raw()
-        await self.update_data(users, user)
         if user is None:
             user = ctx.author
+        users = await self.config.users.get_raw()
+        await self.update_data(users, user)
         if not "treasure" in users[str(user.id)].keys():
             users[str(user.id)]["treasure"] = [0, 0, 0]
         if type == "rare":
@@ -198,7 +199,6 @@ class GobCog(BaseCog):
 
     @commands.command()
     @commands.guild_only()
-    @commands.cooldown(rate=1, per=43200, type=commands.BucketType.user)
     async def pet(self, ctx, switch: str = None):
         """This allows a Ranger to tame or set free a pet or send it foraging (once per day).
            [p]pet
@@ -208,43 +208,52 @@ class GobCog(BaseCog):
         users = await self.config.users.get_raw()
         user = ctx.author.id
         if "name" in users[str(user)]["class"] and users[str(user)]["class"]["name"] != "Ranger":
-            ctx.command.reset_cooldown(ctx)
             return await ctx.send("You need to be a Ranger to do this.")
         else:
             if switch == None or users[str(user)]["class"]["ability"] == False:
                 pet = await Classes.pet(ctx, users, None)
-                if pet != None:
-                    ctx.command.reset_cooldown(
-                        ctx
-                    )  # reset cooldown so ppl can forage right after taming a new pet.
+                if type(pet) is dict:
                     users[str(user)]["class"]["ability"] = {"active": True, "pet": pet}
+                    return await self.config.users.set_raw(value=users)
+                else:
+                    return
             elif switch == "forage":
-                item = await Classes.pet(ctx, users, switch)
-                if item != None:
-                    if item["equip"] == "sell":
-                        price = await self.sell(ctx.author, item)
-                        currency_name = await bank.get_currency_name(ctx.guild)
-                        await ctx.send(
-                            "{} sold the {} for {} {}.".format(
-                                ctx.author.display_name, item["itemname"], price, currency_name
+                try:
+                    self._ranger_forage[ctx.author.id]
+                except KeyError:
+                    self._ranger_forage[ctx.author.id] = 0
+                if self._ranger_forage[ctx.author.id] <= time.time() - 86400:
+                    item = await Classes.pet(ctx, users, switch)
+                    if self._ranger_forage[ctx.author.id] == 0:
+                        self._ranger_forage[ctx.author.id] = time.time()
+                    if item != None:
+                        if item["equip"] == "sell":
+                            price = await self.sell(ctx.author, item)
+                            currency_name = await bank.get_currency_name(ctx.guild)
+                            await ctx.send(
+                                "{} sold the {} for {} {}.".format(
+                                    ctx.author.display_name, item["itemname"], price, currency_name
+                                )
                             )
-                        )
-                    elif item["equip"] == "equip":
-                        equip = {"itemname": item["itemname"], "item": item["item"]}
-                        await self.equip_item(ctx, equip, False)
-                    else:
-                        users[str(user)]["items"]["backpack"].update(
-                            {item["itemname"]: item["item"]}
-                        )
-                        await ctx.send(
-                            "{} put the {} into the backpack.".format(
-                                ctx.author.display_name, item["itemname"]
+                        elif item["equip"] == "equip":
+                            equip = {"itemname": item["itemname"], "item": item["item"]}
+                            await self.equip_item(ctx, equip, False)
+                        else:
+                            users[str(user)]["items"]["backpack"].update(
+                                {item["itemname"]: item["item"]}
                             )
-                        )
+                            await ctx.send(
+                                "{} put the {} into the backpack.".format(
+                                    ctx.author.display_name, item["itemname"]
+                                )
+                            )
+                else:
+                    cooldown_time = (self._ranger_forage[ctx.author.id] + 86400) - time.time()
+                    return await ctx.send("This command is on cooldown. Try again in {:g}s".format(cooldown_time))
             elif switch == "free":
-                ctx.command.reset_cooldown(ctx)
                 await Classes.pet(ctx, users, switch)
-            await self.config.users.set_raw(value=users)
+                users[str(user)]["class"]["ability"] == False
+                await self.config.users.set_raw(value=users)
 
     @commands.command()
     @commands.guild_only()
