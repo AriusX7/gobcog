@@ -8,7 +8,7 @@ from redbot.core.utils.predicates import ReactionPredicate
 from .custompredicate import CustomPredicate
 from redbot.core.commands.context import Context
 from redbot.core import commands, bank, checks, Config
-from redbot.core.utils.chat_formatting import box
+from redbot.core.utils.chat_formatting import box, pagify
 from .adventure import Adventure
 from .treasure import Treasure
 from .classes import Classes
@@ -123,6 +123,7 @@ class GobCog(BaseCog):
                     users[str(user.id)]["skill"]["cha"],
                 )
             )
+        await self.config.users.set_raw(value=users)
 
     @commands.command()
     @checks.admin_or_permissions(administrator=True)
@@ -249,7 +250,9 @@ class GobCog(BaseCog):
                             )
                 else:
                     cooldown_time = (self._ranger_forage[ctx.author.id] + 86400) - time.time()
-                    return await ctx.send("This command is on cooldown. Try again in {:g}s".format(cooldown_time))
+                    return await ctx.send(
+                        "This command is on cooldown. Try again in {:g}s".format(cooldown_time)
+                    )
             elif switch == "free":
                 await Classes.pet(ctx, users, switch)
                 users[str(user)]["class"]["ability"] == False
@@ -805,14 +808,19 @@ class GobCog(BaseCog):
                         + str(users[str(user.id)]["items"]["backpack"][item]["cha"] * 2)
                         + " [two handed])\n"
                     )
-            await ctx.send(
-                "```css\n[{}'s backpack] \n\n```".format(user.display_name)
-                + "```css\n"
+
+            backpack_contents = (
+                "[{}'s backpack] \n\n".format(user.display_name)
+                + "\n"
                 + bkpk
-                + '\n(Reply with the name of an item or use {}backpack equip "name of item" to equip it.)```'.format(
+                + '\n(Reply with the name of an item or use {}backpack equip "name of item" to equip it.)'.format(
                     ctx.prefix
                 )
             )
+
+            for page in pagify(backpack_contents, delims=["\n"], shorten_by=20):
+                await ctx.send(box(page, lang="css"))
+
             try:
                 reply = await ctx.bot.wait_for(
                     "message", check=MessagePredicate.same_context(ctx), timeout=30
