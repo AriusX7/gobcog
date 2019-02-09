@@ -14,12 +14,7 @@ This version is significantly different internally and features:
 
 Things I would like to improve in the future, or will very gladly welcome PRs on:
 
-* Consolidating adventure completion messages into one message
 * Better handling of bundled data json loading (load files once in startup of cog, refer to it elsewhere with the variable)
-* Name the god with a setting. (Currently Herbert).
-* Custom cart timer. (Hardcoded at 3 minutes)
-* Custom cart name (“Hawl’s cart” right now)
-* With new settings like cart name, cart timer, god’s name: put settings under a subcommand, move the cart command to that command group
 * Theme packs with the ability to use commands to manage them for theming the game.
 * Use the backpack formatter to format the stats page the same way (appropriate alignment/spacing of items like the backpack has)
 * Use the backpack formatter to format forging pages the same way
