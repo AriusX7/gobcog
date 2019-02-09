@@ -1,8 +1,11 @@
 {
-    "author" : ["locastan"],
-    "install_msg" : "Thank you for installing my repository.",
-    "name" : "LocaCogs",
-    "short" : "Repo for just the GoblinsComic inspired RPG bot for now.",
+    "author" : ["locastan", "aikaterna"],
+    "install_msg" : "Thank you for trying out the adventure cog.",
+    "name" : "Adventure",
+    "short" : "A fork of locastan's Goblins Adventure cog.",
     "description" : "Play a RPG character and get loot by killing monsters.",
-    "tags" : ["Games", "Economy", "Fun", "RPG"],
+	"tags": [
+		"rpg",
+		"adventure",
+	]
 }
