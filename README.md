@@ -21,7 +21,7 @@ Things I would like to improve in the future, or will very gladly welcome PRs on
 * Custom cart name (“Hawl’s cart” right now)
 * With new settings like cart name, cart timer, god’s name: put settings under a subcommand, move the cart command to that command group
 * Theme packs with the ability to use commands to manage them for theming the game.
-* Use the backpack formatter to format the stats page the same way (appropriate alignment/spacing of items like the backpack * has)
+* Use the backpack formatter to format the stats page the same way (appropriate alignment/spacing of items like the backpack has)
 * Use the backpack formatter to format forging pages the same way
 * End of game HP display (show total groups’ hit vs mob points, for both str and cha)
 * Make it so that the backpack can hold more than 1x of each item (double items overwrite)
