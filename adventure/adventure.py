@@ -8,8 +8,7 @@ from typing import Optional
 from redbot.core import commands, bank, checks, Config
 from redbot.core.commands.context import Context
 from redbot.core.data_manager import bundled_data_path
-from redbot.core.utils.chat_formatting import box, pagify, bold, humanize_list
-from redbot.core.utils.menus import start_adding_reactions
+from redbot.core.utils.chat_formatting import box, pagify, bold, humanize_list 
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 from .custommenu import menu, start_adding_reactions
 
