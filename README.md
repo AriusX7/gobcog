@@ -5,11 +5,11 @@ This cog was originally made by locastan and can be found at the fork link above
 
 This version is significantly different internally and features:
 
-Using Config for data management and more atomic user attribute saving
-Expanded mob/monster list for a stat and monster combo of over 2,800 possibilities
-Added 300% more gear possibilities
-Doubled the amount of item slots
-The game can be played on multiple servers at once
+* Using Config for data management and more atomic user attribute saving
+* Expanded mob/monster list for a stat and monster combo of over 2,800 possibilities
+* Added 300% more gear possibilities
+* Doubled the amount of item slots
+* The game can be played on multiple servers at once
 
 
 Things I would like to improve in the future, or will very gladly welcome PRs on:
