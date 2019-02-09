@@ -2197,7 +2197,7 @@ class Adventure(BaseCog):
         fight_list = all_lists["fight"]
         god = await self.config.god_name()
         if await self.config.guild(self.bot.get_guild(guild_id)).god_name():
-            god = await self.config.guild(ctx.guild).god_name()
+            god = await self.config.guild(self.bot.get_guild(guild_id)).god_name()
         msg = ""
         for user in pray_list:
             userdata = await self.config.user(user).all()
