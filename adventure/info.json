@@ -1,10 +1,18 @@
 {
-    "author" : ["locastan"],
-    "install_msg" : "Thank you for installing the GoblinsComic Adventure Party cog.",
-    "name" : "GobCog",
-    "short" : "GoblinsComic inspired RPG bot.",
-    "description" : "Play a RPG character and get loot by killing monsters.",
-    "permissions" : ["Manage Messages", "Add Reactions"],
-    "tags" : ["Games", "Economy", "Fun", "RPG"],
-    "min_python_version": [3, 6, 0]
+	"author": [
+		"locastan",
+		"aikaterna"
+	],
+	"description": "An RPG game for Discord.",
+    "install_msg": "**Thank you for installing the Adventure cog, based on the GoblinsComic Adventure Party cog by locastan.**\n\n```\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502    \u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510    \u2502\n\u251c\u2500\u2500\u2500\u2500\u2524 W A R N I N G \u251c\u2500\u2500\u2500\u2500\u2524\n\u2502    \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518    \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518 \n```\n\n```\nUnload the earlier version of this cog by using the [unload gobcog] command before loading the adventure cog. Only applies to users upgrading from GobCog. There is no conversion available for users that were utilizing earlier versions of this cog - think of this as a fresh new adventure!```\n```",
+    "min_python_version": [3, 6, 0],
+    "permissions" : [
+		"manage_messages"
+	],
+	"short": "An RPG game for Discord.",
+	"tags": [
+		"rpg",
+		"adventure",
+	],
+	"type": "COG"
 }

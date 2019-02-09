@@ -1,5 +1,5 @@
-from .gobcog import GobCog
+from .adventure import Adventure
 
 
 async def setup(bot):
-    bot.add_cog(GobCog(bot))
+    bot.add_cog(Adventure(bot))
