@@ -461,15 +461,12 @@ class Adventure(BaseCog):
             stats = None
             to_remove = []
             for slot, item in userdata["loadouts"][name].items():
-                # print(item)
                 try:
                     loadout_item_name = [k for k in item.keys()][0]
                 except:
                     loadout_item_name = None
                 if loadout_item_name:
-                    print(loadout_item_name)
                     equip = {"itemname": loadout_item_name, "item": item[loadout_item_name]}
-                    # print(equip)
                     if loadout_item_name in userdata["items"]["backpack"]:
                         stats = await self._equip_silent_item(ctx, equip, True)
                     elif loadout_item_name in userdata["items"][slot]:
@@ -481,11 +478,9 @@ class Adventure(BaseCog):
                         to_remove.append(slot)
                 elif userdata["items"][slot]:
                     equip_name = "".join(k for k in userdata["items"][slot].keys())
-                    print(f"unequipping {equip_name}")
                     stats = await self._sub_silent_unequip(ctx, equip_name)
                     
                 if stats:
-                    # print(stats)
                     stats_msg = stats
             if to_remove:
                 # Cleanup the loadout if the item is missing
