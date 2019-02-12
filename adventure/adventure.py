@@ -10,11 +10,13 @@ from redbot.core.commands.context import Context
 from redbot.core.data_manager import bundled_data_path
 from redbot.core.utils.chat_formatting import box, pagify, bold, humanize_list, escape
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
+from redbot.core.utils.menus import menu as red_menu, DEFAULT_CONTROLS
 from .custommenu import menu, start_adding_reactions
+
 
 BaseCog = getattr(commands, "Cog", object)
 
-E = lambda t: escape(t, mass_mentions=True, formatting=True)
+E = lambda t: escape(t.replace("@&", ""), mass_mentions=True, formatting=True)
 
 
 class Adventure(BaseCog):
@@ -78,6 +80,7 @@ class Adventure(BaseCog):
                 "charm": {},
                 "backpack": {},
             },
+            "loadouts":{},
             "class": {
                 "name": "Hero",
                 "ability": False,
@@ -88,11 +91,56 @@ class Adventure(BaseCog):
         }
 
         default_guild = {"cart_channels": [], "god_name": "", "cart_name": ""}
-        default_global = {"god_name": "Herbert", "cart_name": "Hawl's cart"}
+        default_global = {"god_name": "Herbert", "cart_name": "Hawl", "theme":"default"}
+
+        self.RAISINS: list = None
+        self.THREATEE: list = None
+        self.TR_COMMON: dict = None
+        self.TR_RARE: dict = None
+        self.TR_EPIC: dict = None
+        self.ATTRIBS: dict = None
+        self.MONSTERS: dict = None
+        self.LOCATIONS: list = None
+        self.BOSSES: list = None
+        self.PETS: dict = None
 
         self.config.register_guild(**default_guild)
         self.config.register_global(**default_global)
         self.config.register_user(**default_user)
+
+    async def initialize(self):
+        """This will load all the bundled data into respective variables"""
+        theme = await self.config.theme()
+        pets = bundled_data_path(self) / "{theme}/pets.json".format(theme=theme)
+        with pets.open("r") as f:
+            self.PETS = json.load(f)
+        attribs_fp = bundled_data_path(self) / "{theme}/attribs.json".format(theme=theme)
+        with attribs_fp.open("r") as f:
+            self.ATTRIBS = json.load(f)
+        monster_fp = bundled_data_path(self) / "{theme}/monsters.json".format(theme=theme)
+        with monster_fp.open("r") as f:
+            self.MONSTERS = json.load(f)
+        dragons_fp = bundled_data_path(self) / "{theme}/bosses.json".format(theme=theme)
+        with dragons_fp.open("r") as f:
+            self.BOSSES = json.load(f)
+        locations_fp = bundled_data_path(self) / "{theme}/locations.json".format(theme=theme)
+        with locations_fp.open("r") as f:
+            self.LOCATIONS = json.load(f)
+        raisins_fp = bundled_data_path(self) / "{theme}/raisins.json".format(theme=theme)
+        with raisins_fp.open("r") as f:
+            self.RAISINS = json.load(f)
+        threatee_fp = bundled_data_path(self) / "{theme}/threatee.json".format(theme=theme)
+        with threatee_fp.open("r") as f:
+            self.THREATEE = json.load(f)
+        common_fp = bundled_data_path(self) / "{theme}/tr_common.json".format(theme=theme)
+        with common_fp.open("r") as f:
+            self.TR_COMMON = json.load(f)
+        rare_fp = bundled_data_path(self) / "{theme}/tr_rare.json".format(theme=theme)
+        with rare_fp.open("r") as f:
+            self.TR_RARE = json.load(f)
+        epic_fp = bundled_data_path(self) / "{theme}/tr_epic.json".format(theme=theme)
+        with epic_fp.open("r") as f:
+            self.TR_EPIC = json.load(f)
 
     async def allow_in_dm(self, ctx):
         """Checks if the bank is global and allows the command in dm"""
@@ -340,11 +388,117 @@ class Adventure(BaseCog):
                 f"📜 {bold(E(ctx.author.display_name))} is starting an inspiring sermon. 📜"
             )
 
+    @commands.group(aliases=["loadouts"])
+    async def loadout(self, ctx):
+        """Setup various adventure settings"""
+        pass
+
+    @loadout.command(name="save")
+    async def save_loadout(self, ctx, name: str):
+        """Save your current equipment as a loadout"""
+        if not await self.allow_in_dm(ctx):
+            return await ctx.send("This command is only available in a server on this bot.")
+        name = name.lower()
+        userdata = await self.config.user(ctx.author).all()
+        if name in userdata["loadouts"]:
+            await ctx.send(f"{E(ctx.author.display_name)}, you already have a loadout named {name}.")
+            return
+        else:
+            loadout = {s: a for s, a in userdata["items"].items() if s != "backpack"}
+            userdata["loadouts"][name] = loadout
+            await self.config.user(ctx.author).set(userdata)
+            await ctx.send(f"{E(ctx.author.display_name)}, your current equipment has been saved to {name}.")
+
+    @loadout.command(name="delete", aliases=["del", "rem", "remove"])
+    async def remove_loadout(self, ctx, name: str):
+        """Delete a saved loadout"""
+        if not await self.allow_in_dm(ctx):
+            return await ctx.send("This command is only available in a server on this bot.")
+        name = name.lower()
+        userdata = await self.config.user(ctx.author).all()
+        if name not in userdata["loadouts"]:
+            await ctx.send(f"{E(ctx.author.display_name)}, you don't have a loadout named {name}.")
+            return
+        else:
+            del userdata["loadouts"][name]
+            await self.config.user(ctx.author).set(userdata)
+            await ctx.send(f"{E(ctx.author.display_name)}, loadout {name} has been deleted.")
+
+    @loadout.command(name="show")
+    async def show_loadout(self, ctx, name: str = None):
+        """Show saved loadouts"""
+        if not await self.allow_in_dm(ctx):
+            return await ctx.send("This command is only available in a server on this bot.")
+        userdata = await self.config.user(ctx.author).all()
+        if name is not None and name.lower() not in userdata["loadouts"]:
+            await ctx.send(f"{E(ctx.author.display_name)}, you don't have a loadout named {name}.")
+            return
+        else:
+            msg_list = []
+            index = 0
+            count = 0
+            for l_name, loadout in userdata["loadouts"].items():
+                if name.lower() == l_name:
+                    index = count
+                stats = self._build_stats_display({"items":loadout})
+                msg = f"[{l_name} Loadout for {E(ctx.author.display_name)}]\n{stats}"
+                msg_list.append(box(msg, lang="css"))
+                count += 1
+            await red_menu(ctx, msg_list, DEFAULT_CONTROLS, page=index)
+
+    @loadout.command(name="equip", aliases=["load"])
+    async def equip_loadout(self, ctx, name: str):
+        """Equip a saved loadout"""
+        if not await self.allow_in_dm(ctx):
+            return await ctx.send("This command is only available in a server on this bot.")
+        name = name.lower()
+        userdata = await self.config.user(ctx.author).all()
+        if name not in userdata["loadouts"]:
+            await ctx.send(f"{E(ctx.author.display_name)}, you don't have a loadout named {name}.")
+            return
+        else:
+            stats_msg = None
+            stats = None
+            to_remove = []
+            for slot, item in userdata["loadouts"][name].items():
+                try:
+                    loadout_item_name = [k for k in item.keys()][0]
+                except:
+                    loadout_item_name = None
+                if loadout_item_name:
+                    equip = {"itemname": loadout_item_name, "item": item[loadout_item_name]}
+                    if loadout_item_name in userdata["items"]["backpack"]:
+                        stats = await self._equip_silent_item(ctx, equip, True)
+                    elif loadout_item_name in userdata["items"][slot]:
+                        # already equipped
+                        continue
+                    else:
+                        equip_name = "".join(k for k in userdata["items"][slot].keys())
+                        stats = await self._sub_silent_unequip(ctx, equip_name)
+                        to_remove.append(slot)
+                elif userdata["items"][slot]:
+                    equip_name = "".join(k for k in userdata["items"][slot].keys())
+                    stats = await self._sub_silent_unequip(ctx, equip_name)
+                    
+                if stats:
+                    stats_msg = stats
+            if to_remove:
+                # Cleanup the loadout if the item is missing
+                for slot in to_remove:
+                    userdata["loadouts"][name][slot] = {}
+                await self.config.user(ctx.author).set(userdata)
+                await ctx.send(f"{E(ctx.author.display_name)}, you no longer have some items in your loadout.")
+            if stats_msg:
+                await ctx.send(stats_msg)
+
+
+
     @commands.group()
     @checks.admin_or_permissions(administrator=True)
     @commands.guild_only()
     async def adventureset(self, ctx):
         """Setup various adventure settings"""
+        pass
 
     @adventureset.command()
     async def god(self, ctx, *, name):
@@ -379,7 +533,7 @@ class Adventure(BaseCog):
         """[Admin] Add or remove a text channel that the Trader cart can appear in.
 
         If the channel is already in the list, it will be removed.
-        Use `[p]cart` with no arguments to show the channel list.
+        Use `[p]adventureset cart` with no arguments to show the channel list.
         """
 
         channel_list = await self.config.guild(ctx.guild).cart_channels()
@@ -783,13 +937,14 @@ class Adventure(BaseCog):
             "twohanded",
         ]
         rarities = ["normal", "rare", "epic"]
+        item_name = item_name.lower()
         if user is None:
             user = ctx.author
         if position not in positions:
             itempos = ", ".join(pos for pos in positions)
             return await ctx.send(f"{E(ctx.author.display_name)}, valid item slots are: {itempos}")
-        # if cha > 4 or atk > 4:
-        # return await ctx.send(f"{E(ctx.author.display_name)}, don't you think that's a bit overpowered? Not creating item.")
+        if (cha > 6 or atk > 6) and not await self.bot.is_owner(ctx.author):
+            return await ctx.send(f"{E(ctx.author.display_name)}, don't you think that's a bit overpowered? Not creating item.")
         if len(item_name) >= 40:
             return await ctx.send(f"{E(ctx.author.display_name)}, try again with a shorter name.")
         if rarity not in rarities:
@@ -1411,10 +1566,7 @@ class Adventure(BaseCog):
                 return await self._open_chest(ctx, userdata["class"]["pet"]["name"], "pet")
             else:
                 if userdata["class"]["ability"] == False:
-                    fp = bundled_data_path(self) / "pets.json"
-                    with fp.open("r") as f:
-                        pets = json.load(f)
-                    pet = random.choice(list(pets.keys()))
+                    pet = random.choice(list(self.PETS.keys()))
                     roll = random.randint(1, 20)
                     dipl_value = roll + userdata["cha"] + userdata["skill"]["cha"]
 
@@ -1424,7 +1576,7 @@ class Adventure(BaseCog):
                     user_msg = await ctx.send(pet_msg)
                     await asyncio.sleep(2)
                     pet_msg2 = box(
-                        f"{E(ctx.author.display_name)} started tracking a wild {pets[pet]['name']} with a roll of 🎲({roll}).",
+                        f"{E(ctx.author.display_name)} started tracking a wild {self.PETS[pet]['name']} with a roll of 🎲({roll}).",
                         lang="css",
                     )
                     await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}")
@@ -1437,15 +1589,15 @@ class Adventure(BaseCog):
                         dipl_value += 10
                     else:
                         bonus = ""
-                    if dipl_value > pets[pet]["cha"]:
+                    if dipl_value > self.PETS[pet]["cha"]:
                         pet_msg3 = box(
-                            f"{bonus}\nThey successfully tamed the {pets[pet]['name']}.",
+                            f"{bonus}\nThey successfully tamed the {self.PETS[pet]['name']}.",
                             lang="css",
                         )
                         await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}")
-                        return pets[pet]
+                        return self.PETS[pet]
                     else:
-                        pet_msg3 = box(f"{bonus}\nThe {pets[pet]['name']} escaped.", lang="css")
+                        pet_msg3 = box(f"{bonus}\nThe {self.PETS[pet]['name']} escaped.", lang="css")
                         await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}")
                 else:
                     ctx.command.reset_cooldown(ctx)
@@ -1542,16 +1694,6 @@ class Adventure(BaseCog):
         scha = userdata["skill"]["cha"]
         pool = userdata["skill"]["pool"]
         equip = "Equipped Items: \n"
-        i = iter(userdata["items"])
-        for slot in i:
-            if userdata["items"][slot] and slot != "backpack":
-                item = list(userdata["items"][slot].keys())[0]
-                info = userdata["items"][slot][item]
-                if len(info["slot"]) == 1:
-                    equip += f" - {item} - (ATT: {info['att']}) | DPL: {info['cha']}) [{info['slot'][0]} slot]\n"
-                else:
-                    equip += f" - {item} - (ATT: {info['att'] * 2}) | DPL: {info['cha'] * 2}) [two handed]\n"
-                    next(i, None)
         next_lvl = int((lvl + 1) ** 4)
         if userdata["class"] != {} and "name" in userdata["class"]:
             class_desc = userdata["class"]["name"] + "\n\n" + userdata["class"]["desc"]
@@ -1563,20 +1705,45 @@ class Adventure(BaseCog):
         else:
             class_desc = "Hero."
 
-        header = box(f"[{E(user.display_name)}'s Character Sheet]", lang="css")
-        mid = box(
-            (
+        header = f"[{E(user.display_name)}'s Character Sheet]\n\n"
+        mid =(
                 f"A level {lvl} {class_desc} \n\n- ATTACK: {att} [+{satt}] - "
                 f"DIPLOMACY: {cha} [+{scha}] -\n\n- Currency: {bal} \n- Experience: "
-                f"{xp}/{next_lvl} \n- Unspent skillpoints: {pool}"
-            ),
-            lang="css",
-        )
-        equipped = box(equip, lang="css")
-        await ctx.send(f"{header}{mid}{equipped}")
+                f"{xp}/{next_lvl} \n- Unspent skillpoints: {pool}\n\n"
+            )
+        equipped = self._build_stats_display(userdata)
+        await ctx.send(box(f"{header}{mid}{equipped}", lang="css"))
+
+    def _build_stats_display(self, userdata):
+        form_string = "Items Equipped:"
+        last_slot = ""
+        for slot, data in userdata["items"].items():
+            if slot == "backpack":
+                continue
+            if last_slot == "two handed":
+                last_slot = slot
+                continue
+            
+            if not data:
+                last_slot = slot
+                form_string += f"\n\n {slot.title()} slot"
+                continue
+            slot_name = userdata["items"][slot]["".join(i for i in data.keys())]["slot"]
+            slot_name = slot_name[0] if len(slot_name) < 2 else "two handed"
+            form_string += f"\n\n {slot_name.title()} slot"
+            last_slot = slot_name
+            rjust = max([len(i) for i in data.keys()])
+            for name, stats in data.items():
+                att = stats["att"] * 2 if slot_name == "two handed" else stats["att"]
+                cha = stats["cha"] * 2 if slot_name == "two handed" else stats["cha"]
+                form_string += (
+                    f"\n  - {name:<{rjust}} - (ATT: {att} | DPL: {cha})"
+                )
+
+        return form_string + "\n"
 
     @commands.command()
-    async def unequip(self, ctx, item: str = "None"):
+    async def unequip(self, ctx, *, item: str = "None"):
         """This stashes a specified equipped item into your backpack.
 
         `[p]unequip name of item`
@@ -1634,6 +1801,42 @@ class Adventure(BaseCog):
             )
             await msg.edit(content=f"{msg.content}\n{stats_msg}")
 
+    async def _sub_silent_unequip(self, ctx, item: str):
+        user = ctx.author
+        userdata = await self.config.user(ctx.author).all()
+        equipped = {}
+
+        for slot in userdata["items"]:
+            if userdata["items"][slot] and slot != "backpack":
+                async with self.config.user(user).all() as userupdate:
+                    equipped.update(userupdate["items"][slot])
+
+        if not any([x for x in equipped if item in x.lower()]):
+            if item == "{.:'":
+                return
+            else:
+                return
+        else:
+            lookup = list(x for x in equipped if item in x.lower())
+            for olditem in lookup:
+                # keep in mind that double handed items grant their bonus twice so they remove twice
+                for slot in equipped[olditem].get("slot"):
+                    async with self.config.user(user).all() as userinfo:
+                        userinfo["items"][slot] = {}
+                        userinfo["att"] -= int(equipped[olditem].get("att"))
+                        userinfo["cha"] -= int(equipped[olditem].get("cha"))
+                        userinfo["items"]["backpack"].update({olditem: equipped[olditem]})
+                # TODO: Change data structure of items dict so you can have duplicate items because of key duplicate overwrite in dicts.
+            userdata = await self.config.user(ctx.author).all()
+            stats_msg = box(
+                (
+                    f"{E(ctx.author.display_name)}'s new stats: Attack: {userdata['att']} "
+                    f"[+{userdata['skill']['att']}], Diplomacy: {userdata['cha']} [+{userdata['skill']['cha']}]."
+                ),
+                lang="css",
+            )
+            return stats_msg
+
     @commands.command(name="adventure", aliases=["a"])
     @commands.guild_only()
     @commands.cooldown(rate=1, per=125, type=commands.BucketType.guild)
@@ -1652,7 +1855,10 @@ class Adventure(BaseCog):
             if not rewards:
                 pass
             else:
-                user = self.bot.get_user(userid)
+                user = ctx.guild.get_member(userid) # bot.get_user breaks sometimes :ablobsweats:
+                if user is None:
+                    # sorry no rewards if you leave the server
+                    continue
                 await self._add_rewards(
                     ctx, user, rewards["xp"], rewards["cp"], rewards["special"]
                 )
@@ -1673,22 +1879,15 @@ class Adventure(BaseCog):
 
     async def _simple(self, ctx, adventure_msg):
         text = ""
-        monster_fp = bundled_data_path(self) / "monsters.json"
-        with monster_fp.open("r") as f:
-            monsters = json.load(f)
-        attribs_fp = bundled_data_path(self) / "attribs.json"
-        with attribs_fp.open("r") as f:
-            attribs = json.load(f)
-        self._challenge[ctx.guild.id] = random.choice(list(monsters.keys()))
-        self._challenge_attrib[ctx.guild.id] = random.choice(list(attribs.keys()))
+        
+        self._challenge[ctx.guild.id] = random.choice(list(self.MONSTERS.keys()))
+        self._challenge_attrib[ctx.guild.id] = random.choice(list(self.ATTRIBS.keys()))
         challenge = self._challenge[ctx.guild.id]
         challenge_attrib = self._challenge_attrib[ctx.guild.id]
         adventure_time = time.time()
         await self._data_check(ctx)
-        dragons_fp = bundled_data_path(self) / "dragons.json"
-        with dragons_fp.open("r") as f:
-            dragons = json.load(f)
-        if challenge in dragons:
+
+        if challenge in self.BOSSES:
             self._adventure_timer[ctx.guild.id] = 120
             text = box("\n [Dragon Alarm!]", lang="css")
         elif challenge == "Basilisk":
@@ -1697,15 +1896,10 @@ class Adventure(BaseCog):
             challenge == self._challenge[ctx.guild.id]
             self._adventure_timer[ctx.guild.id] = 30
 
-        locations_fp = bundled_data_path(self) / "locations.json"
-        with locations_fp.open("r") as f:
-            locations = json.load(f)
-        raisins_fp = bundled_data_path(self) / "raisins.json"
-        with raisins_fp.open("r") as f:
-            raisins = json.load(f)
+
         adventure_msg = (
-            f"{adventure_msg}{text}\n{random.choice(locations)}\n"
-            f"**{E(ctx.author.display_name)}**{random.choice(raisins)}"
+            f"{adventure_msg}{text}\n{random.choice(self.LOCATIONS)}\n"
+            f"**{E(ctx.author.display_name)}**{random.choice(self.RAISINS)}"
         )
         await self._choice(ctx, adventure_msg)
         rewards = self._rewards
@@ -1715,9 +1909,7 @@ class Adventure(BaseCog):
     async def _choice(self, ctx, adventure_msg):
         challenge = self._challenge[ctx.guild.id]
         challenge_attrib = self._challenge_attrib[ctx.guild.id]
-        threatee_fp = bundled_data_path(self) / "threatee.json"
-        with threatee_fp.open("r") as f:
-            threatee = json.load(f)
+
 
         dragon_text = (
             f"but **a{challenge_attrib} {challenge}** just landed in front of you glaring! \n\n"
@@ -1730,17 +1922,15 @@ class Adventure(BaseCog):
             "Heroes have 1 minute to participate via reaction:"
         )
         normal_text = (
-            f"but **a{challenge_attrib} {challenge}** is guarding it with{random.choice(threatee)}. \n\n"
+            f"but **a{challenge_attrib} {challenge}** is guarding it with{random.choice(self.THREATEE)}. \n\n"
             "What will you do and will other heroes help your cause?\n"
             "Heroes have 30s to participate via reaction:"
         )
 
         await self._adv_countdown(ctx, self._adventure_timer[ctx.guild.id], "Time remaining: ")
-        dragons_fp = bundled_data_path(self) / "dragons.json"
-        with dragons_fp.open("r") as f:
-            dragons = json.load(f)
 
-        if challenge in dragons:
+
+        if challenge in self.BOSSES:
             adventure_msg = f"{adventure_msg}\n{dragon_text}"
             await menu(ctx, [adventure_msg], self._adventure_actions, None, 0, 120)
 
@@ -1901,15 +2091,9 @@ class Adventure(BaseCog):
 
         challenge = self._challenge[ctx.guild.id]
         challenge_attrib = self._challenge_attrib[ctx.guild.id]
-        monster_fp = bundled_data_path(self) / "monsters.json"
-        with monster_fp.open("r") as f:
-            monsters = json.load(f)
-        attribs_fp = bundled_data_path(self) / "attribs.json"
-        with attribs_fp.open("r") as f:
-            attribs = json.load(f)
 
-        strength = monsters[challenge]["str"] * attribs[challenge_attrib][0]
-        dipl = monsters[challenge]["dipl"] * attribs[challenge_attrib][1]
+        strength = self.MONSTERS[challenge]["str"] * self.ATTRIBS[challenge_attrib][0]
+        dipl = self.MONSTERS[challenge]["dipl"] * self.ATTRIBS[challenge_attrib][1]
         slain = attack >= strength
         persuaded = diplomacy >= dipl
 
@@ -1950,10 +2134,8 @@ class Adventure(BaseCog):
                 treasure = random.choice([[0, 1, 0], [1, 0, 0]])
             elif CR >= 180:  # rewards 50:50 epic:rare chest for killing hard stuff.
                 treasure = random.choice([[0, 0, 1], [0, 1, 0]])
-            dragons_fp = bundled_data_path(self) / "dragons.json"
-            with dragons_fp.open("r") as f:
-                dragons = json.load(f)
-            if self._challenge[ctx.guild.id] in dragons:  # always rewards an epic chest.
+
+            if self._challenge[ctx.guild.id] in self.BOSSES:  # always rewards an epic chest.
                 treasure[2] += 1
             if len(critlist) != 0:
                 treasure[0] += 1
@@ -1986,7 +2168,7 @@ class Adventure(BaseCog):
             else:
                 result_msg += "The Basilisk's gaze turned everyone to stone."
 
-            return await ctx.send(msg)
+            return await ctx.send(result_msg)
         if self._challenge[ctx.guild.id] == "Basilisk" and not slain and not persuaded:
             self._participants[ctx.guild.id] = (
                 fight_list + talk_list + pray_list + run_list + fumblelist
@@ -2484,6 +2666,39 @@ class Adventure(BaseCog):
         )
         await msg.edit(content=f"{msg.content}\n{stats_msg}")
 
+    async def _equip_silent_item(self, ctx, item, from_backpack):
+        """This is the same as equip item but silent for loadout equipping"""
+        async with self.config.user(ctx.author).all() as userdata:
+            for slot in item["item"]["slot"]:
+                if userdata["items"][slot] == {}:
+                    userdata["items"][slot][item["itemname"]] = item["item"]
+                    userdata["att"] += item["item"]["att"]
+                    userdata["cha"] += item["item"]["cha"]
+                else:
+                    olditem = userdata["items"][slot]
+                    for oslot in olditem[list(olditem.keys())[0]]["slot"]:
+                        userdata["items"][oslot] = {}
+                        userdata["att"] -= olditem[list(olditem.keys())[0]][
+                            "att"
+                        ]  # keep in mind that double handed items grant their bonus twice so they remove twice
+                        userdata["cha"] -= olditem[list(olditem.keys())[0]]["cha"]
+                    userdata["items"]["backpack"].update(olditem)
+                    userdata["items"][slot][item["itemname"]] = item["item"]
+                    userdata["att"] += item["item"]["att"]
+                    userdata["cha"] += item["item"]["cha"]
+        if from_backpack:
+            async with self.config.user(ctx.author).all() as userdata:
+                del userdata["items"]["backpack"][item["itemname"]]
+        userdata = await self.config.user(ctx.author).all()
+        stats_msg = box(
+            (
+                f"{E(ctx.author.display_name)}'s new stats: Attack: {userdata['att']} "
+                f"[+{userdata['skill']['att']}], Diplomacy: {userdata['cha']} [+{userdata['skill']['cha']}]."
+            ),
+            lang="css",
+        )
+        return stats_msg
+
     @staticmethod
     def _get_epoch(seconds: int):
         epoch = time.time()
@@ -2549,23 +2764,15 @@ class Adventure(BaseCog):
         await asyncio.sleep(2)
         roll = random.randint(1, 100)
 
-        common_fp = bundled_data_path(self) / "tr_common.json"
-        with common_fp.open("r") as f:
-            common = json.load(f)
-        rare_fp = bundled_data_path(self) / "tr_rare.json"
-        with rare_fp.open("r") as f:
-            rare = json.load(f)
-        epic_fp = bundled_data_path(self) / "tr_epic.json"
-        with epic_fp.open("r") as f:
-            unique = json.load(f)
+
 
         if chest_type == "pet":
             if roll <= 5:
-                chance = unique
+                chance = self.TR_EPIC
             elif roll > 5 and roll <= 25:
-                chance = rare
+                chance = self.TR_RARE
             elif roll > 25 and roll <= 75:
-                chance = common
+                chance = self.TR_COMMON
             else:
                 await open_msg.edit(
                     content=box(
@@ -2576,25 +2783,25 @@ class Adventure(BaseCog):
                 return None
         if chest_type == "normal":
             if roll <= 5:
-                chance = unique
+                chance = self.TR_EPIC
             elif roll > 5 and roll <= 25:
-                chance = rare
+                chance = self.TR_RARE
             else:
-                chance = common
+                chance = self.TR_COMMON
         if chest_type == "rare":
             if roll <= 15:
-                chance = unique
+                chance = self.TR_EPIC
             elif roll > 15 and roll <= 45:
-                chance = rare
+                chance = self.TR_RARE
             else:
-                chance = common
+                chance = self.TR_COMMON
         if chest_type == "epic":
             if roll <= 35:
-                chance = unique
+                chance = self.TR_EPIC
             else:
-                chance = rare
+                chance = self.TR_RARE
         else:
-            chance = common
+            chance = self.TR_COMMON
         itemname = random.choice(list(chance.keys()))
         item = chance[itemname]
         if len(item["slot"]) == 2:  # two handed weapons add their bonuses twice
@@ -2871,15 +3078,7 @@ class Adventure(BaseCog):
         items = {}
         output = {}
 
-        common_fp = bundled_data_path(self) / "tr_common.json"
-        with common_fp.open("r") as f:
-            common = json.load(f)
-        rare_fp = bundled_data_path(self) / "tr_rare.json"
-        with rare_fp.open("r") as f:
-            rare = json.load(f)
-        epic_fp = bundled_data_path(self) / "tr_epic.json"
-        with epic_fp.open("r") as f:
-            unique = json.load(f)
+
 
         chest_type = random.randint(1, 100)
         while len(items) < 4:
@@ -2887,9 +3086,9 @@ class Adventure(BaseCog):
             roll = random.randint(1, 100)
             if chest_type <= 60:
                 if roll <= 5:
-                    chance = unique
+                    chance = self.TR_EPIC
                 elif roll > 5 and roll <= 25:
-                    chance = rare
+                    chance = self.TR_RARE
                 elif roll >= 90:
                     chest = [1, 0, 0]
                     types = ["normal chest", ".rare_chest", "[epic chest]"]
@@ -2904,12 +3103,12 @@ class Adventure(BaseCog):
                             }
                         )
                 else:
-                    chance = common
+                    chance = self.TR_COMMON
             elif chest_type <= 75:
                 if roll <= 15:
-                    chance = unique
+                    chance = self.TR_EPIC
                 elif roll > 15 and roll <= 45:
-                    chance = rare
+                    chance = self.TR_RARE
                 elif roll >= 90:
                     chest = random.choice([[0, 1, 0], [1, 0, 0]])
                     types = ["normal chest", ".rare_chest", "[epic chest]"]
@@ -2927,10 +3126,10 @@ class Adventure(BaseCog):
                             }
                         )
                 else:
-                    chance = common
+                    chance = self.TR_COMMON
             elif chest_type <= 90:
                 if roll <= 25:
-                    chance = unique
+                    chance = self.TR_EPIC
                 elif roll >= 90:
                     chest = random.choice([[0, 1, 0], [0, 0, 1]])
                     types = ["normal chest", ".rare_chest", "[epic chest]"]
@@ -2948,7 +3147,7 @@ class Adventure(BaseCog):
                             }
                         )
                 else:
-                    chance = rare
+                    chance = self.TR_RARE
 
             if chance != None:
                 itemname = random.choice(list(chance.keys()))
