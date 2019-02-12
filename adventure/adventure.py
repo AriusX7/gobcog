@@ -1709,7 +1709,7 @@ class Adventure(BaseCog):
         mid =(
                 f"A level {lvl} {class_desc} \n\n- ATTACK: {att} [+{satt}] - "
                 f"DIPLOMACY: {cha} [+{scha}] -\n\n- Currency: {bal} \n- Experience: "
-                f"{xp}/{next_lvl} \n- Unspent skillpoints: {pool}\n"
+                f"{xp}/{next_lvl} \n- Unspent skillpoints: {pool}\n\n"
             )
         equipped = self._build_stats_display(userdata)
         await ctx.send(box(f"{header}{mid}{equipped}", lang="css"))
