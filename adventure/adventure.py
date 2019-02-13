@@ -438,7 +438,7 @@ class Adventure(BaseCog):
             index = 0
             count = 0
             for l_name, loadout in userdata["loadouts"].items():
-                if name.lower() == l_name:
+                if name and name.lower() == l_name:
                     index = count
                 stats = self._build_stats_display({"items":loadout})
                 msg = f"[{l_name} Loadout for {E(ctx.author.display_name)}]\n{stats}"
@@ -490,6 +490,8 @@ class Adventure(BaseCog):
                 await ctx.send(f"{E(ctx.author.display_name)}, you no longer have some items in your loadout.")
             if stats_msg:
                 await ctx.send(stats_msg)
+            else:
+                await ctx.send(f"{E(ctx.author.display_name)}, you already have all those items equipped.")
 
 
 
