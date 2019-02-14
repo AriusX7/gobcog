@@ -14,7 +14,6 @@ This version is significantly different internally and features:
 
 Things I would like to improve in the future, or will very gladly welcome PRs on:
 
-* Use the backpack formatter to format forging pages the same way
 * End of game HP display (show total groups’ hit vs mob points, for both str and cha)
 * Make it so that the backpack can hold more than 1x of each item (double items overwrite)
 * Trade unopened loot boxes between players
