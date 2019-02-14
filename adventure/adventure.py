@@ -103,6 +103,7 @@ class Adventure(BaseCog):
         self.LOCATIONS: list = None
         self.BOSSES: list = None
         self.PETS: dict = None
+        self.MINIBOSSES: dict = None
 
         self.config.register_guild(**default_guild)
         self.config.register_global(**default_global)
@@ -123,6 +124,9 @@ class Adventure(BaseCog):
         dragons_fp = bundled_data_path(self) / "{theme}/bosses.json".format(theme=theme)
         with dragons_fp.open("r") as f:
             self.BOSSES = json.load(f)
+        miniboss_fp = bundled_data_path(self) / "{theme}/minibosses.json".format(theme=theme)
+        with miniboss_fp.open("r") as f:
+            self.MINIBOSSES = json.load(f)
         locations_fp = bundled_data_path(self) / "{theme}/locations.json".format(theme=theme)
         with locations_fp.open("r") as f:
             self.LOCATIONS = json.load(f)
@@ -168,7 +172,7 @@ class Adventure(BaseCog):
         or respond with "name of item" to backpack.
         """
         if not await self.allow_in_dm(ctx):
-            return await ctx.send("This command is only available in a server on this bot.")
+            return await ctx.send("This command is not available in DM's on this bot.")
 
         userdata = await self.config.user(ctx.author).all()
         bkpk = "Items in Backpack: \n"
@@ -232,13 +236,13 @@ class Adventure(BaseCog):
             switch == "sell"
         ):  # new logic allows for bulk sales. It also always confirms the sale by yes/no query to avoid accidents.
             if item == "None" or not any(
-                [x for x in userdata["items"]["backpack"] if item in x.lower()]
+                [x for x in userdata["items"]["backpack"] if item.lower() in x.lower()]
             ):
                 await ctx.send(
                     f"{E(ctx.author.display_name)}, you have to specify an item (or partial name) from your backpack to sell."
                 )
                 return
-            lookup = list(x for x in userdata["items"]["backpack"] if item in x.lower())
+            lookup = list(x for x in userdata["items"]["backpack"] if item.lower() in x.lower())
             if any([x for x in lookup if "{.:'" in x.lower()]):
                 device = [x for x in lookup if "{.:'" in x.lower()]
                 return await ctx.send(
@@ -248,15 +252,11 @@ class Adventure(BaseCog):
                     )
                 )
             msg = await ctx.send(
-                f"{E(ctx.author.display_name)}, do you want to sell these items {str(lookup)}?"
+                f"{E(ctx.author.display_name)}, do you want to sell these items? {box(humanize_list(lookup), lang='css')}"
             )
             start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
             pred = ReactionPredicate.yes_or_no(msg, ctx.author)
             await ctx.bot.wait_for("reaction_add", check=pred)
-            try:
-                await msg.delete()
-            except discord.errors.Forbidden:
-                pass
             if pred.result:  # user reacted with Yes.
                 for item in lookup:
                     queryitem = {"itemname": item, "item": userdata["items"]["backpack"].get(item)}
@@ -269,6 +269,11 @@ class Adventure(BaseCog):
                     await ctx.send(
                         f"{E(ctx.author.display_name)} sold their {item} for {price} {currency_name}."
                     )
+            else:
+                try:
+                    await msg.delete()
+                except discord.errors.Forbidden:
+                    pass
 
         elif switch == "trade":
             if item == "None" or not any(
@@ -397,7 +402,7 @@ class Adventure(BaseCog):
     async def save_loadout(self, ctx, name: str):
         """Save your current equipment as a loadout"""
         if not await self.allow_in_dm(ctx):
-            return await ctx.send("This command is only available in a server on this bot.")
+            return await ctx.send("This command is not available in DM's on this bot.")
         name = name.lower()
         userdata = await self.config.user(ctx.author).all()
         if name in userdata["loadouts"]:
@@ -413,7 +418,7 @@ class Adventure(BaseCog):
     async def remove_loadout(self, ctx, name: str):
         """Delete a saved loadout"""
         if not await self.allow_in_dm(ctx):
-            return await ctx.send("This command is only available in a server on this bot.")
+            return await ctx.send("This command is not available in DM's on this bot.")
         name = name.lower()
         userdata = await self.config.user(ctx.author).all()
         if name not in userdata["loadouts"]:
@@ -428,8 +433,11 @@ class Adventure(BaseCog):
     async def show_loadout(self, ctx, name: str = None):
         """Show saved loadouts"""
         if not await self.allow_in_dm(ctx):
-            return await ctx.send("This command is only available in a server on this bot.")
+            return await ctx.send("This command is not available in DM's on this bot.")
         userdata = await self.config.user(ctx.author).all()
+        if not userdata["loadouts"]:
+            await ctx.send(f"{E(ctx.author.display_name)}, you don't have any loadouts saved.")
+            return
         if name is not None and name.lower() not in userdata["loadouts"]:
             await ctx.send(f"{E(ctx.author.display_name)}, you don't have a loadout named {name}.")
             return
@@ -438,7 +446,7 @@ class Adventure(BaseCog):
             index = 0
             count = 0
             for l_name, loadout in userdata["loadouts"].items():
-                if name.lower() == l_name:
+                if name and name.lower() == l_name:
                     index = count
                 stats = self._build_stats_display({"items":loadout})
                 msg = f"[{l_name} Loadout for {E(ctx.author.display_name)}]\n{stats}"
@@ -450,7 +458,7 @@ class Adventure(BaseCog):
     async def equip_loadout(self, ctx, name: str):
         """Equip a saved loadout"""
         if not await self.allow_in_dm(ctx):
-            return await ctx.send("This command is only available in a server on this bot.")
+            return await ctx.send("This command is not available in DM's on this bot.")
         name = name.lower()
         userdata = await self.config.user(ctx.author).all()
         if name not in userdata["loadouts"]:
@@ -490,6 +498,8 @@ class Adventure(BaseCog):
                 await ctx.send(f"{E(ctx.author.display_name)}, you no longer have some items in your loadout.")
             if stats_msg:
                 await ctx.send(stats_msg)
+            else:
+                await ctx.send(f"{E(ctx.author.display_name)}, you already have all those items equipped.")
 
 
 
@@ -619,7 +629,7 @@ class Adventure(BaseCog):
         `[p]equip "name of item"`
         """
         if not await self.allow_in_dm(ctx):
-            return await ctx.send("This command is only available in a server on this bot.")
+            return await ctx.send("This command is not available in DM's on this bot.")
         if not item:
             return await ctx.send("Please use an item name with this command.")
         await ctx.invoke(self._backpack, switch="equip", item=item)
@@ -633,7 +643,7 @@ class Adventure(BaseCog):
         (2h cooldown)
         """
         if not await self.allow_in_dm(ctx):
-            return await ctx.send("This command is only available in a server on this bot.")
+            return await ctx.send("This command is not available in DM's on this bot.")
         userdata = await self.config.user(ctx.author).all()
         if userdata["class"]["name"] != "Tinkerer":
             ctx.command.reset_cooldown(ctx)
@@ -652,25 +662,14 @@ class Adventure(BaseCog):
                     f"{E(ctx.author.display_name)}, you need at least two forgeable items in your backpack to forge."
                 )
             backpack_items = userdata["items"]["backpack"]
-            for item in backpack_items:
-                if "{.:'" not in item:
-                    if len(backpack_items[item]["slot"]) == 1:
-                        bkpk += (
-                            f" - {item} - (ATT: {str(backpack_items[item]['att'])} | "
-                            f"DPL: {str(backpack_items[item]['cha'])} [{backpack_items[item]['slot'][0]} slot])\n"
-                        )
-                    else:
-                        bkpk += (
-                            f" - {item} - (ATT: {str(backpack_items[item]['att'] * 2)} | "
-                            f"DPL: {str(backpack_items[item]['cha'] * 2)} [two handed])\n"
-                        )
+            bkpk = self._build_bkpk_display(userdata["items"]["backpack"], True)
+            forgeables = (
+                        f"[{E(ctx.author.display_name)}'s forgeables]\n"
+                        f"{bkpk}\n(Reply with the full or partial name of item 1 to select for forging. Try to be specific.)"
+                    )
+            for page in pagify(forgeables, delims=["\n"], shorten_by=20):
+                    await ctx.send(box(page, lang="css"))
 
-            await ctx.send(
-                (
-                    f"```css\n[{E(ctx.author.display_name)}'s forgeables]\n```\n```css\n"
-                    f"{bkpk}\n(Reply with the full or partial name of item 1 to select for forging. Try to be specific.)```"
-                )
-            )
             try:
                 reply = await ctx.bot.wait_for(
                     "message", check=MessagePredicate.same_context(ctx), timeout=30
@@ -698,24 +697,13 @@ class Adventure(BaseCog):
                     f"{E(ctx.author.display_name)}, I could not find that item - check your spelling."
                 )
             bkpk = ""
-            for item in backpack_items:
-                if item not in consumed and "{.:'" not in item:
-                    if len(backpack_items[item]["slot"]) == 1:
-                        bkpk += (
-                            f" - {item} - (ATT: {str(backpack_items[item]['att'])} | "
-                            f"DPL: {str(backpack_items[item]['cha'])} [{backpack_items[item]['slot'][0]} slot])\n"
-                        )
-                    else:
-                        bkpk += (
-                            f" - {item} - (ATT: {str(backpack_items[item]['att'] * 2)} | "
-                            f"DPL: {str(backpack_items[item]['cha'] * 2)} [two handed])\n"
-                        )
-            await ctx.send(
-                (
-                    f"```css\n[{E(ctx.author.display_name)}'s forgeables]\n```\n```css\n"
-                    f"{bkpk}\n(Reply with the full or partial name of item 2 to select for forging. Try to be specific.)```"
+            bkpk = self._build_bkpk_display(userdata["items"]["backpack"], True, consumed)
+            forgeables =(
+                    f"[{E(ctx.author.display_name)}'s forgeables]\n"
+                    f"{bkpk}\n(Reply with the full or partial name of item 2 to select for forging. Try to be specific.)"
                 )
-            )
+            for page in pagify(forgeables, delims=["\n"], shorten_by=20):
+                    await ctx.send(box(page, lang="css"))
             try:
                 reply = await ctx.bot.wait_for(
                     "message", check=MessagePredicate.same_context(ctx), timeout=30
@@ -1016,7 +1004,7 @@ class Adventure(BaseCog):
         For information on class use: `[p]heroclass "classname" info`
         """
         if not await self.allow_in_dm(ctx):
-            return await ctx.send("This command is only available in a server on this bot.")
+            return await ctx.send("This command is not available in DM's on this bot.")
         classes = {
             "Tinkerer": {
                 "name": "Tinkerer",
@@ -1254,7 +1242,7 @@ class Adventure(BaseCog):
         or epic.
         """
         if not await self.allow_in_dm(ctx):
-            return await ctx.send("This command is only available in a server on this bot.")
+            return await ctx.send("This command is not available in DM's on this bot.")
         userdata = await self.config.user(ctx.author).all()
         if not box_type:
             return await ctx.send(
@@ -1347,7 +1335,7 @@ class Adventure(BaseCog):
         'offering' in this context is the amount of currency you are sacrificing for this fight.
         """
         if not await self.allow_in_dm(ctx):
-            return await ctx.send("This command is only available in a server on this bot.")
+            return await ctx.send("This command is not available in DM's on this bot.")
         bal = await bank.get_balance(ctx.author)
         currency_name = await bank.get_currency_name(ctx.guild)
 
@@ -1483,7 +1471,7 @@ class Adventure(BaseCog):
         `[p]pet free`
         """
         if not await self.allow_in_dm(ctx):
-            return await ctx.send("This command is only available in a server on this bot.")
+            return await ctx.send("This command is not available in DM's on this bot.")
         userdata = await self.config.user(ctx.author).all()
         if userdata["class"]["name"] != "Ranger":
             return await ctx.send(
@@ -1638,10 +1626,38 @@ class Adventure(BaseCog):
         """This allows you to spend skillpoints.
 
         `[p]skill attack/diplomacy`
+        `[p]skill reset` Will allow you to reset your skill points for a cost.
         """
         if not await self.allow_in_dm(ctx):
-            return await ctx.send("This command is only available in a server on this bot.")
+            return await ctx.send("This command is not available in DM's on this bot.")
         userdata = await self.config.user(ctx.author).all()
+        if spend == "reset":
+            bal = await bank.get_balance(ctx.author)
+            currency_name = await bank.get_currency_name(ctx.guild)
+
+            offering = int(bal/8)
+            nv_msg = await ctx.send(
+                (
+                    f"{E(ctx.author.display_name)}, this will cost you at least "
+                    f"{offering} {currency_name}.\nYou currently have {bal}. Do you want to proceed?"
+                )
+            )
+            start_adding_reactions(nv_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+            pred = ReactionPredicate.yes_or_no(nv_msg, ctx.author)
+            await ctx.bot.wait_for("reaction_add", check=pred)
+
+            if pred.result:
+                userdata["skill"]["pool"] = userdata["skill"]["att"] + userdata["skill"]["cha"]
+                userdata["skill"]["att"] = 0
+                userdata["skill"]["cha"] = 0
+                print(userdata["skill"])
+                await self.config.user(ctx.author).set(userdata)
+                await bank.withdraw_credits(ctx.author, offering)
+                await ctx.send(f"{E(ctx.author.display_name)}, your skill points have been reset.")
+            else:
+                await ctx.send(f"Don't play games with me, {E(ctx.author.display_name)}.")
+            return
+
         if userdata["skill"]["pool"] == 0:
             return await ctx.send(
                 f"{E(ctx.author.display_name)}, you do not have unspent skillpoints."
@@ -1678,7 +1694,7 @@ class Adventure(BaseCog):
         `[p]stats` without user will open your stats.
         """
         if not await self.allow_in_dm(ctx):
-            return await ctx.send("This command is only available in a server on this bot.")
+            return await ctx.send("This command is not available in DM's on this bot.")
         if user is None:
             user = ctx.author
         if user.bot:
@@ -1712,7 +1728,13 @@ class Adventure(BaseCog):
                 f"{xp}/{next_lvl} \n- Unspent skillpoints: {pool}\n\n"
             )
         equipped = self._build_stats_display(userdata)
-        await ctx.send(box(f"{header}{mid}{equipped}", lang="css"))
+        msg = await ctx.send(box(f"{header}{mid}{equipped}", lang="css"))
+        await msg.add_reaction("\N{CROSS MARK}")
+        pred = ReactionPredicate.same_context(msg, ctx.author)
+        react, user = await self.bot.wait_for("reaction_add", check=pred)
+        if str(react.emoji) == "\N{CROSS MARK}":
+            await msg.delete()
+
 
     def _build_stats_display(self, userdata):
         form_string = "Items Equipped:"
@@ -1750,7 +1772,7 @@ class Adventure(BaseCog):
         You can only have one of each uniquely named item in your backpack.
         """
         if not await self.allow_in_dm(ctx):
-            return await ctx.send("This command is only available in a server on this bot.")
+            return await ctx.send("This command is not available in DM's on this bot.")
         await self._sub_unequip(ctx, item)
 
     async def _sub_unequip(self, ctx, item: str = "None"):
@@ -1840,16 +1862,18 @@ class Adventure(BaseCog):
     @commands.command(name="adventure", aliases=["a"])
     @commands.guild_only()
     @commands.cooldown(rate=1, per=125, type=commands.BucketType.guild)
-    async def _adventure(self, ctx):
+    async def _adventure(self, ctx, *, challenge = None):
         """This will send you on an adventure!
 
         You play by reacting with the offered emojis.
         """
-
+        if challenge and not await ctx.bot.is_owner(ctx.author):
+            # Only let the bot owner specify a specific challenge
+            challenge = None
         userdata = await self.config.user(ctx.author).all()
         adventure_msg = f"You feel adventurous, {E(ctx.author.display_name)}?"
 
-        reward, participants = await self._simple(ctx, adventure_msg)
+        reward, participants = await self._simple(ctx, adventure_msg, challenge)
         reward_copy = reward.copy()
         for userid, rewards in reward_copy.items():
             if not rewards:
@@ -1877,10 +1901,12 @@ class Adventure(BaseCog):
         self._participants[ctx.guild.id] = None
         self._rewards[ctx.guild.id] = None
 
-    async def _simple(self, ctx, adventure_msg):
+    async def _simple(self, ctx, adventure_msg, challenge=None):
         text = ""
-        
-        self._challenge[ctx.guild.id] = random.choice(list(self.MONSTERS.keys()))
+        if challenge and challenge.title() in list(self.MONSTERS.keys()):
+            self._challenge[ctx.guild.id] = challenge.title()
+        else:
+            self._challenge[ctx.guild.id] = random.choice(list(self.MONSTERS.keys()))
         self._challenge_attrib[ctx.guild.id] = random.choice(list(self.ATTRIBS.keys()))
         challenge = self._challenge[ctx.guild.id]
         challenge_attrib = self._challenge_attrib[ctx.guild.id]
@@ -1889,8 +1915,8 @@ class Adventure(BaseCog):
 
         if challenge in self.BOSSES:
             self._adventure_timer[ctx.guild.id] = 120
-            text = box("\n [Dragon Alarm!]", lang="css")
-        elif challenge == "Basilisk":
+            text = box(f"\n [{challenge} Alarm!]", lang="css")
+        elif challenge in self.MINIBOSSES:
             self._adventure_timer[ctx.guild.id] = 60
         else:
             challenge == self._challenge[ctx.guild.id]
@@ -2129,7 +2155,7 @@ class Adventure(BaseCog):
             CR = strength + dipl
             treasure = [0, 0, 0]
             if (
-                CR >= 80 or self._challenge[ctx.guild.id] == "Basilisk"
+                CR >= 80 or self._challenge[ctx.guild.id] in self.MINIBOSSES
             ):  # rewards 50:50 rare:normal chest for killing something like the basilisk
                 treasure = random.choice([[0, 1, 0], [1, 0, 0]])
             elif CR >= 180:  # rewards 50:50 epic:rare chest for killing hard stuff.
@@ -2141,7 +2167,7 @@ class Adventure(BaseCog):
                 treasure[0] += 1
             if treasure == [0, 0, 0]:
                 treasure = False
-        if self._challenge[ctx.guild.id] == "Basilisk" and failed:
+        if self._challenge[ctx.guild.id] in self.MINIBOSSES and failed:
             self._participants[ctx.guild.id] = (
                 fight_list + talk_list + pray_list + run_list + fumblelist
             )
@@ -2156,20 +2182,17 @@ class Adventure(BaseCog):
                 else:
                     pass
             loss_list = []
+            result_msg += self.MINIBOSSES[self._challenge[ctx.guild.id]]["defeat"]
             if len(repair_list) > 0:
                 for user, loss in repair_list:
                     loss_list.append(
                         f"{bold(E(user.display_name))} used {str(loss)} {currency_name}"
                     )
                 result_msg += (
-                    "The Basilisk's gaze turned everyone to stone."
                     f"\n{humanize_list(loss_list)} to repay a passing cleric that unfroze the group."
                 )
-            else:
-                result_msg += "The Basilisk's gaze turned everyone to stone."
-
             return await ctx.send(result_msg)
-        if self._challenge[ctx.guild.id] == "Basilisk" and not slain and not persuaded:
+        if self._challenge[ctx.guild.id] in self.MINIBOSSES and not slain and not persuaded:
             self._participants[ctx.guild.id] = (
                 fight_list + talk_list + pray_list + run_list + fumblelist
             )
@@ -2189,8 +2212,11 @@ class Adventure(BaseCog):
                     loss_list.append(
                         f"{bold(E(user.display_name))} used {str(loss)} {currency_name}"
                     )
+            miniboss = self._challenge[ctx.guild.id]
+            item = self.MINIBOSSES[miniboss]["requirements"][0]
+            special = self.MINIBOSSES[self._challenge[ctx.guild.id]]["special"]
             result_msg += (
-                "The mirror shield reflected the Basilisks gaze, but he still managed to kill you."
+                f"The {item} countered the {miniboss}'s {special}, but he still managed to kill you."
                 f"\n{humanize_list(loss_list)} to repay a passing cleric that resurrected the group."
             )
         amount = (strength + dipl) * people
@@ -2485,14 +2511,15 @@ class Adventure(BaseCog):
         fight_list = self._adventure_userlist[ctx.guild.id]["fight"]
         talk_list = self._adventure_userlist[ctx.guild.id]["talk"]
         pray_list = self._adventure_userlist[ctx.guild.id]["pray"]
-        if self._challenge[ctx.guild.id] == "Basilisk":
+        if self._challenge[ctx.guild.id] in self.MINIBOSSES:
             failed = True
+            item, slot = self.MINIBOSSES[self._challenge[ctx.guild.id]]["requirements"]
             for user in (
                 fight_list + talk_list + pray_list
             ):  # check if any fighter has an equipped mirror shield to give them a chance.
                 userinfo = await self.config.user(user).all()
                 try:
-                    if ".mirror_shield" in userinfo["items"]["left"]:
+                    if item in userinfo["items"][slot]:
                         failed = False
                         break
                 except KeyError:
@@ -2535,15 +2562,19 @@ class Adventure(BaseCog):
 
         return loop.create_task(adv_countdown())
 
-    def _build_bkpk_display(self, backpack):
+    def _build_bkpk_display(self, backpack, forging=False, consumed:list=[]):
         bkpk = self._sort_backpack(backpack)
         form_string = "Items in Backpack:"
+        consumed_list = [i for i in consumed]
         for slot_group in bkpk:
+            
             slot_name = slot_group[0][1]["slot"]
             slot_name = slot_name[0] if len(slot_name) < 2 else "two handed"
             form_string += f"\n\n {slot_name.title()} slot"
             rjust = max([len(i[0]) for i in slot_group])
             for item in slot_group:
+                if forging and ("{.:" in item[0] or item[0] in consumed_list):
+                    continue
                 form_string += (
                     f'\n  - {item[0]:<{rjust}} - (ATT: {item[1]["att"]} | DPL: {item[1]["cha"]})'
                 )
