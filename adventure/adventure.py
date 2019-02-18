@@ -265,7 +265,7 @@ class Adventure(BaseCog):
                         del userdata["items"]["backpack"][item]
                     currency_name = await bank.get_currency_name(ctx.guild)
                     if str(currency_name).startswith("<"):
-                        currency_name = "credits"
+                        currency_name = f"{'credits' if price != 1 else 'credit'}"
                     await ctx.send(
                         f"{E(ctx.author.display_name)} sold their {item} for {price} {currency_name}."
                     )
@@ -1277,7 +1277,7 @@ class Adventure(BaseCog):
                 price = await self._sell(ctx.author, item[0])
                 currency_name = await bank.get_currency_name(ctx.guild)
                 if str(currency_name).startswith("<"):
-                    currency_name = "credits"
+                    currency_name = f"{'credits' if price != 1 else 'credit'}"
                 await item[1].edit(
                     content=(
                         box(
@@ -1499,7 +1499,7 @@ class Adventure(BaseCog):
                                 price = await self._sell(ctx.author, item[0])
                                 currency_name = await bank.get_currency_name(ctx.guild)
                                 if str(currency_name).startswith("<"):
-                                    currency_name = "credits"
+                                    currency_name = f"{'credits' if price != 1 else 'credit'}"
                                 await item[1].edit(
                                     content=box(
                                         (
