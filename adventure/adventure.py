@@ -3045,7 +3045,7 @@ class Adventure(BaseCog):
         controls = {em_list[1]: 0, em_list[2]: 1, em_list[3]: 2, em_list[4]: 3}
         cart = await self.config.cart_name()
         if await self.config.guild(ctx.guild).cart_name():
-            cart = await self.config.guild(cts.guild).cart_name()
+            cart = await self.config.guild(ctx.guild).cart_name()
         text = box(f"[{cart}'s brother is bringing the cart around!]", lang="css")
         if self._last_trade[ctx.guild.id] == 0:
             self._last_trade[ctx.guild.id] = time.time()
