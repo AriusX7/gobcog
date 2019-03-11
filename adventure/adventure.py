@@ -1639,6 +1639,11 @@ class Adventure(BaseCog):
             c.heroclass["forage"] = 7201
         if c.heroclass["forage"] <= time.time() - 7200:
             item = await self._open_chest(ctx, c.heroclass["pet"]["name"], "pet")
+            try:
+                c = await Character._from_json(self.config, ctx.author)
+            except Exception as e:
+                log.error("Error with the new character sheet", exc_info=True)
+                return
             c.heroclass["forage"] = time.time()
             await self.config.user(ctx.author).set(c._to_json())
         else:
@@ -2752,7 +2757,7 @@ class Adventure(BaseCog):
             slot = "two handed"
         if hasattr(user, "display_name"):
 
-            chest_msg2 = f"{E(user.display_name)} found a {itemname}. (Attack: {str(item.att)}, Charisma: {str(item.cha)} [{slot}])"
+            chest_msg2 = f"{E(user.display_name)} found a {item}. (Attack: {str(item.att)}, Charisma: {str(item.cha)} [{slot}])"
             await open_msg.edit(
                 content=box(
                     f"{chest_msg}\n{chest_msg2}\nDo you want to equip this item, put in your backpack, or sell this item?",
