@@ -295,7 +295,7 @@ class Adventure(BaseCog):
                     lang="css",
                 )
             )
-        item_str = box(humanize_list([f"{str(y) - {y.owned}}" for y in lookup]), lang="css")
+        item_str = box(humanize_list([f"{str(y)} - {y.owned}" for y in lookup]), lang="css")
         start_msg = await ctx.send(
             f"{E(ctx.author.display_name)}, do you want to sell these items? {item_str}"
         )
