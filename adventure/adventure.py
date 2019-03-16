@@ -103,7 +103,7 @@ class Adventure(BaseCog):
         self.config.register_guild(**default_guild)
         self.config.register_global(**default_global)
         self.config.register_user(**default_user)
-        self.cleanup_loop = self.bot.create_task(self.cleanup_loop())
+        self.cleanup_loop = self.bot.loop.create_task(self.cleanup_tasks())
 
     def __unload(self):
         for task in self.tasks:
