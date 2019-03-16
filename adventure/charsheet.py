@@ -1,5 +1,4 @@
 from redbot.core import Config, bank
-from redbot.core.utils.chat_formatting import escape
 import discord
 from typing import Optional, Dict, List, Set
 from copy import copy
@@ -7,24 +6,24 @@ import logging
 
 log = logging.getLogger("red.adventure")
 
-E = lambda t: escape(t.replace("@&", ""), mass_mentions=True, formatting=True)
 
 ORDER = [
-            "head",
-            "neck",
-            "chest",
-            "gloves",
-            "belt",
-            "legs",
-            "boots",
-            "left",
-            "right",
-            "two handed",
-            "ring",
-            "charm",
-        ]
+    "head",
+    "neck",
+    "chest",
+    "gloves",
+    "belt",
+    "legs",
+    "boots",
+    "left",
+    "right",
+    "two handed",
+    "ring",
+    "charm",
+]
 TINKER_OPEN = r"{.:'"
 TINKER_CLOSE = r"':.}"
+
 
 class Item:
     """An object to represent an item in the game world"""
@@ -61,12 +60,12 @@ class Item:
         return item
 
     @classmethod
-    def _from_json(cls, data:dict):
+    def _from_json(cls, data: dict):
         # try:
         name = "".join(data.keys())
         data = data[name]
         # except KeyError:
-            # return cls(**data)
+        # return cls(**data)
         rarity = "normal"
         # data = data[name]
         if name.startswith("."):
@@ -96,8 +95,7 @@ class Item:
 
     def _to_json(self) -> dict:
         return {
-            self.name:
-            {
+            self.name: {
                 "name": self.name,
                 "slot": self.slot,
                 "att": self.att,
@@ -109,8 +107,10 @@ class Item:
             }
         }
 
+
 class GameSession:
     """A class to represent and hold current game sessions per server"""
+
     challenge: str
     attribute: str
     timer: int
@@ -129,24 +129,20 @@ class GameSession:
         self.challenge: str = kwargs.pop("challenge")
         self.attribute: dict = kwargs.pop("attribute")
         self.guild: discord.Guild = kwargs.pop("guild")
-        self.boss : bool = kwargs.pop("boss")
+        self.boss: bool = kwargs.pop("boss")
         self.miniboss: dict = kwargs.pop("miniboss")
         self.timer: int = kwargs.pop("timer")
         self.monster: dict = kwargs.pop("monster")
         self.message_id: int = 0
-        self.participants : Set[discord.Member] = set()
+        self.participants: Set[discord.Member] = set()
         self.fight: List[discord.Member] = []
         self.talk: List[discord.Member] = []
         self.pray: List[discord.Member] = []
         self.run: List[discord.Member] = []
 
 
-
-
-
 class Character(Item):
     """An class to represent the characters stats"""
-    
 
     def __init__(self, **kwargs):
         self.exp: int = kwargs.pop("exp")
@@ -207,12 +203,14 @@ class Character(Item):
         else:
             class_desc = "Hero."
 
-        
         return (
-            f"[{E(self.user.display_name)}'s Character Sheet]\n\n"
-            f"A level {self.lvl} {class_desc} \n\n- ATTACK: {self.att} [+{self.skill['att']}] - "
-            f"DIPLOMACY: {self.cha} [+{self.skill['cha']}] -\n\n- Currency: {self.bal} \n- Experience: "
-            f"{round(self.exp)}/{next_lvl} \n- Unspent skillpoints: {self.skill['pool']}\n\n"
+            f"[{self.user.display_name}'s Character Sheet]\n\n"
+            f"A level {self.lvl} {class_desc} \n\n- "
+            f"ATTACK: {self.att} [+{self.skill['att']}] - "
+            f"DIPLOMACY: {self.cha} [+{self.skill['cha']}] -\n\n- "
+            f"Currency: {self.bal} \n- "
+            f"Experience: {round(self.exp)}/{next_lvl} \n- "
+            f"Unspent skillpoints: {self.skill['pool']}\n\n"
             f"Items Equipped:{self.__equipment__()}"
         )
 
@@ -240,9 +238,7 @@ class Character(Item):
             # for name, stats in data.items():
             att = item.att * 2 if slot_name == "two handed" else item.att
             cha = item.cha * 2 if slot_name == "two handed" else item.cha
-            form_string += (
-                f"\n  - {str(item)} - (ATT: {att} | DPL: {cha})"
-            )
+            form_string += f"\n  - {str(item)} - (ATT: {att} | DPL: {cha})"
 
         return form_string + "\n"
 
@@ -278,7 +274,7 @@ class Character(Item):
         )
         return final
 
-    def __backpack__(self, forging : bool=False, consumed : list=[]):
+    def __backpack__(self, forging: bool = False, consumed: list = []):
         bkpk = self._sort_new_backpack(self.backpack)
         form_string = "Items in Backpack:"
         consumed_list = [i for i in consumed]
@@ -299,7 +295,7 @@ class Character(Item):
 
         return form_string + "\n"
 
-    async def _equip_item(self, item: Item, from_backpack:bool=True):
+    async def _equip_item(self, item: Item, from_backpack: bool = True):
         """This handles moving an item from backpack to equipment"""
         # log.debug(self.backpack)
         if from_backpack and item.name in self.backpack:
@@ -334,7 +330,7 @@ class Character(Item):
                 setattr(self, slot, None)
             else:
                 await self._equip_item(self.backpack[name], True)
-            
+
         return self
 
     @staticmethod
@@ -343,18 +339,18 @@ class Character(Item):
             Return a dict of currently equipped items for loadouts
         """
         return {
-                "head": char.head._to_json() if char.head else {},
-                "neck": char.neck._to_json() if char.neck else {},
-                "chest": char.chest._to_json() if char.chest else {},
-                "gloves": char.gloves._to_json() if char.gloves else {},
-                "belt": char.belt._to_json() if char.belt else {},
-                "legs": char.legs._to_json() if char.legs else {},
-                "boots": char.boots._to_json() if char.boots else {},
-                "left": char.left._to_json() if char.left else {},
-                "right": char.right._to_json() if char.right else {},
-                "ring": char.ring._to_json() if char.ring else {},
-                "charm": char.charm._to_json() if char.charm else {},
-            }
+            "head": char.head._to_json() if char.head else {},
+            "neck": char.neck._to_json() if char.neck else {},
+            "chest": char.chest._to_json() if char.chest else {},
+            "gloves": char.gloves._to_json() if char.gloves else {},
+            "belt": char.belt._to_json() if char.belt else {},
+            "legs": char.legs._to_json() if char.legs else {},
+            "boots": char.boots._to_json() if char.boots else {},
+            "left": char.left._to_json() if char.left else {},
+            "right": char.right._to_json() if char.right else {},
+            "ring": char.ring._to_json() if char.ring else {},
+            "charm": char.charm._to_json() if char.charm else {},
+        }
 
     def current_equipment(self):
         """
@@ -383,11 +379,15 @@ class Character(Item):
         return self
 
     @classmethod
-    async def _from_json(cls, config : Config, user : discord.Member):
+    async def _from_json(cls, config: Config, user: discord.Member):
         """Return a Character object from config and user"""
         data = await config.user(user).all()
         balance = await bank.get_balance(user)
-        equipment = {k:Item._from_json(v) if v else None for k,v in data["items"].items() if k != "backpack"}
+        equipment = {
+            k: Item._from_json(v) if v else None
+            for k, v in data["items"].items()
+            if k != "backpack"
+        }
         loadouts = data["loadouts"]
         heroclass = "Hero"
         if "class" in data:
@@ -400,10 +400,10 @@ class Character(Item):
             # helps move old data to new format
             backpack = {}
             for n, i in data["items"]["backpack"].items():
-                item = Item._from_json({n:i})
-                backpack[item.name] = item 
+                item = Item._from_json({n: i})
+                backpack[item.name] = item
         else:
-            backpack = {n:Item._from_json({n:i}) for n, i in data["backpack"].items()}
+            backpack = {n: Item._from_json({n: i}) for n, i in data["backpack"].items()}
         # log.debug(data["items"]["backpack"])
         hero_data = {
             "exp": data["exp"],
@@ -447,9 +447,8 @@ class Character(Item):
                 "ring": self.ring._to_json() if self.ring else {},
                 "charm": self.charm._to_json() if self.charm else {},
             },
-
             "backpack": backpack,
-            "loadouts": self.loadouts, # convert to dict of items
+            "loadouts": self.loadouts,  # convert to dict of items
             "heroclass": self.heroclass,
             "skill": self.skill,
         }
