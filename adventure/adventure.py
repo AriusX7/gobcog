@@ -3207,7 +3207,7 @@ class Adventure(BaseCog):
                         )
                 else:
                     chance = self.TR_COMMON
-            elif chest_type <= 90:
+            else:
                 if roll <= 25:
                     chance = self.TR_EPIC
                 elif roll >= 90:
