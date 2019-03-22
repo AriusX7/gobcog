@@ -392,7 +392,7 @@ class Adventure(BaseCog):
             await ctx.send(
                 (
                     f"{self.E(ctx.author.display_name)}, I found multiple items "
-                    f"({humanize_list(lookup)}) "
+                    f"({humanize_list([x.name for x in lookup])}) "
                     "matching that name in your backpack.\nPlease be more specific."
                 )
             )
