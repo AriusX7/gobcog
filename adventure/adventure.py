@@ -741,6 +741,10 @@ class Adventure(BaseCog):
         except Exception as e:
             log.error("Error with the new character sheet", exc_info=True)
             return
+        if amount > 1:
+            plural = "s"
+        else:
+            plural = ""
         if box_rarity.lower() == "normal":
             if c.treasure[0] >= (5 * amount):
                 c.treasure[0] -= 5 * amount
@@ -749,7 +753,7 @@ class Adventure(BaseCog):
                     box(
                         (
                             f"Successfully converted {(5 * amount)} normal treasure "
-                            f"chests to {(1 * amount)} rare treasure chest. "
+                            f"chests to {(1 * amount)} rare treasure chest{plural}. "
                             f"\n{self.E(ctx.author.display_name)} "
                             f"now owns {c.treasure[0]} normal, "
                             f"{c.treasure[1]} rare and {c.treasure[2]} epic treasure chests."
@@ -771,7 +775,7 @@ class Adventure(BaseCog):
                     box(
                         (
                             f"Successfully converted {(4 * amount)} rare treasure "
-                            f"chests to {(1 * amount)} epic treasure chest. "
+                            f"chests to {(1 * amount)} epic treasure chest{plural}. "
                             f"\n{self.E(ctx.author.display_name)} "
                             f"now owns {c.treasure[0]} normal, "
                             f"{c.treasure[1]} rare and {c.treasure[2]} epic treasure chests."
@@ -1337,8 +1341,7 @@ class Adventure(BaseCog):
 
             if clz in classes and action is None:
                 now_class_msg = (
-                    f"Congratulations, {self.E(ctx.author.display_name)}. "
-                    f"You are now a {classes[clz]['name']}."
+                    f"Congratulations, {self.E(ctx.author.display_name)}.\nYou are now a {classes[clz]['name']}."
                 )
                 if c.lvl >= 10:
                     if c.heroclass["name"] == "Tinkerer" or c.heroclass["name"] == "Ranger":
@@ -1405,7 +1408,7 @@ class Adventure(BaseCog):
                                     content=box(
                                         (
                                             f"{self.E(ctx.author.display_name)} released their"
-                                            f" pet into the wild.\n{now_class_msg}"
+                                            f" pet into the wild.\n"
                                         ),
                                         lang="css",
                                     )
@@ -1713,7 +1716,7 @@ class Adventure(BaseCog):
             elif roll == 20:
                 bonus = "They happen to have its favorite food."
                 dipl_value += 10
-            if dipl_value > self.PETS[pet]["cha"]:
+            if dipl_value > self.PETS[pet]["cha"] and roll > 1:
                 pet_msg3 = box(
                     f"{bonus}\nThey successfully tamed the {self.PETS[pet]['name']}.", lang="css"
                 )
@@ -1775,11 +1778,16 @@ class Adventure(BaseCog):
                     lang="css",
                 )
             )
-        c.heroclass["pet"] = {}
-        await self.config.user(ctx.author).set(c._to_json())
-        return await ctx.send(
-            box(f"{self.E(ctx.author.display_name)} released their pet into the wild.", lang="css")
-        )
+        if c.heroclass["pet"]:
+            c.heroclass["pet"] = {}
+            await self.config.user(ctx.author).set(c._to_json())
+            return await ctx.send(
+                box(f"{self.E(ctx.author.display_name)} released their pet into the wild.", lang="css")
+            )
+        else:
+            return await ctx.send(
+                box("You don't have a pet.", lang="css")
+            )
 
     @commands.command()
     @commands.guild_only()
