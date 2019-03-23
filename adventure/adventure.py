@@ -183,10 +183,10 @@ class Adventure(BaseCog):
             return await ctx.send("This command is not available in DM's on this bot.")
         try:
             c = await Character._from_json(self.config, ctx.author)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
-        bkpk = "Items in Backpack: \n"
+        # bkpk = "Items in Backpack: \n"
         if not ctx.invoked_subcommand:
             backpack_contents = (
                 f"[{self.E(ctx.author.display_name)}'s backpack] \n\n{c.__backpack__()}\n"
@@ -194,7 +194,7 @@ class Adventure(BaseCog):
                 "equip 'name of item' to equip it.)"
             )
             for page in pagify(backpack_contents, delims=["\n"], shorten_by=20):
-                backpack_message = await ctx.send(box(page, lang="css"))
+                await ctx.send(box(page, lang="css"))
 
             try:
                 reply = await ctx.bot.wait_for(
@@ -250,7 +250,7 @@ class Adventure(BaseCog):
         """Equip an item from your backpack"""
         try:
             c = await Character._from_json(self.config, ctx.author)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         equip = None
@@ -289,7 +289,7 @@ class Adventure(BaseCog):
             item = item.replace("{.:'", "").replace("':.}", "")
         try:
             c = await Character._from_json(self.config, ctx.author)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         if not any([x for x in c.backpack if item.lower() in x.lower()]):
@@ -379,7 +379,7 @@ class Adventure(BaseCog):
         """Trade an item from your backpack to another user"""
         try:
             c = await Character._from_json(self.config, ctx.author)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         if not any([x for x in c.backpack if item.lower() in x.lower()]):
@@ -441,7 +441,7 @@ class Adventure(BaseCog):
                         await self.config.user(ctx.author).set(c._to_json())
                         try:
                             buy_user = await Character._from_json(self.config, buyer)
-                        except Exception as e:
+                        except Exception:
                             log.error("Error with the new character sheet", exc_info=True)
                             return
                         if item.name in buy_user.backpack:
@@ -491,7 +491,7 @@ class Adventure(BaseCog):
 
         try:
             c = await Character._from_json(self.config, ctx.author)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         if c.heroclass["name"] != "Cleric":
@@ -523,7 +523,7 @@ class Adventure(BaseCog):
         name = name.lower()
         try:
             c = await Character._from_json(self.config, ctx.author)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         if name in c.loadouts:
@@ -548,7 +548,7 @@ class Adventure(BaseCog):
         name = name.lower()
         try:
             c = await Character._from_json(self.config, ctx.author)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         if name not in c.loadouts:
@@ -568,7 +568,7 @@ class Adventure(BaseCog):
             return await ctx.send("This command is not available in DM's on this bot.")
         try:
             c = await Character._from_json(self.config, ctx.author)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         if not c.loadouts:
@@ -602,7 +602,7 @@ class Adventure(BaseCog):
         name = name.lower()
         try:
             c = await Character._from_json(self.config, ctx.author)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         if name not in c.loadouts:
@@ -728,7 +728,7 @@ class Adventure(BaseCog):
 
     @commands.command()
     @commands.cooldown(rate=1, per=4, type=commands.BucketType.guild)
-    async def convert(self, ctx, amount: Optional[int] = 1, *, box_rarity: str):
+    async def convert(self, ctx, box_rarity: str, amount: int = 1):
         """Convert normal or rare treasure chests to epic.
 
         Trade 5 normal treasure chests for 1 rare treasure chest.
@@ -738,7 +738,7 @@ class Adventure(BaseCog):
         # Thanks to flare#0001 for the idea and writing the first instance of this
         try:
             c = await Character._from_json(self.config, ctx.author)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         if amount > 1:
@@ -819,7 +819,7 @@ class Adventure(BaseCog):
             return await ctx.send("This command is not available in DM's on this bot.")
         try:
             c = await Character._from_json(self.config, ctx.author)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         if c.heroclass["name"] != "Tinkerer":
@@ -828,7 +828,6 @@ class Adventure(BaseCog):
                 f"{self.E(ctx.author.display_name)}, you need to be a Tinkerer to do this."
             )
         else:
-            bkpk = ""
             consumed = []
             forgeables = len([i for n, i in c.backpack.items() if i.rarity != "forged"])
             if forgeables <= 1:
@@ -888,7 +887,6 @@ class Adventure(BaseCog):
                 return await ctx.send(
                     f"I don't have all day you know, {self.E(ctx.author.display_name)}."
                 )
-            item2 = {}
             for name, item in c.backpack.items():
                 if reply.content.lower() in name and item not in consumed:
                     if item.rarity != "forged":
@@ -1106,7 +1104,6 @@ class Adventure(BaseCog):
         `[p]give item "fine dagger" rare 1 1 right @locastan`
         will give a right-handed .fine_dagger with 1/1 stats to locastan.
         """
-
         positions = [
             "head",
             "neck",
@@ -1160,8 +1157,8 @@ class Adventure(BaseCog):
         new_item = {item_name: {"slot": pos, "att": atk, "cha": cha, "rarity": rarity}}
         item = Item._from_json(new_item)
         try:
-            c = await Character._from_json(self.config, ctx.author)
-        except Exception as e:
+            c = await Character._from_json(self.config, user)
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         if item.name in c.backpack:
@@ -1196,7 +1193,7 @@ class Adventure(BaseCog):
             )
         try:
             c = await Character._from_json(self.config, user)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         if loot_type == "rare":
@@ -1309,7 +1306,7 @@ class Adventure(BaseCog):
             )
             try:
                 c = await Character._from_json(self.config, ctx.author)
-            except Exception as e:
+            except Exception:
                 log.error("Error with the new character sheet", exc_info=True)
                 return
             start_adding_reactions(class_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
@@ -1341,7 +1338,8 @@ class Adventure(BaseCog):
 
             if clz in classes and action is None:
                 now_class_msg = (
-                    f"Congratulations, {self.E(ctx.author.display_name)}.\nYou are now a {classes[clz]['name']}."
+                    f"Congratulations, {self.E(ctx.author.display_name)}.\n"
+                    f"You are now a {classes[clz]['name']}."
                 )
                 if c.lvl >= 10:
                     if c.heroclass["name"] == "Tinkerer" or c.heroclass["name"] == "Ranger":
@@ -1447,7 +1445,7 @@ class Adventure(BaseCog):
             return await ctx.send("This command is not available in DM's on this bot.")
         try:
             c = await Character._from_json(self.config, ctx.author)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         if not box_type:
@@ -1493,7 +1491,7 @@ class Adventure(BaseCog):
 
         try:
             c = await Character._from_json(self.config, ctx.author)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         if c.heroclass["name"] != "Bard":
@@ -1669,7 +1667,7 @@ class Adventure(BaseCog):
             return await ctx.send("This command is not available in DM's on this bot.")
         try:
             c = await Character._from_json(self.config, ctx.author)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         if c.heroclass["name"] != "Ranger":
@@ -1734,7 +1732,7 @@ class Adventure(BaseCog):
         """
         try:
             c = await Character._from_json(self.config, ctx.author)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         if c.heroclass["name"] != "Ranger":
@@ -1747,10 +1745,10 @@ class Adventure(BaseCog):
         if "forage" not in c.heroclass:
             c.heroclass["forage"] = 7201
         if c.heroclass["forage"] <= time.time() - 7200:
-            item = await self._open_chest(ctx, c.heroclass["pet"]["name"], "pet")
+            await self._open_chest(ctx, c.heroclass["pet"]["name"], "pet")
             try:
                 c = await Character._from_json(self.config, ctx.author)
-            except Exception as e:
+            except Exception:
                 log.error("Error with the new character sheet", exc_info=True)
                 return
             c.heroclass["forage"] = time.time()
@@ -1768,7 +1766,7 @@ class Adventure(BaseCog):
         """
         try:
             c = await Character._from_json(self.config, ctx.author)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         if c.heroclass["name"] != "Ranger":
@@ -1782,7 +1780,10 @@ class Adventure(BaseCog):
             c.heroclass["pet"] = {}
             await self.config.user(ctx.author).set(c._to_json())
             return await ctx.send(
-                box(f"{self.E(ctx.author.display_name)} released their pet into the wild.", lang="css")
+                box(
+                    f"{self.E(ctx.author.display_name)} released their pet into the wild.",
+                    lang="css"
+                )
             )
         else:
             return await ctx.send(
@@ -1801,7 +1802,7 @@ class Adventure(BaseCog):
 
         try:
             c = await Character._from_json(self.config, ctx.author)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         if c.heroclass["name"] != "Berserker":
@@ -1831,7 +1832,7 @@ class Adventure(BaseCog):
             return await ctx.send("This command is not available in DM's on this bot.")
         try:
             c = await Character._from_json(self.config, ctx.author)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         if spend == "reset":
@@ -1910,11 +1911,9 @@ class Adventure(BaseCog):
             user = ctx.author
         if user.bot:
             return
-        bal = await bank.get_balance(user)
-        currency = await bank.get_currency_name(ctx.guild)
         try:
             c = await Character._from_json(self.config, user)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         msg = await ctx.send(box(c, lang="css"))
@@ -1964,7 +1963,7 @@ class Adventure(BaseCog):
             return await ctx.send("This command is not available in DM's on this bot.")
         try:
             c = await Character._from_json(self.config, ctx.author)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         msg = ""
@@ -2000,7 +1999,7 @@ class Adventure(BaseCog):
         adventure_msg = f"You feel adventurous, {self.E(ctx.author.display_name)}?"
         try:
             reward, participants = await self._simple(ctx, adventure_msg, challenge)
-        except Exception as e:
+        except Exception:
             log.error("Something went wrong controlling the game", exc_info=True)
             return
         reward_copy = reward.copy()
@@ -2020,7 +2019,7 @@ class Adventure(BaseCog):
             for user in participants:  # reset activated abilities
                 try:
                     c = await Character._from_json(self.config, user)
-                except Exception as e:
+                except Exception:
                     log.error("Error with the new character sheet", exc_info=True)
                     continue
                 if c.heroclass["name"] != "Ranger" and c.heroclass["ability"]:
@@ -2123,9 +2122,9 @@ class Adventure(BaseCog):
         start_adding_reactions(adventure_msg, self._adventure_actions, ctx.bot.loop)
         try:
             await asyncio.wait_for(timer, timeout=timeout + 5)
-        except Exception as e:
+        except Exception:
             timer.cancel()
-            log.error("Error with the countdown timer", exc_info=e)
+            log.error("Error with the countdown timer", exc_info=True)
             pass
 
         return await self._result(ctx, adventure_msg)
@@ -2165,7 +2164,7 @@ class Adventure(BaseCog):
                 try:
                     symbol = self._adventure_controls[x]
                     await reaction.message.remove_reaction(symbol, user)
-                except Exception as e:
+                except Exception:
                     # print(e)
                     pass
         if user not in getattr(session, action):
@@ -2177,14 +2176,13 @@ class Adventure(BaseCog):
         itemindex = emojis.index(str(reaction.emoji)) - 1
         items = self._current_traders[guild.id]["stock"][itemindex]
         spender = user
-        react = None
         channel = reaction.message.channel
         currency_name = await bank.get_currency_name(guild)
         if await bank.can_spend(spender, int(items["price"])):
             await bank.withdraw_credits(spender, int(items["price"]))
             try:
                 c = await Character._from_json(self.config, user)
-            except Exception as e:
+            except Exception:
                 log.error("Error with the new character sheet", exc_info=True)
                 return
             if "chest" in items["itemname"]:
@@ -2219,8 +2217,8 @@ class Adventure(BaseCog):
         calc_msg = await ctx.send("Calculating...")
         attack = 0
         diplomacy = 0
-        fumblelist = []
-        critlist = []
+        fumblelist: list = []
+        critlist: list = []
         failed = False
         session = self._sessions[ctx.guild.id]
         people = len(session.fight) + len(session.talk) + len(session.pray)
@@ -2518,7 +2516,7 @@ class Adventure(BaseCog):
             roll = random.randint(1, 20)
             try:
                 c = await Character._from_json(self.config, user)
-            except Exception as e:
+            except Exception:
                 log.error("Error with the new character sheet", exc_info=True)
                 continue
             att_value = c.att + c.skill["att"]
@@ -2569,7 +2567,7 @@ class Adventure(BaseCog):
         for user in pray_list:
             try:
                 c = await Character._from_json(self.config, user)
-            except Exception as e:
+            except Exception:
                 log.error("Error with the new character sheet", exc_info=True)
                 continue
             if c.heroclass["name"] == "Cleric" and c.heroclass["ability"]:
@@ -2647,7 +2645,7 @@ class Adventure(BaseCog):
         for user in session.talk:
             try:
                 c = await Character._from_json(self.config, user)
-            except Exception as e:
+            except Exception:
                 log.error("Error with the new character sheet", exc_info=True)
                 continue
             roll = random.randint(1, 20)
@@ -2701,7 +2699,7 @@ class Adventure(BaseCog):
             ):  # check if any fighter has an equipped mirror shield to give them a chance.
                 try:
                     c = await Character._from_json(self.config, user)
-                except Exception as e:
+                except Exception:
                     log.error("Error with the new character sheet", exc_info=True)
                     continue
                 try:
@@ -2718,7 +2716,7 @@ class Adventure(BaseCog):
     async def _add_rewards(self, ctx, user, exp, cp, special):
         try:
             c = await Character._from_json(self.config, user)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         c.exp += exp
@@ -2838,7 +2836,7 @@ class Adventure(BaseCog):
             )
         try:
             c = await Character._from_json(self.config, ctx.author)
-        except Exception as e:
+        except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
         open_msg = await ctx.send(box(chest_msg, lang="css"))
@@ -3025,7 +3023,7 @@ class Adventure(BaseCog):
             self._rewards[user.id] = {}
             try:
                 c = await Character._from_json(self.config, user)
-            except Exception as e:
+            except Exception:
                 log.error("Error with the new character sheet", exc_info=True)
                 return
             roll = random.randint(1, 5)
@@ -3160,7 +3158,7 @@ class Adventure(BaseCog):
             pass
         try:
             await msg.delete()
-        except Exception as e:
+        except Exception:
             log.error("Error deleting the cart message", exc_info=True)
             pass
 
