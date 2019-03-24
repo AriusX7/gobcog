@@ -174,10 +174,10 @@ class Adventure(BaseCog):
     async def _backpack(self, ctx):
         """This shows the contents of your backpack.
 
-        Selling: `[p]backpack sell "(partial) name of item"`
-        Trading: `[p]backpack trade "name of item" credits @buyer`
-        Equip:   `[p]backpack equip "(partial) name of item"`
-        or respond with "name of item" to backpack.
+        Selling: `[p]backpack sell item_name`
+        Trading: `[p]backpack trade @user price item_name`
+        Equip:   `[p]backpack equip item_name`
+        or respond with the item name to the backpack command output.
         """
         if not await self.allow_in_dm(ctx):
             return await ctx.send("This command is not available in DM's on this bot.")
