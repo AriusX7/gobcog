@@ -1996,7 +1996,7 @@ class Adventure(BaseCog):
         if challenge and not await ctx.bot.is_owner(ctx.author):
             # Only let the bot owner specify a specific challenge
             challenge = None
-        adventure_msg = f"You feel adventurous, {self.E(ctx.author.display_name)}?"
+        adventure_msg = f"!You feel adventurous, {self.E(ctx.author.display_name)}?"
         try:
             reward, participants = await self._simple(ctx, adventure_msg, challenge)
         except Exception:
