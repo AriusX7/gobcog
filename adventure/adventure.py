@@ -3214,7 +3214,9 @@ class Adventure(BaseCog):
             thing = item[0]
         else:
             thing = item
-        if item.rarity == "epic":
+        if item.rarity == "legendary":
+            base = (2000, 5000)
+        elif item.rarity == "epic":
             base = (500, 1000)
         elif item.rarity == "rare":
             base = (100, 500)

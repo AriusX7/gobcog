@@ -58,7 +58,7 @@ class Item:
         if item.startswith("["):
             item = item.replace("[", "").replace("]", "")
         if item.startswith("{Legendary:'"):
-            item = item.replace("{Legendary:'", "").replace("'", "")
+            item = item.replace("{Legendary:'", "").replace("'}", "")
         if item.startswith("{.:'"):
             item = item.replace("{.:'", "").replace("':.}", "")
         return item
@@ -79,7 +79,7 @@ class Item:
             name = name.replace("[", "").replace("]", "")
             rarity = "epic"
         if name.startswith("{Legendary:'"):
-            name = name.replace("{Legendary:'", "").replace("'", "")
+            name = name.replace("{Legendary:'", "").replace("'}", "")
             rarity = "legendary"
         if name.startswith("{.:'"):
             name = name.replace("{.:'", "").replace("':.}", "")
