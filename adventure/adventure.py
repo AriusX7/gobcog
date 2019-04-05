@@ -95,6 +95,7 @@ class Adventure(BaseCog):
         self.TR_COMMON: dict = None
         self.TR_RARE: dict = None
         self.TR_EPIC: dict = None
+        self.TR_LEGENDARY: dict = None
         self.ATTRIBS: dict = None
         self.MONSTERS: dict = None
         self.LOCATIONS: list = None
@@ -140,6 +141,9 @@ class Adventure(BaseCog):
         epic_fp = bundled_data_path(self) / "{theme}/tr_epic.json".format(theme=theme)
         with epic_fp.open("r") as f:
             self.TR_EPIC = json.load(f)
+        legendary_fp = bundled_data_path(self) / "{theme}/tr_legendary.json".format(theme=theme)
+        with legendary_fp.open("r") as f:
+            self.TR_LEGENDARY = json.load(f)
 
     async def cleanup_tasks(self):
         await self.bot.wait_until_ready()
@@ -683,6 +687,7 @@ class Adventure(BaseCog):
             "tr_common.json",
             "tr_epic.json",
             "tr_rare.json",
+            "tr_legendary.json",
         ]
         if os.listdir(bundled_data_path(self) / theme) != good_files:
             await ctx.send(
@@ -729,10 +734,11 @@ class Adventure(BaseCog):
     @commands.command()
     @commands.cooldown(rate=1, per=4, type=commands.BucketType.guild)
     async def convert(self, ctx, box_rarity: str, amount: int = 1):
-        """Convert normal or rare treasure chests to epic.
+        """Convert normal, rare or epic chests.
 
         Trade 5 normal treasure chests for 1 rare treasure chest.
         Trade 4 rare treasure chests for 1 epic treasure chest.
+        Trade 3 epic treasure chests for 1 legendary treasure chest.
         """
 
         # Thanks to flare#0001 for the idea and writing the first instance of this
@@ -756,7 +762,8 @@ class Adventure(BaseCog):
                             f"chests to {(1 * amount)} rare treasure chest{plural}. "
                             f"\n{self.E(ctx.author.display_name)} "
                             f"now owns {c.treasure[0]} normal, "
-                            f"{c.treasure[1]} rare and {c.treasure[2]} epic treasure chests."
+                            f"{c.treasure[1]} rare, {c.treasure[2]} epic "
+                            f"and {c.treasure[3]} legendary treasure chests."
                         ),
                         lang="css",
                     )
@@ -778,7 +785,8 @@ class Adventure(BaseCog):
                             f"chests to {(1 * amount)} epic treasure chest{plural}. "
                             f"\n{self.E(ctx.author.display_name)} "
                             f"now owns {c.treasure[0]} normal, "
-                            f"{c.treasure[1]} rare and {c.treasure[2]} epic treasure chests."
+                            f"{c.treasure[1]} rare, {c.treasure[2]} epic "
+                            f"and {c.treasure[3]} legendary treasure chests."
                         ),
                         lang="css",
                     )
@@ -789,10 +797,33 @@ class Adventure(BaseCog):
                     f"{self.E(ctx.author.display_name)}, you do not have {(4 * amount)} "
                     "rare treasure chests to convert."
                 )
+        elif box_rarity.lower() == "epic":
+            if c.treasure[2] >= (3 * amount):
+                c.treasure[2] -= 3 * amount
+                c.treasure[3] += 1 * amount
+                await ctx.send(
+                    box(
+                        (
+                            f"Successfully converted {(3 * amount)} epic treasure "
+                            f"chests to {(1 * amount)} legendary treasure chest{plural}. "
+                            f"\n{self.E(ctx.author.display_name)} "
+                            f"now owns {c.treasure[0]} normal, "
+                            f"{c.treasure[1]} rare, {c.treasure[2]} epic "
+                            f"and {c.treasure[3]} legendary treasure chests."
+                        ),
+                        lang="css",
+                    )
+                )
+                await self.config.user(ctx.author).set(c._to_json())
+            else:
+                await ctx.send(
+                    f"{self.E(ctx.author.display_name)}, you do not have {(3 * amount)} "
+                    "epic treasure chests to convert."
+                )
         else:
             await ctx.send(
                 f"{self.E(ctx.author.display_name)}, please select"
-                " between normal or rare treasure chests to convert."
+                " between normal, rare or epic treasure chests to convert."
             )
 
     @commands.command()
@@ -1180,15 +1211,15 @@ class Adventure(BaseCog):
 
         `[p]give loot normal @locastan`
         will give locastan a normal chest.
-        Loot types: normal, rare, epic
+        Loot types: normal, rare, epic, legendary
         """
 
         if user is None:
             user = ctx.author
-        loot_types = ["normal", "rare", "epic"]
+        loot_types = ["normal", "rare", "epic", "legendary"]
         if loot_type not in loot_types:
             return await ctx.send(
-                "Valid loot types: `normal`, `rare`, or `epic`:"
+                "Valid loot types: `normal`, `rare`, `epic` or `legendary`:"
                 f" ex. `{ctx.prefix}give loot normal @locastan` "
             )
         try:
@@ -1200,13 +1231,16 @@ class Adventure(BaseCog):
             c.treasure[1] += 1
         elif loot_type == "epic":
             c.treasure[2] += 1
+        elif loot_type == "legendary":
+            c.treasure[3] += 1
         else:
             c.treasure[0] += 1
         await ctx.send(
             box(
                 (
                     f"{self.E(user.display_name)} now owns {str(c.treasure[0])} "
-                    f"normal, {str(c.treasure[1])} rare and {str(c.treasure[2])} epic chests."
+                    f"normal, {str(c.treasure[1])} rare, {str(c.treasure[2])} epic "
+                    f"and {str(c.treasure[3])} legendary chests."
                 ),
                 lang="css",
             )
@@ -1438,8 +1472,7 @@ class Adventure(BaseCog):
     async def loot(self, ctx, box_type: str = None):
         """This opens one of your precious treasure chests.
 
-        Use the box rarity type with the command: normal, rare
-        or epic.
+        Use the box rarity type with the command: normal, rare, epic or legendary.
         """
         if not await self.allow_in_dm(ctx):
             return await ctx.send("This command is not available in DM's on this bot.")
@@ -1453,17 +1486,20 @@ class Adventure(BaseCog):
                 box(
                     (
                         f"{self.E(ctx.author.display_name)} owns {str(c.treasure[0])} "
-                        f"normal, {str(c.treasure[1])} rare and {str(c.treasure[2])} epic chests."
+                        f"normal, {str(c.treasure[1])} rare, {str(c.treasure[2])} epic "
+                        f"and {str(c.treasure[3])} legendary chests."                
                     ),
                     lang="css",
                 )
             )
         if box_type == "normal":
-            redux = [1, 0, 0]
+            redux = [1, 0, 0, 0]
         elif box_type == "rare":
-            redux = [0, 1, 0]
+            redux = [0, 1, 0, 0]
         elif box_type == "epic":
-            redux = [0, 0, 1]
+            redux = [0, 0, 1, 0]
+        elif box_type == "legendary":
+            redux = [0, 0, 0, 1]
         else:
             return await ctx.send(
                 f"There is talk of a {box_type} treasure chest but nobody ever saw one."
@@ -1996,7 +2032,7 @@ class Adventure(BaseCog):
         if challenge and not await ctx.bot.is_owner(ctx.author):
             # Only let the bot owner specify a specific challenge
             challenge = None
-        adventure_msg = f"!You feel adventurous, {self.E(ctx.author.display_name)}?"
+        adventure_msg = f"You feel adventurous, {self.E(ctx.author.display_name)}?"
         try:
             reward, participants = await self._simple(ctx, adventure_msg, challenge)
         except Exception:
@@ -2302,19 +2338,24 @@ class Adventure(BaseCog):
         text = ""
         if slain or persuaded and not failed:
             CR = strength + dipl
-            treasure = [0, 0, 0]
+            treasure = [0, 0, 0, 0]
             if (
                 CR >= 80 or session.miniboss
             ):  # rewards 50:50 rare:normal chest for killing something like the basilisk
-                treasure = random.choice([[0, 1, 0], [1, 0, 0]])
+                treasure = random.choice([[0, 1, 0, 0], [1, 0, 0, 0]])
             elif CR >= 180:  # rewards 50:50 epic:rare chest for killing hard stuff.
-                treasure = random.choice([[0, 0, 1], [0, 1, 0]])
+                treasure = random.choice([[0, 0, 1, 0], [0, 1, 0, 0]])
 
-            if session.boss:  # always rewards an epic chest.
-                treasure[2] += 1
+            if session.boss:  # always rewards at least an epic chest.
+                # roll for legendary chest
+                roll = random.randint(1,5):
+                if roll == 1:
+                    treasure[3] += 1
+                else:
+                    treasure[2] += 1
             if len(critlist) != 0:
                 treasure[0] += 1
-            if treasure == [0, 0, 0]:
+            if treasure == [0, 0, 0, 0]:
                 treasure = False
         if session.miniboss and failed:
             session.participants = set(fight_list + talk_list + pray_list + run_list + fumblelist)
@@ -2841,14 +2882,16 @@ class Adventure(BaseCog):
             return
         open_msg = await ctx.send(box(chest_msg, lang="css"))
         await asyncio.sleep(2)
-        roll = random.randint(1, 100)
+        roll = random.randint(1, 500)
 
         if chest_type == "pet":
-            if roll <= 5:
+            if roll == 1:
+                chance = self.TR_LEGENDARY
+            elif roll <= 25:
                 chance = self.TR_EPIC
-            elif roll > 5 and roll <= 25:
+            elif roll > 25 and roll <= 125:
                 chance = self.TR_RARE
-            elif roll > 25 and roll <= 75:
+            elif roll > 125 and roll <= 375:
                 chance = self.TR_COMMON
             else:
                 await open_msg.edit(
@@ -2859,24 +2902,35 @@ class Adventure(BaseCog):
                 )
                 return None
         if chest_type == "normal":
-            if roll <= 5:
+            if roll == 2:
+                chance = self.TR_LEGENDARY
+            elif roll <= 25:
                 chance = self.TR_EPIC
-            elif roll > 5 and roll <= 25:
+            elif roll > 25 and roll <= 125:
                 chance = self.TR_RARE
             else:
                 chance = self.TR_COMMON
         if chest_type == "rare":
-            if roll <= 15:
+            if roll <= 10:
+                chance = self.TR_LEGENDARY
+            elif roll <= 75:
                 chance = self.TR_EPIC
-            elif roll > 15 and roll <= 45:
+            elif roll > 75 and roll <= 225:
                 chance = self.TR_RARE
             else:
                 chance = self.TR_COMMON
         if chest_type == "epic":
-            if roll <= 35:
+            if roll <= 25:
+                chance = self.TR_LEGENDARY
+            elif roll <= 175:
                 chance = self.TR_EPIC
             else:
                 chance = self.TR_RARE
+        if chest_type == "legendary":
+            if roll <= 100:
+                chance = self.TR_LEGENDARY
+            else:
+                chance = self.TR_EPIC
         else:
             chance = self.TR_COMMON
         itemname = random.choice(list(chance.keys()))
@@ -3059,7 +3113,7 @@ class Adventure(BaseCog):
 
         word = "has" if len(userlist) == 1 else "have"
         if special is not False and sum(special) == 1:
-            types = [" normal", " rare", "n epic"]
+            types = [" normal", " rare", "n epic", " legendary"]
             chest_type = types[special.index(1)]
             phrase += (
                 f"\n{bold(to_reward)} {word} been awarded {xp} xp and found {cp} {currency_name}. "
