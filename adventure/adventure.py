@@ -1227,7 +1227,7 @@ class Adventure(BaseCog):
             "charm",
             "twohanded",
         ]
-        rarities = ["normal", "rare", "epic"]
+        rarities = ["normal", "rare", "epic", "legendary"]
         item_name = item_name.lower()
         if item_name.isnumeric():
             return await ctx.send("Item names cannot be numbers.")
