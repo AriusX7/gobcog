@@ -1284,11 +1284,11 @@ class Adventure(BaseCog):
         )
 
     @give.command(name="loot")
-    async def _give_loot(self, ctx, loot_type: str, user: discord.Member = None):
+    async def _give_loot(self, ctx, loot_type: str, user: discord.Member = None, number: int = 1):
         """[Admin] This rewards a treasure chest to a specified member.
 
-        `[p]give loot normal @locastan`
-        will give locastan a normal chest.
+        `[p]give loot normal @locastan 5`
+        will give locastan 5 normal chests.
         Loot types: normal, rare, epic, legendary
         """
 
@@ -1306,13 +1306,13 @@ class Adventure(BaseCog):
             log.error("Error with the new character sheet", exc_info=True)
             return
         if loot_type == "rare":
-            c.treasure[1] += 1
+            c.treasure[1] += number
         elif loot_type == "epic":
-            c.treasure[2] += 1
+            c.treasure[2] += number
         elif loot_type == "legendary":
-            c.treasure[3] += 1
+            c.treasure[3] += number
         else:
-            c.treasure[0] += 1
+            c.treasure[0] += number
         await ctx.send(
             box(
                 (

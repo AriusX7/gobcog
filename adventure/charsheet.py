@@ -46,7 +46,7 @@ class Item:
         if self.rarity == "epic":
             return f"[{self.name}]"
         if self.rarity == "legendary":
-            return "#" + self.name.replace(" ", "_")
+            return f"{{Legendary:'{self.name}'}}"
         if self.rarity == "forged":
             return f"{TINKER_OPEN}{self.name}{TINKER_CLOSE}"
             # Thanks Sinbad!
@@ -57,8 +57,8 @@ class Item:
             item = item.replace("_", " ").replace(".", "")
         if item.startswith("["):
             item = item.replace("[", "").replace("]", "")
-        if item.startswith("#"):
-            item = item.replace("_", " ").replace("#", "")
+        if item.startswith("{Legendary:'"):
+            item = item.replace("{Legendary:'", "").replace("'", "")
         if item.startswith("{.:'"):
             item = item.replace("{.:'", "").replace("':.}", "")
         return item
@@ -78,8 +78,8 @@ class Item:
         if name.startswith("["):
             name = name.replace("[", "").replace("]", "")
             rarity = "epic"
-        if name.startswith("#"):
-            name = name.replace("_", " ").replace("#", "")
+        if name.startswith("{Legendary:'"):
+            name = name.replace("{Legendary:'", "").replace("'", "")
             rarity = "legendary"
         if name.startswith("{.:'"):
             name = name.replace("{.:'", "").replace("':.}", "")
@@ -251,7 +251,7 @@ class Character(Item):
 
     @staticmethod
     def _get_rarity(item):
-        if item[0][0] == "#":  # legendary
+        if item[0][0] == "{":  # legendary
             return 0
         elif item[0][0] == "[":  # epic
             return 1
