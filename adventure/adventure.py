@@ -2348,7 +2348,7 @@ class Adventure(BaseCog):
 
             if session.boss:  # always rewards at least an epic chest.
                 # roll for legendary chest
-                roll = random.randint(1,5):
+                roll = random.randint(1, 5)
                 if roll == 1:
                     treasure[3] += 1
                 else:
