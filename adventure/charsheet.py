@@ -79,7 +79,7 @@ class Item:
             name = name.replace("[", "").replace("]", "")
             rarity = "epic"
         if name.startswith("#"):
-            item = item.replace("_", " ").replace("#", "")
+            name = name.replace("_", " ").replace("#", "")
             rarity = "legendary"
         if name.startswith("{.:'"):
             name = name.replace("{.:'", "").replace("':.}", "")
