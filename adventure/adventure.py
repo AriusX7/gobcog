@@ -645,7 +645,10 @@ class Adventure(BaseCog):
             return await self._clear_react(msg)
         try:
             await bank.withdraw_credits(ctx.author, spend)
+            await msg.edit(content=box(f"Your squire changed you in record time.", lang="css",))
+            await self._clear_react(msg)
         except ValueError:
+            await self._clear_react(msg)
             return await msg.edit(content=broke)
 
         name = name.lower()
