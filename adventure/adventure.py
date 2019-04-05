@@ -62,7 +62,7 @@ class Adventure(BaseCog):
             "lvl": 1,
             "att": 0,
             "cha": 0,
-            "treasure": [0, 0, 0],
+            "treasure": [0, 0, 0, 0],
             "items": {
                 "head": {},
                 "neck": {},
@@ -626,6 +626,36 @@ class Adventure(BaseCog):
             )
             await ctx.send(current_stats)
             await self.config.user(ctx.author).set(c._to_json())
+
+    @commands.group()
+    @checks.admin_or_permissions(administrator=True)
+    @commands.guild_only()
+    async def adventureconfig(self, ctx):
+        """Allow admins to update json config"""
+        pass
+
+    # This is only necessary to convert existing adventures to use legendaries also
+    # as the config has arrays with 3 elements, not 4
+    @adventureconfig.command()
+    async def addlegendarychest(self, ctx):
+        """Run to update from original cog to add legendaries or
+            or run to give everyone a legendary chest :)
+        """
+        try:
+            conf_dict = await self.config.all_users()
+            for id, char in conf_dict.items():
+                member = discord.utils.get(ctx.guild.members, id = id)
+                c = await Character._from_json(self.config, member)
+                if len(c.treasure) <= 3:  # make sure we can't go higher
+                    c.treasure.append(0)
+                elif len(c.treasure) == 4:
+                    c.treasure[3] += 1
+                await self.config.user(ctx.author).set(c._to_json())
+
+            await ctx.send("Updated all users.")
+        except Exception:
+            log.error("Error with the new character sheet", exc_info=True)
+            return
 
     @commands.group()
     @checks.admin_or_permissions(administrator=True)
