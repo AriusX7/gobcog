@@ -599,10 +599,55 @@ class Adventure(BaseCog):
             await menu(ctx, msg_list, DEFAULT_CONTROLS, page=index)
 
     @loadout.command(name="equip", aliases=["load"])
+    @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
     async def equip_loadout(self, ctx, name: str):
         """Equip a saved loadout"""
         if not await self.allow_in_dm(ctx):
             return await ctx.send("This command is not available in DM's on this bot.")
+        
+        bal = await bank.get_balance(ctx.author)
+        currency_name = await bank.get_currency_name(ctx.guild)
+        if str(currency_name).startswith("<"):
+            currency_name = "credits"
+        spend = 1000
+        msg = await ctx.send(
+            box(
+                (
+                    f"This will cost {spend} {currency_name}. "
+                    f"Do you want to continue, {self.E(ctx.author.display_name)}?"
+                ),
+                lang="css",
+            )
+        )
+        broke = box(
+            f"You don't have enough {currency_name} to pay your squire.",
+            lang="css",
+        )
+
+        start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+        pred = ReactionPredicate.yes_or_no(msg, ctx.author)
+        try:
+            await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
+        except asyncio.TimeoutError:
+            await self._clear_react(msg)
+            return
+
+        if not pred.result:
+            await msg.edit(
+                content=box(
+                    (
+                        f"{self.E(ctx.author.display_name)} decided"
+                        f" not to change his loadout."
+                    ),
+                    lang="css",
+                )
+            )
+            return await self._clear_react(msg)
+        try:
+            await bank.withdraw_credits(ctx.author, spend)
+        except ValueError:
+            return await msg.edit(content=broke)
+
         name = name.lower()
         try:
             c = await Character._from_json(self.config, ctx.author)
