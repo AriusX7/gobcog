@@ -32,6 +32,7 @@ class Item:
         self.name: str = kwargs.pop("name")
         self.slot: List[str] = kwargs.pop("slot")
         self.att: int = kwargs.pop("att")
+        self.int: int = kwargs.pop("int")
         self.cha: int = kwargs.pop("cha")
         self.rarity: str = kwargs.pop("rarity")
         self.dex: int = kwargs.pop("dex")
@@ -45,6 +46,8 @@ class Item:
             return "." + self.name.replace(" ", "_")
         if self.rarity == "epic":
             return f"[{self.name}]"
+        if self.rarity == "legendary":
+            return f"{{Legendary:'{self.name}'}}"
         if self.rarity == "forged":
             return f"{TINKER_OPEN}{self.name}{TINKER_CLOSE}"
             # Thanks Sinbad!
@@ -55,6 +58,8 @@ class Item:
             item = item.replace("_", " ").replace(".", "")
         if item.startswith("["):
             item = item.replace("[", "").replace("]", "")
+        if item.startswith("{Legendary:'"):
+            item = item.replace("{Legendary:'", "").replace("'}", "")
         if item.startswith("{.:'"):
             item = item.replace("{.:'", "").replace("':.}", "")
         return item
@@ -74,18 +79,25 @@ class Item:
         if name.startswith("["):
             name = name.replace("[", "").replace("]", "")
             rarity = "epic"
+        if name.startswith("{Legendary:'"):
+            name = name.replace("{Legendary:'", "").replace("'}", "")
+            rarity = "legendary"
         if name.startswith("{.:'"):
             name = name.replace("{.:'", "").replace("':.}", "")
             rarity = "forged"
         rarity = data["rarity"] if "rarity" in data else rarity
+        att = data["att"] if "att" in data else 0
         dex = data["dex"] if "dex" in data else 0
+        inter = data["int"] if "int" in data else 0
+        cha = data["cha"] if "cha" in data else 0
         luck = data["luck"] if "luck" in data else 0
         owned = data["owned"] if "owned" in data else 1
         item_data = {
             "name": name,
             "slot": data["slot"],
-            "att": data["att"],
-            "cha": data["cha"],
+            "att": att,
+            "int": inter,
+            "cha": cha,
             "rarity": rarity,
             "dex": dex,
             "luck": luck,
@@ -99,6 +111,7 @@ class Item:
                 "name": self.name,
                 "slot": self.slot,
                 "att": self.att,
+                "int": self.int,
                 "cha": self.cha,
                 "rarity": self.rarity,
                 "dex": self.dex,
@@ -121,6 +134,7 @@ class GameSession:
     message_id: int
     participants: Set[discord.Member] = set()
     fight: List[discord.Member] = []
+    magic: List[discord.Member] = []
     talk: List[discord.Member] = []
     pray: List[discord.Member] = []
     run: List[discord.Member] = []
@@ -136,6 +150,7 @@ class GameSession:
         self.message_id: int = 0
         self.participants: Set[discord.Member] = set()
         self.fight: List[discord.Member] = []
+        self.magic: List[discord.Member] = []
         self.talk: List[discord.Member] = []
         self.pray: List[discord.Member] = []
         self.run: List[discord.Member] = []
@@ -167,6 +182,7 @@ class Character(Item):
         self.user: discord.Member = kwargs.pop("user")
         self.att = self.__stat__("att")
         self.cha = self.__stat__("cha")
+        self.int = self.__stat__("int")
         self.dex = self.__stat__("dex")
         self.luck = self.__stat__("luck")
 
@@ -207,6 +223,7 @@ class Character(Item):
             f"[{self.user.display_name}'s Character Sheet]\n\n"
             f"A level {self.lvl} {class_desc} \n\n- "
             f"ATTACK: {self.att} [+{self.skill['att']}] - "
+            f"INTELLIGENCE: {self.int} [+{self.skill['int']}] - "
             f"DIPLOMACY: {self.cha} [+{self.skill['cha']}] -\n\n- "
             f"Currency: {self.bal} \n- "
             f"Experience: {round(self.exp)}/{next_lvl} \n- "
@@ -237,19 +254,22 @@ class Character(Item):
             # rjust = max([len(i) for i in item.name])
             # for name, stats in data.items():
             att = item.att * 2 if slot_name == "two handed" else item.att
+            inter = item.int * 2 if slot_name == "two handed" else item.int
             cha = item.cha * 2 if slot_name == "two handed" else item.cha
-            form_string += f"\n  - {str(item)} - (ATT: {att} | DPL: {cha})"
+            form_string += f"\n  - {str(item)} - (ATT: {att} | INT: {inter} | DPL: {cha})"
 
         return form_string + "\n"
 
     @staticmethod
     def _get_rarity(item):
-        if item[0][0] == "[":  # epic
+        if item[0][0] == "{":  # legendary
             return 0
-        elif item[0][0] == ".":  # rare
+        elif item[0][0] == "[":  # epic
             return 1
+        elif item[0][0] == ".":  # rare
+            return 2
         else:
-            return 2  # common / normal
+            return 3  # common / normal
 
     def _sort_new_backpack(self, backpack: dict):
         tmp = {}
@@ -290,7 +310,7 @@ class Character(Item):
                     continue
                 form_string += (
                     f"\n {item[1].owned} - {str(item[1]):<{rjust}} - "
-                    f"(ATT: {item[1].att} | DPL: {item[1].cha})"
+                    f"(ATT: {item[1].att} | INT: {item[1].int} | DPL: {item[1].cha})"
                 )
 
         return form_string + "\n"
@@ -409,6 +429,7 @@ class Character(Item):
             "exp": data["exp"],
             "lvl": data["lvl"],
             "att": data["att"],
+            "int": data["int"],
             "cha": data["cha"],
             "treasure": data["treasure"],
             "backpack": backpack,
@@ -432,6 +453,7 @@ class Character(Item):
             "exp": self.exp,
             "lvl": self.lvl,
             "att": self.att,
+            "int": self.int,
             "cha": self.cha,
             "treasure": self.treasure,
             "items": {
