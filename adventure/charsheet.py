@@ -372,7 +372,7 @@ class Character(Item):
                 if forging and (item[1].rarity == "forged" or item[1] in consumed_list):
                     continue
                 form_string += (
-                    f"\n {item[1].owned} - {str(item[1]):<{rjust}} - \n"
+                    f"\n {item[1].owned} - {str(item[1]):<{rjust}} - "
                     f"(ATT: {item[1].att} | INT: {item[1].int} | DPL: {item[1].cha} "
                     f"DEX: {item[1].dex} | LUCK: {item[1].luck})"
                 )
