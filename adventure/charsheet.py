@@ -1,8 +1,13 @@
 from redbot.core import Config, bank
 import discord
-from typing import Optional, Dict, List, Set
-from copy import copy
+from typing import List, Set, Dict
 import logging
+import re
+
+from redbot.core import commands
+
+from discord.ext.commands.converter import Converter
+from discord.ext.commands.errors import BadArgument
 
 log = logging.getLogger("red.adventure")
 
@@ -23,6 +28,62 @@ ORDER = [
 ]
 TINKER_OPEN = r"{.:'"
 TINKER_CLOSE = r"':.}"
+LEGENDARY_OPEN = r"{Legendary:'"
+LEGENDARY_CLOSE = r"'}"
+
+
+class Stats(Converter):
+    """
+    This will parse a string for specific keywords like attack and dexterity followed by a number
+    to create an item object to be added to a users inventory
+    """
+    ATT = re.compile(r"(att(?:ack)?)\s?([\d]*)")
+    CHA = re.compile(r"(cha(?:risma)?|dip(?:lo?(?:macy)?)?)\s?([\d]*)")
+    INT = re.compile(r"(int(?:elligence)?)\s?([\d]*)")
+    LUCK = re.compile(r"(luck)\s?([\d]*)")
+    DEX = re.compile(r"(dex(?:terity)?)\s?([\d]*)")
+    SLOT = re.compile(r"(head|neck|chest|gloves|belt|legs|boots|left|right|ring|charm|twohanded)")
+    RARITY = re.compile(r"(normal|rare|epic|legend(?:ary)?)")
+
+    async def convert(self, ctx: commands.Context, argument: str) -> Dict[str, int]:
+        result = {
+                "slot": ["left"],
+                "att": 0,
+                "cha": 0,
+                "int": 0,
+                "dex": 0,
+                "luck": 0,
+                "rarity": "normal"
+            }
+        possible_stats = dict(
+            att=self.ATT.search(argument),
+            cha=self.CHA.search(argument),
+            int=self.INT.search(argument),
+            dex=self.DEX.search(argument),
+            luck=self.LUCK.search(argument)
+        )
+        try:
+            slot = [self.SLOT.search(argument).group(0)]
+            if slot == ["twohanded"]:
+                slot = ["left", "right"]
+            result["slot"] = slot
+        except AttributeError:
+            raise BadArgument("No slot position was provided.")
+        try:
+            result["rarity"] = self.RARITY.search(argument).group(0)
+        except AttributeError:
+            raise BadArgument("No rarity was provided.")
+        for key, value in possible_stats.items():
+            try:
+                stat = int(value.group(2))
+                if stat > 6 and not await ctx.bot.is_owner(ctx.author):
+                    raise BadArgument(
+                        "Don't you think that's a bit overpowered? Not creating item."
+                    )
+                result[key] = stat
+            except AttributeError:
+                pass
+        return result
 
 
 class Item:
@@ -47,7 +108,7 @@ class Item:
         if self.rarity == "epic":
             return f"[{self.name}]"
         if self.rarity == "legendary":
-            return f"{{Legendary:'{self.name}'}}"
+            return f"{LEGENDARY_OPEN}{self.name}{LEGENDARY_CLOSE}"
         if self.rarity == "forged":
             return f"{TINKER_OPEN}{self.name}{TINKER_CLOSE}"
             # Thanks Sinbad!
@@ -199,7 +260,7 @@ class Character(Item):
                 # log.debug(item)
                 if item:
                     stats += getattr(item, stat)
-            except Exception as e:
+            except Exception:
                 log.error(f"error calculating {stat}", exc_info=True)
                 pass
         return stats
@@ -225,6 +286,8 @@ class Character(Item):
             f"ATTACK: {self.att} [+{self.skill['att']}] - "
             f"INTELLIGENCE: {self.int} [+{self.skill['int']}] - "
             f"DIPLOMACY: {self.cha} [+{self.skill['cha']}] -\n\n- "
+            f"DEXTERITY: {self.dex} - "
+            f"LUCK: {self.luck} \n\n "
             f"Currency: {self.bal} \n- "
             f"Experience: {round(self.exp)}/{next_lvl} \n- "
             f"Unspent skillpoints: {self.skill['pool']}\n\n"
@@ -345,7 +408,7 @@ class Character(Item):
                 continue
             if current and current.name != name:
                 await self._unequip_item(current)
-            if current and name not in self.backpack:
+            if name not in self.backpack:
                 log.debug(f"{name} is missing")
                 setattr(self, slot, None)
             else:
@@ -425,6 +488,8 @@ class Character(Item):
         else:
             backpack = {n: Item._from_json({n: i}) for n, i in data["backpack"].items()}
         # log.debug(data["items"]["backpack"])
+        if len(data["treasure"]) < 4:
+            data["treasure"].append(0)
         hero_data = {
             "exp": data["exp"],
             "lvl": data["lvl"],

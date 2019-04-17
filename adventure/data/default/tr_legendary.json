@@ -1,9 +1,3 @@
 {
-    "{Legendary:'verdict'}": {"slot": ["head"], "att": 7, "cha": 2},
-    "{Legendary:'soulkeeper'}": {"slot": ["head"], "att": 2, "cha": 7},
-    "{Legendary:'serenity'}": {"slot": ["head"], "att": 5, "cha": 5},
-    "{Legendary:'persuit'}": {"slot": ["head"], "att": 8, "cha": 1},
-    "{Legendary:'celeste'}": {"slot": ["head"], "att": -1, "cha": 9},
-    "{Legendary:'divine visage'}": {"slot": ["head"], "att": -6, "cha": 13},
-    "{Legendary:'dark omen'}": {"slot": ["ring"], "att": 8, "cha": 0}
+    "{Legendary:'Dev Item'}": {"slot": ["right"], "att": -10, "cha": -10, "luck": -10, "int": -10, "dex": -10}
 }
