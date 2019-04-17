@@ -2777,7 +2777,7 @@ class Adventure(BaseCog):
                 elif pdef >= 1.25:
                     msg += f"This monster has **extremely tough** armour!\n"
                 elif pdef > 1:
-                    msg += f"Swords don't cut this monster **quite as well!**!\n"
+                    msg += f"Swords don't cut this monster **quite as well!**\n"
                 elif pdef >= 0.75 and pdef < 1:
                     msg += f"This monster is **soft and easy** to slice!\n"
                 elif pdef > 0 and pdef != 1:
