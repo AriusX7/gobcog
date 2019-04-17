@@ -3244,11 +3244,11 @@ class Adventure(BaseCog):
         if hasattr(user, "display_name"):
 
             chest_msg2 = (
-                f"{self.E(user.display_name)} found {item} [{slot}]. ("
+                f"{self.E(user.display_name)} found {str(item)} [{slot}]. ("
                 f"Attack: {str(item.att)}, "
                 f"Intelligence: {str(item.int)}, "
-                f"Charisma: {str(item.cha)}), "
-                f"Dexterity: {str(item.dex)}), "
+                f"Charisma: {str(item.cha)}, "
+                f"Dexterity: {str(item.dex)}, "
                 f"Luck: {str(item.luck)}), "
             )
             await open_msg.edit(
@@ -3262,11 +3262,11 @@ class Adventure(BaseCog):
             )
         else:
             chest_msg2 = (
-                f"The {user} found {item} [{slot}]. ("
+                f"The {user} found {str(item)} [{slot}]. ("
                 f"Attack: {str(item.att)}, "
                 f"Intelligence: {str(item.int)}, "
-                f"Charisma: {str(item.cha)}), "
-                f"Dexterity: {str(item.dex)}), "
+                f"Charisma: {str(item.cha)}, "
+                f"Dexterity: {str(item.dex)}, "
                 f"Luck: {str(item.luck)}), "
             )
             await open_msg.edit(
