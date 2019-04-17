@@ -3190,7 +3190,6 @@ class Adventure(BaseCog):
             multiplier = 1
         # -multiplier because higher luck is better negative luck takes away
         roll = random.randint(1, multiplier)
-
         if chest_type == "pet":
             if roll == 1:
                 chance = self.TR_LEGENDARY
@@ -3215,27 +3214,29 @@ class Adventure(BaseCog):
                 chance = self.TR_RARE
             else:
                 chance = self.TR_COMMON
-        if chest_type == "rare":
+        elif chest_type == "rare":
             if roll <= 5:
                 chance = self.TR_EPIC
             elif roll > 5 and roll <= 350:
                 chance = self.TR_RARE
             else:
                 chance = self.TR_COMMON
-        if chest_type == "epic":
+        elif chest_type == "epic":
             if roll <= 10:
                 chance = self.TR_LEGENDARY
             elif roll > 10 and roll <= 350:
                 chance = self.TR_EPIC
             else:
                 chance = self.TR_RARE
-        if chest_type == "legendary":
+        elif chest_type == "legendary":
             if roll <= 125:
                 chance = self.TR_LEGENDARY
             else:
                 chance = self.TR_EPIC
         else:
             chance = self.TR_COMMON
+            # not sure why this was put here but just incase someone
+            # tries to add a new loot type we give them normal loot instead
         itemname = random.choice(list(chance.keys()))
         item = Item._from_json({itemname: chance[itemname]})
         slot = item.slot[0]
