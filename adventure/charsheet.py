@@ -37,11 +37,11 @@ class Stats(Converter):
     This will parse a string for specific keywords like attack and dexterity followed by a number
     to create an item object to be added to a users inventory
     """
-    ATT = re.compile(r"(att(?:ack)?)\s?([\d]*)")
-    CHA = re.compile(r"(cha(?:risma)?|dip(?:lo?(?:macy)?)?)\s?([\d]*)")
-    INT = re.compile(r"(int(?:elligence)?)\s?([\d]*)")
-    LUCK = re.compile(r"(luck)\s?([\d]*)")
-    DEX = re.compile(r"(dex(?:terity)?)\s?([\d]*)")
+    ATT = re.compile(r"([\d]*) (att(?:ack)?)")
+    CHA = re.compile(r"([\d]*) (cha(?:risma)?|dip(?:lo?(?:macy)?)?)")
+    INT = re.compile(r"([\d]*) (int(?:elligence)?)")
+    LUCK = re.compile(r"([\d]*) (luck)")
+    DEX = re.compile(r"([\d]*) (dex(?:terity)?)")
     SLOT = re.compile(r"(head|neck|chest|gloves|belt|legs|boots|left|right|ring|charm|twohanded)")
     RARITY = re.compile(r"(normal|rare|epic|legend(?:ary)?)")
 
@@ -75,13 +75,13 @@ class Stats(Converter):
             raise BadArgument("No rarity was provided.")
         for key, value in possible_stats.items():
             try:
-                stat = int(value.group(2))
+                stat = int(value.group(1))
                 if stat > 6 and not await ctx.bot.is_owner(ctx.author):
                     raise BadArgument(
                         "Don't you think that's a bit overpowered? Not creating item."
                     )
                 result[key] = stat
-            except AttributeError:
+            except (AttributeError, ValueError):
                 pass
         return result
 
@@ -372,8 +372,9 @@ class Character(Item):
                 if forging and (item[1].rarity == "forged" or item[1] in consumed_list):
                     continue
                 form_string += (
-                    f"\n {item[1].owned} - {str(item[1]):<{rjust}} - "
-                    f"(ATT: {item[1].att} | INT: {item[1].int} | DPL: {item[1].cha})"
+                    f"\n {item[1].owned} - {str(item[1]):<{rjust}} - \n"
+                    f"(ATT: {item[1].att} | INT: {item[1].int} | DPL: {item[1].cha} "
+                    f"DEX: {item[1].dex} | LUCK: {item[1].luck})"
                 )
 
         return form_string + "\n"

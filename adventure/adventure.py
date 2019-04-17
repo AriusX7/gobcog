@@ -506,39 +506,6 @@ class Adventure(BaseCog):
                 except discord.errors.Forbidden:
                     pass
 
-    @commands.command()
-    @commands.guild_only()
-    @commands.cooldown(rate=1, per=900, type=commands.BucketType.user)
-    async def bless(self, ctx):
-        """[Cleric Class Only]
-
-        This allows a praying Cleric to add
-        substantial bonuses for heroes fighting the battle.
-        (30 minute cooldown)
-        """
-
-        try:
-            c = await Character._from_json(self.config, ctx.author)
-        except Exception:
-            log.error("Error with the new character sheet", exc_info=True)
-            return
-        if c.heroclass["name"] != "Cleric":
-            ctx.command.reset_cooldown(ctx)
-            return await ctx.send(
-                f"{self.E(ctx.author.display_name)}, you need to be a Cleric to do this."
-            )
-        else:
-            if c.heroclass["ability"]:
-                return await ctx.send(
-                    f"{self.E(ctx.author.display_name)}, ability already in use."
-                )
-            c.heroclass["ability"] = False
-            await self.config.user(ctx.author).set(c._to_json())
-            await ctx.send(
-                f"📜 {bold(self.E(ctx.author.display_name))} "
-                f"is starting an inspiring sermon. 📜"
-            )
-
     @commands.group(aliases=["loadouts"])
     async def loadout(self, ctx):
         """Setup various adventure settings"""
@@ -1209,10 +1176,10 @@ class Adventure(BaseCog):
         """[Admin] Adds a custom item to a specified member.
 
         Item names containing spaces must be enclosed in double quotes.
-        `[p]give item @locastan "fine dagger" att 1 diplomacy 1 rare twohanded`
+        `[p]give item @locastan "fine dagger" 1 att 1 diplomacy rare twohanded`
         will give a two handed .fine_dagger with 1 attack and 1 diplomacy to locastan.
-        if a stat is not specified it will default to 0.
-        available stats are attack(att), diplomacy(charisma),
+        if a stat is not specified it will default to 0, order does not matter.
+        available stats are attack(att), diplomacy(diplo) or charisma(cha),
         intelligence(int), dexterity(dex), and luck.
         """
         item_name = item_name.lower()
@@ -1839,6 +1806,38 @@ class Adventure(BaseCog):
             )
         else:
             return await ctx.send(box("You don't have a pet.", lang="css"))
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.cooldown(rate=1, per=900, type=commands.BucketType.user)
+    async def bless(self, ctx):
+        """[Cleric Class Only]
+
+        This allows a praying Cleric to add substantial bonuses for heroes fighting the battle.
+        (30 minute cooldown)
+        """
+
+        try:
+            c = await Character._from_json(self.config, ctx.author)
+        except Exception:
+            log.error("Error with the new character sheet", exc_info=True)
+            return
+        if c.heroclass["name"] != "Cleric":
+            ctx.command.reset_cooldown(ctx)
+            return await ctx.send(
+                f"{self.E(ctx.author.display_name)}, you need to be a Cleric to do this."
+            )
+        else:
+            if c.heroclass["ability"]:
+                return await ctx.send(
+                    f"{self.E(ctx.author.display_name)}, ability already in use."
+                )
+            c.heroclass["ability"] = False
+            await self.config.user(ctx.author).set(c._to_json())
+            await ctx.send(
+                f"📜 {bold(self.E(ctx.author.display_name))} "
+                f"is starting an inspiring sermon. 📜"
+            )
 
     @commands.command()
     @commands.guild_only()
