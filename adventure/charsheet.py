@@ -373,7 +373,7 @@ class Character(Item):
                     continue
                 form_string += (
                     f"\n {item[1].owned} - {str(item[1]):<{rjust}} - "
-                    f"(ATT: {item[1].att} | INT: {item[1].int} | DPL: {item[1].cha} "
+                    f"(ATT: {item[1].att} | INT: {item[1].int} | DPL: {item[1].cha} | "
                     f"DEX: {item[1].dex} | LUCK: {item[1].luck})"
                 )
 
