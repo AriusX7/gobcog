@@ -359,22 +359,22 @@ class Character(Item):
 
     def __backpack__(self, forging: bool = False, consumed: list = []):
         bkpk = self._sort_new_backpack(self.backpack)
-        form_string = "Items in Backpack:"
+        form_string = "Items in Backpack:\n( ATT  |  CHA  |  INT  |  DEX  |  LUCK)"
         consumed_list = [i for i in consumed]
         for slot_group in bkpk:
 
             slot_name = slot_group[0][1].slot
             slot_name = slot_name[0] if len(slot_name) < 2 else "two handed"
             form_string += f"\n\n {slot_name.title()} slot"
-            rjust = max([len(str(i[0])) for i in slot_group])
+            rjust = max([len(str(i[1])) for i in slot_group])
             for item in slot_group:
                 # log.debug(item[1])
                 if forging and (item[1].rarity == "forged" or item[1] in consumed_list):
                     continue
                 form_string += (
                     f"\n {item[1].owned} - {str(item[1]):<{rjust}} - "
-                    f"(ATT: {item[1].att} | INT: {item[1].int} | DPL: {item[1].cha} | "
-                    f"DEX: {item[1].dex} | LUCK: {item[1].luck})"
+                    f"( {item[1].att}  |  {item[1].int}  |  {item[1].cha}  | "
+                    f" {item[1].dex}  |  {item[1].luck} )"
                 )
 
         return form_string + "\n"
@@ -472,6 +472,11 @@ class Character(Item):
             for k, v in data["items"].items()
             if k != "backpack"
         }
+        if "int" not in data["skill"]:
+            data["skill"]["int"] = 0
+            # auto update old users with new skill slot
+            # likely unnecessary since this worked without it but this prevents
+            # potential issues
         loadouts = data["loadouts"]
         heroclass = "Hero"
         if "class" in data:

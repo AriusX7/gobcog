@@ -26,6 +26,8 @@ log = logging.getLogger("red.adventure")
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan"""
 
+    __version__ = "2.2.0"
+
     def __init__(self, bot):
         self.bot = bot
         self._last_trade = {}
@@ -668,6 +670,11 @@ class Adventure(BaseCog):
     async def adventureset(self, ctx):
         """Setup various adventure settings"""
         pass
+
+    @adventureset.command()
+    async def version(self, ctx):
+        """Display the version of adventure being used"""
+        await ctx.send(box(f"Adventure version: {self.__version__}"))
 
     @adventureset.command()
     async def god(self, ctx: Context, *, name):
@@ -1832,7 +1839,7 @@ class Adventure(BaseCog):
                 return await ctx.send(
                     f"{self.E(ctx.author.display_name)}, ability already in use."
                 )
-            c.heroclass["ability"] = False
+            c.heroclass["ability"] = True
             await self.config.user(ctx.author).set(c._to_json())
             await ctx.send(
                 f"📜 {bold(self.E(ctx.author.display_name))} "
@@ -3071,7 +3078,7 @@ class Adventure(BaseCog):
             # recalculate free skillpoint pool based on new level and already spent points.
             await ctx.send(f"{user.mention} is now level {lvl_end}!")
             c.lvl = lvl_end
-            c.skill["pool"] = int(lvl_end / 5) - (c.skill["att"] + c.skill["cha"])
+            c.skill["pool"] = int(lvl_end / 5) - (c.skill["att"] + c.skill["cha"] + c.skill["int"])
             if c.skill["pool"] > 0:
                 await ctx.send(f"{self.E(user.display_name)}, you have skillpoints available.")
         if special is not False:
