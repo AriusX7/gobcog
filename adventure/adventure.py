@@ -1821,7 +1821,7 @@ class Adventure(BaseCog):
         """[Cleric Class Only]
 
         This allows a praying Cleric to add substantial bonuses for heroes fighting the battle.
-        (30 minute cooldown)
+        (15 minute cooldown)
         """
 
         try:
@@ -1853,7 +1853,7 @@ class Adventure(BaseCog):
         """[Berserker Class Only]
 
         This allows a Berserker to add substantial attack bonuses for one battle.
-        (30 minute cooldown)
+        (15 minute cooldown)
         """
 
         try:
@@ -1885,7 +1885,7 @@ class Adventure(BaseCog):
         """[Wizard Class Only]
 
         This allows a Wizard to add substantial magic bonuses for one battle.
-        (30 minute cooldown)
+        (15 minute cooldown)
         """
 
         try:
@@ -1917,7 +1917,7 @@ class Adventure(BaseCog):
         """[Bard Class Only]
 
         This allows a Bard to add substantial diplomacy bonuses for one battle.
-        (1h cooldown)
+        (15 minute cooldown)
         """
 
         try:
