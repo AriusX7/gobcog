@@ -3001,7 +3001,7 @@ class Adventure(BaseCog):
                         "madman but nobody else helped them.\n"
                     )
 
-                if roll == 4:
+                elif roll == 4:
                     attack += 10 * len(fight_list)
                     diplomacy += 10 * len(talk_list)
                     magic += 10 * len(magic_list)
