@@ -1154,7 +1154,8 @@ class Adventure(BaseCog):
         `[p]give funds 10 @Elder Aramis`
         will create 10 currency and add to Elder Aramis' total.
         """
-
+        if await bank.is_global() and not await ctx.bot.is_owner(ctx.author):
+            return await ctx.send("You are not worthy.")
         if to is None:
             return await ctx.send(
                 f"You need to specify a receiving member, {self.E(ctx.author.display_name)}."
