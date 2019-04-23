@@ -1768,6 +1768,13 @@ class Adventure(BaseCog):
                     lang="css",
                 )
             )
+        if not c.heroclass["pet"]:
+            return await ctx.send(
+                box(
+                    f"{self.E(ctx.author.display_name)}, you need to have a pet to do this.",
+                    lang="css",
+                )
+            )
         if "forage" not in c.heroclass:
             c.heroclass["forage"] = 7201
         if c.heroclass["forage"] <= time.time() - 7200:
