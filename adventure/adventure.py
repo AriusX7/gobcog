@@ -2185,12 +2185,29 @@ class Adventure(BaseCog):
                     await self.config.user(user).set(c._to_json())
         del self._sessions[ctx.guild.id]
 
+    async def get_challenge(self, ctx):
+        try:
+            c = await Character._from_json(self.config, ctx.author)
+        except Exception:
+            log.error("Error with the new character sheet", exc_info=True)
+            possible_monsters = random.choice(list(self.MONSTERS.keys()))
+        possible_monsters = []
+        for m, stats in self.MONSTERS.items():
+            if c.lvl < 20:
+                if stats["hp"] < (c.lvl * 10):
+                    possible_monsters.append(m)
+            else:
+                possible_monsters.append(m)
+        log.debug(possible_monsters)
+        return random.choice(possible_monsters)
+
     async def _simple(self, ctx: Context, adventure_msg, challenge=None):
+
         text = ""
         if challenge and challenge.title() in list(self.MONSTERS.keys()):
             challenge = challenge.title()
         else:
-            challenge = random.choice(list(self.MONSTERS.keys()))
+            challenge = await self.get_challenge(ctx)
         attribute = random.choice(list(self.ATTRIBS.keys()))
 
         if self.MONSTERS[challenge]["boss"]:
