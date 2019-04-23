@@ -371,10 +371,18 @@ class Character(Item):
                 # log.debug(item[1])
                 if forging and (item[1].rarity == "forged" or item[1] in consumed_list):
                     continue
+                att_space = " " if len(str(item[1].att)) == 1 else ""
+                cha_space = " " if len(str(item[1].cha)) == 1 else ""
+                int_space = " " if len(str(item[1].int)) == 1 else ""
+                dex_space = " " if len(str(item[1].dex)) == 1 else ""
+                luck_space = " " if len(str(item[1].luck)) == 1 else ""
                 form_string += (
                     f"\n {item[1].owned} - {str(item[1]):<{rjust}} - "
-                    f"( {item[1].att}  |  {item[1].int}  |  {item[1].cha}  | "
-                    f" {item[1].dex}  |  {item[1].luck} )"
+                    f"({att_space}{item[1].att}  | "
+                    f"{int_space}{item[1].int}  | "
+                    f"{cha_space}{item[1].cha}  | "
+                    f"{dex_space}{item[1].dex}  | "
+                    f"{luck_space}{item[1].luck} )"
                 )
 
         return form_string + "\n"

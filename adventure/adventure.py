@@ -623,6 +623,7 @@ class Adventure(BaseCog):
             await ctx.send(current_stats)
             await self.config.user(ctx.author).set(c._to_json())
         return
+
         # saving this code to potentially be used later should not be read at all
         await bank.get_balance(ctx.author)
         currency_name = await bank.get_currency_name(ctx.guild)
@@ -713,7 +714,12 @@ class Adventure(BaseCog):
     @checks.is_owner()
     async def theme(self, ctx: Context, *, theme):
         """Change the theme for adventure"""
-        log.debug(os.listdir(cog_data_path(self) / "default"))
+        # log.debug(os.listdir(cog_data_path(self) / "default"))
+        if theme == "default":
+            await self.config.theme.set("default")
+            await ctx.send("Going back to the default theme.")
+            await self.initialize()
+            return
         if theme not in os.listdir(cog_data_path(self)):
             await ctx.send("That theme pack does not exist!")
             return
@@ -731,15 +737,18 @@ class Adventure(BaseCog):
             "tr_rare.json",
             "tr_legendary.json",
         ]
-        if os.listdir(cog_data_path(self) / theme) != good_files:
+        missing_files = set(good_files).difference(os.listdir(cog_data_path(self) / theme))
+
+        if missing_files:
             await ctx.send(
-                "That theme pack is missing one or more"
-                f"of the following files {humanize_list(good_files)}"
+                "That theme pack is missing "
+                f"the following files {humanize_list(missing_files)}"
             )
             return
         else:
             await self.config.theme.set(theme)
             await ctx.tick()
+        await self.initialize()
 
     @adventureset.command()
     @checks.admin_or_permissions(administrator=True)
@@ -840,8 +849,7 @@ class Adventure(BaseCog):
                 )
         elif box_rarity.lower() == "epic":
             return await ctx.send(
-                f"{self.E(ctx.author.display_name)}, I convert "
-                "loot rarer than epic."
+                f"{self.E(ctx.author.display_name)}, I convert " "loot rarer than epic."
             )
             if c.treasure[2] >= (4 * amount):
                 c.treasure[2] -= 4 * amount
@@ -1173,12 +1181,7 @@ class Adventure(BaseCog):
 
     @give.command(name="item")
     async def _give_item(
-        self,
-        ctx: Context,
-        user: discord.Member,
-        item_name: str,
-        *,
-        stats: Stats,
+        self, ctx: Context, user: discord.Member, item_name: str, *, stats: Stats
     ):
         """[Admin] Adds a custom item to a specified member.
 
@@ -1849,8 +1852,7 @@ class Adventure(BaseCog):
             c.heroclass["ability"] = True
             await self.config.user(ctx.author).set(c._to_json())
             await ctx.send(
-                f"📜 {bold(self.E(ctx.author.display_name))} "
-                f"is starting an inspiring sermon. 📜"
+                f"📜 {bold(self.E(ctx.author.display_name))} " f"is starting an inspiring sermon. 📜"
             )
 
     @commands.command()
@@ -1945,8 +1947,7 @@ class Adventure(BaseCog):
             c.heroclass["ability"] = True
             await self.config.user(ctx.author).set(c._to_json())
         await ctx.send(
-            f"♪♫♬ {bold(self.E(ctx.author.display_name))} "
-            "is whipping up a performance...♬♫♪"
+            f"♪♫♬ {bold(self.E(ctx.author.display_name))} " "is whipping up a performance...♬♫♪"
         )
 
     @commands.command()
@@ -2049,7 +2050,10 @@ class Adventure(BaseCog):
             log.error("Error with the new character sheet", exc_info=True)
             return
         msg = await ctx.send(box(c, lang="css"))
-        await msg.add_reaction("\N{CROSS MARK}")
+        try:
+            await msg.add_reaction("\N{CROSS MARK}")
+        except discord.errors.Forbidden:
+            return
         pred = ReactionPredicate.same_context(msg, ctx.author)
         try:
             react, user = await self.bot.wait_for("reaction_add", check=pred, timeout=60)
@@ -2087,10 +2091,9 @@ class Adventure(BaseCog):
     async def unequip(self, ctx: Context, *, item: str):
         """This stashes a specified equipped item into your backpack.
 
-        `[p]unequip name of item`
+        `[p]unequip name of item` or `[p]unequip slot`
         You can only have one of each uniquely named item in your backpack.
         """
-
         if not await self.allow_in_dm(ctx):
             return await ctx.send("This command is not available in DM's on this bot.")
         try:
@@ -2098,14 +2101,36 @@ class Adventure(BaseCog):
         except Exception:
             log.error("Error with the new character sheet", exc_info=True)
             return
+        slots = [
+            "head",
+            "neck",
+            "chest",
+            "gloves",
+            "belt",
+            "legs",
+            "boots",
+            "left",
+            "right",
+            "ring",
+            "charm",
+        ]
         msg = ""
-        for current_item in c.current_equipment():
-            if item.lower() in current_item.name:
-                await c._unequip_item(current_item)
-                msg = (
-                    f"{self.E(ctx.author.display_name)} removed the "
-                    f"{current_item} and put it into their backpack."
-                )
+
+        if item in slots:
+            current_item = getattr(c, item, None)
+            await c._unequip_item(current_item)
+            msg = (
+                f"{self.E(ctx.author.display_name)} removed the "
+                f"{current_item} and put it into their backpack."
+            )
+        else:
+            for current_item in c.current_equipment():
+                if item.lower() in current_item.name.lower():
+                    await c._unequip_item(current_item)
+                    msg = (
+                        f"{self.E(ctx.author.display_name)} removed the "
+                        f"{current_item} and put it into their backpack."
+                    )
         if msg:
             await ctx.send(box(msg, lang="css"))
             await self.config.user(ctx.author).set(c._to_json())
@@ -2822,8 +2847,8 @@ class Adventure(BaseCog):
             crit_mod = max(c.dex, c.luck)
             mod = 0
             if crit_mod != 0:
-                mod = round(crit_mod/10)
-            crit_roll = random.randint(1+mod, 20)
+                mod = round(crit_mod / 10)
+            crit_roll = random.randint(1 + mod, 20)
             att_value = c.att + c.skill["att"]
             if roll == 1:
                 msg += f"{bold(self.E(user.display_name))} fumbled the attack.\n"
@@ -3253,6 +3278,8 @@ class Adventure(BaseCog):
         itemname = random.choice(list(chance.keys()))
         item = Item._from_json({itemname: chance[itemname]})
         slot = item.slot[0]
+        old_item = getattr(c, item.slot[0], None)
+        old_stats = ""
         if len(item.slot) > 1:
             slot = "two handed"
         if hasattr(user, "display_name"):
@@ -3265,11 +3292,24 @@ class Adventure(BaseCog):
                 f"Dexterity: {str(item.dex)}, "
                 f"Luck: {str(item.luck)}), "
             )
+            if old_item:
+                old_slot = old_item.slot[0]
+                if len(old_item.slot) > 1:
+                    old_slot = "two handed"
+                old_stats = (
+                    f"You currently have {str(old_item)} [{old_slot}] equipped. ("
+                    f"Attack: {str(old_item.att)}, "
+                    f"Intelligence: {str(old_item.int)}, "
+                    f"Charisma: {str(old_item.cha)}, "
+                    f"Dexterity: {str(old_item.dex)}, "
+                    f"Luck: {str(old_item.luck)}), "
+                )
             await open_msg.edit(
                 content=box(
                     (
                         f"{chest_msg}\n\n{chest_msg2}\n\nDo you want to equip "
-                        "this item, put in your backpack, or sell this item?"
+                        "this item, put in your backpack, or sell this item?\n\n"
+                        f"{old_stats}"
                     ),
                     lang="css",
                 )
@@ -3465,7 +3505,9 @@ class Adventure(BaseCog):
             base = (100, 500)
         else:
             base = (10, 200)
-        price = random.randint(base[0], base[1]) * max(item.att + item.cha, 1)
+        price = random.randint(base[0], base[1]) * max([item.att, item.cha, item.int], default=1)
+        if item.luck > 0:
+            price = round(price * (item.luck / 10))
         await bank.deposit_credits(user, price)
         return price
 
