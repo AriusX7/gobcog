@@ -361,15 +361,17 @@ class Adventure(BaseCog):
         msg = ""
         if pred.result == 0:  # user reacted with one to sell.
             # sell one of the item
+            price = 0
             for item in lookup:
                 item.owned -= 1
-                price = await self._sell(ctx.author, item)
+                price += await self._sell(ctx.author, item)
                 msg += (
                     f"{self.E(ctx.author.display_name)} sold their "
                     f"{box(item, lang='css')} for {price} {currency_name}.\n"
                 )
                 if item.owned <= 0:
                     del c.backpack[item.name]
+            await bank.deposit_credits(ctx.author, price)
         if pred.result == 1:  # user wants to sell all owned.
             for item in lookup:
                 price = 0
@@ -382,9 +384,10 @@ class Adventure(BaseCog):
                     f"{self.E(ctx.author.display_name)} sold all their "
                     f"{box(item, lang='css')} for {price} {currency_name}.\n"
                 )
+            await bank.deposit_credits(ctx.author, price)
         if pred.result == 2:  # user wants to sell all but one.
+            price = 0
             for item in lookup:
-                price = 0
                 for x in range(1, item.owned):
                     item.owned -= 1
                     price += await self._sell(ctx.author, item)
@@ -393,6 +396,7 @@ class Adventure(BaseCog):
                         f"{self.E(ctx.author.display_name)} sold all their "
                         f"{box(item, lang='css')} for {price} {currency_name}.\n"
                     )
+                    await bank.deposit_credits(ctx.author, price)
         if pred.result == 3:  # user doesn't want to sell those items.
             msg = "Not selling those items."
 
@@ -3381,6 +3385,7 @@ class Adventure(BaseCog):
         await self._clear_react(open_msg)
         if self._treasure_controls[react.emoji] == "sell":
             price = await self._sell(ctx.author, item)
+            await bank.deposit_credits(ctx.author, price)
             currency_name = await bank.get_currency_name(ctx.guild)
             if str(currency_name).startswith("<"):
                 currency_name = "credits"
@@ -3525,8 +3530,7 @@ class Adventure(BaseCog):
             base = (10, 200)
         price = random.randint(base[0], base[1]) * max([item.att, item.cha, item.int], default=1)
         if item.luck > 0:
-            price = round(price * (item.luck / 10))
-        await bank.deposit_credits(user, price)
+            price = price + round(price * (item.luck / 10))
         return price
 
     async def _trader(self, ctx):
@@ -3693,11 +3697,11 @@ class Adventure(BaseCog):
                     cha = item.cha
                     intel = item.int
                 if item.rarity == "epic":
-                    price = random.randint(1000, 2000) * max(att + cha + intel, 1)
+                    price = random.randint(3000, 6000) * max(att + cha + intel, 1)
                 elif item.rarity == "rare":
-                    price = random.randint(200, 1000) * max(att + cha + intel, 1)
+                    price = random.randint(500, 2000) * max(att + cha + intel, 1)
                 else:
-                    price = random.randint(10, 200) * max(att + cha + intel, 1)
+                    price = random.randint(200, 400) * max(att + cha + intel, 1)
                 if itemname not in items:
                     items.update({itemname: {"itemname": itemname, "item": item, "price": price}})
 
