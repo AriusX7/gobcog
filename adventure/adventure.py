@@ -1831,12 +1831,12 @@ class Adventure(BaseCog):
 
     @commands.command()
     @commands.guild_only()
-    @commands.cooldown(rate=1, per=900, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
     async def bless(self, ctx):
         """[Cleric Class Only]
 
         This allows a praying Cleric to add substantial bonuses for heroes fighting the battle.
-        (15 minute cooldown)
+        (10 minute cooldown)
         """
 
         try:
@@ -1862,12 +1862,12 @@ class Adventure(BaseCog):
 
     @commands.command()
     @commands.guild_only()
-    @commands.cooldown(rate=1, per=900, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
     async def rage(self, ctx):
         """[Berserker Class Only]
 
         This allows a Berserker to add substantial attack bonuses for one battle.
-        (15 minute cooldown)
+        (10 minute cooldown)
         """
 
         try:
@@ -1894,12 +1894,12 @@ class Adventure(BaseCog):
 
     @commands.command()
     @commands.guild_only()
-    @commands.cooldown(rate=1, per=900, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
     async def focus(self, ctx):
         """[Wizard Class Only]
 
         This allows a Wizard to add substantial magic bonuses for one battle.
-        (15 minute cooldown)
+        (10 minute cooldown)
         """
 
         try:
@@ -1926,12 +1926,12 @@ class Adventure(BaseCog):
 
     @commands.command()
     @commands.guild_only()
-    @commands.cooldown(rate=1, per=900, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
     async def music(self, ctx):
         """[Bard Class Only]
 
         This allows a Bard to add substantial diplomacy bonuses for one battle.
-        (15 minute cooldown)
+        (10 minute cooldown)
         """
 
         try:
