@@ -115,6 +115,7 @@ class Adventure(BaseCog):
         self.config.register_user(**default_user)
         self.cleanup_loop = self.bot.loop.create_task(self.cleanup_tasks())
 
+    # def cog_unload(self): #  another 3.1 change
     def __unload(self):
         for task in self.tasks:
             log.debug(f"removing task {task}")
@@ -670,18 +671,19 @@ class Adventure(BaseCog):
             return await msg.edit(content=broke)
 
     @commands.group()
-    @checks.admin_or_permissions(administrator=True)
     @commands.guild_only()
     async def adventureset(self, ctx):
         """Setup various adventure settings"""
         pass
 
     @adventureset.command()
+    @checks.admin_or_permissions(administrator=True)
     async def version(self, ctx):
         """Display the version of adventure being used"""
         await ctx.send(box(f"Adventure version: {self.__version__}"))
 
     @adventureset.command()
+    @checks.admin_or_permissions(administrator=True)
     async def god(self, ctx: Context, *, name):
         """[Admin] Set the server's name of the god"""
         await self.config.guild(ctx.guild).god_name.set(name)
@@ -695,6 +697,7 @@ class Adventure(BaseCog):
         await ctx.tick()
 
     @adventureset.command(aliases=["embed"])
+    @checks.admin_or_permissions(administrator=True)
     async def embeds(self, ctx):
         """[Admin] Set whether or not to use embeds for the adventure game"""
         toggle = await self.config.guild(ctx.guild).embed()
@@ -702,6 +705,7 @@ class Adventure(BaseCog):
         await ctx.send(f"Embeds: {not toggle}")
 
     @adventureset.command()
+    @checks.admin_or_permissions(administrator=True)
     async def cartname(self, ctx: Context, *, name):
         """[Admin] Set the server's name of the cart"""
         await self.config.guild(ctx.guild).cart_name.set(name)
@@ -1498,7 +1502,7 @@ class Adventure(BaseCog):
 
     @commands.command()
     @commands.cooldown(rate=1, per=4, type=commands.BucketType.user)
-    async def loot(self, ctx: Context, box_type: str = None):
+    async def loot(self, ctx: Context, box_type: str = None, ammount: int = 1):
         """This opens one of your precious treasure chests.
 
         Use the box rarity type with the command: normal, rare, epic or legendary.
@@ -1534,15 +1538,40 @@ class Adventure(BaseCog):
                 f"There is talk of a {box_type} treasure chest but nobody ever saw one."
             )
         treasure = c.treasure[redux.index(1)]
-        if treasure == 0:
+        if treasure < ammount:
             await ctx.send(
                 f"{self.E(ctx.author.display_name)}, "
-                f"you have no {box_type} treasure chest to open."
+                f"you do not have enough {box_type} treasure chest to open."
             )
         else:
-            c.treasure[redux.index(1)] -= 1
+            c.treasure[redux.index(1)] -= ammount
             await self.config.user(ctx.author).set(c._to_json())
-            await self._open_chest(ctx, ctx.author, box_type)  # returns item and msg
+            if ammount > 1:
+                items = await self._open_chests(ctx, ctx.author, box_type, ammount)
+                msg = (
+                    f"{self.E(ctx.author.display_name)}, "
+                    "you've opened the following items:\n"
+                    "( ATT  |  CHA  |  INT  |  DEX  |  LUCK)"
+                )
+                rjust = max([len(str(i)) for i in items])
+                for item in items:
+                    att_space = " " if len(str(item.att)) == 1 else ""
+                    cha_space = " " if len(str(item.cha)) == 1 else ""
+                    int_space = " " if len(str(item.int)) == 1 else ""
+                    dex_space = " " if len(str(item.dex)) == 1 else ""
+                    luck_space = " " if len(str(item.luck)) == 1 else ""
+                    msg += (
+                        f"\n {item.owned} - {str(item):<{rjust}} - "
+                        f"({att_space}{item.att}  | "
+                        f"{int_space}{item.int}  | "
+                        f"{cha_space}{item.cha}  | "
+                        f"{dex_space}{item.dex}  | "
+                        f"{luck_space}{item.luck} )"
+                    )
+                for page in pagify(msg):
+                    await ctx.send(box(page, lang="css"))
+            else:
+                await self._open_chest(ctx, ctx.author, box_type)  # returns item and msg
 
     @commands.command(name="negaverse", aliases=["nv"])
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
@@ -2308,6 +2337,37 @@ class Adventure(BaseCog):
 
         return await self._result(ctx, adventure_msg)
 
+    async def local_perms(self, user):
+        """Check the user is/isn't locally whitelisted/blacklisted.
+            https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
+        """
+        if await self.bot.is_owner(user):
+            return True
+        guild_settings = self.bot.db.guild(user.guild)
+        local_blacklist = await guild_settings.blacklist()
+        local_whitelist = await guild_settings.whitelist()
+
+        _ids = [r.id for r in user.roles if not r.is_default()]
+        _ids.append(user.id)
+        if local_whitelist:
+            return any(i in local_whitelist for i in _ids)
+
+        return not any(i in local_blacklist for i in _ids)
+
+    async def global_perms(self, user):
+        """Check the user is/isn't globally whitelisted/blacklisted.
+            https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
+        """
+        if await self.bot.is_owner(user):
+            return True
+
+        whitelist = await self.bot.db.whitelist()
+        if whitelist:
+            return user.id in whitelist
+
+        return user.id not in await self.bot.db.blacklist()
+
+    @commands.Cog.listener() #  Red 3.1 requirement uncomment when 3.1 is live
     async def on_reaction_add(self, reaction, user):
         """This will be a cog level reaction_add listener for game logic"""
         if user.bot:
@@ -2315,6 +2375,8 @@ class Adventure(BaseCog):
         try:
             guild = user.guild
         except AttributeError:
+            return
+        if not await self.local_perms(user) or not await self.global_perms(user):
             return
         log.debug("reactions working")
         emojis = ReactionPredicate.NUMBER_EMOJIS[:5] + self._adventure_actions
@@ -3227,24 +3289,7 @@ class Adventure(BaseCog):
                 ctx = await self.bot.get_context(message)
                 await self._trader(ctx)
 
-    async def _open_chest(self, ctx: Context, user, chest_type):
-        if hasattr(user, "display_name"):
-            chest_msg = (
-                f"{self.E(user.display_name)} is opening a treasure chest. What riches lay inside?"
-            )
-        else:
-            chest_msg = (
-                f"{self.E(ctx.author.display_name)}'s {user[:1] + user[1:]} is "
-                "foraging for treasure. What will it find?"
-            )
-        try:
-            c = await Character._from_json(self.config, ctx.author)
-        except Exception:
-            log.error("Error with the new character sheet", exc_info=True)
-            return
-        open_msg = await ctx.send(box(chest_msg, lang="css"))
-        await asyncio.sleep(2)
-
+    async def _roll_chest(self, chest_type: str, c: Character):
         multiplier = 500 + round(-c.luck * 5)
         if multiplier < 1:
             multiplier = 1
@@ -3298,7 +3343,45 @@ class Adventure(BaseCog):
             # not sure why this was put here but just incase someone
             # tries to add a new loot type we give them normal loot instead
         itemname = random.choice(list(chance.keys()))
-        item = Item._from_json({itemname: chance[itemname]})
+        return Item._from_json({itemname: chance[itemname]})
+
+    async def _open_chests(self, ctx: Context, user: discord.Member, chest_type: str, ammount: int):
+        """This allows you you to open multiple chests at once and put them in your inventory"""
+        try:
+            c = await Character._from_json(self.config, ctx.author)
+        except Exception:
+            log.error("Error with the new character sheet", exc_info=True)
+            return
+        await asyncio.sleep(2)
+        items = [await self._roll_chest(chest_type, c) for i in range(1, ammount)]
+
+        for item in items:
+            if item.name in c.backpack:
+                c.backpack[item.name].owned += 1
+            else:
+                c.backpack[item.name] = item
+        await self.config.user(ctx.author).set(c._to_json())
+        return items
+
+    async def _open_chest(self, ctx: Context, user, chest_type):
+        if hasattr(user, "display_name"):
+            chest_msg = (
+                f"{self.E(user.display_name)} is opening a treasure chest. What riches lay inside?"
+            )
+        else:
+            chest_msg = (
+                f"{self.E(ctx.author.display_name)}'s {user[:1] + user[1:]} is "
+                "foraging for treasure. What will it find?"
+            )
+        try:
+            c = await Character._from_json(self.config, ctx.author)
+        except Exception:
+            log.error("Error with the new character sheet", exc_info=True)
+            return
+        open_msg = await ctx.send(box(chest_msg, lang="css"))
+        await asyncio.sleep(2)
+
+        item = await self._roll_chest(chest_type, c)
         slot = item.slot[0]
         old_item = getattr(c, item.slot[0], None)
         old_stats = ""
