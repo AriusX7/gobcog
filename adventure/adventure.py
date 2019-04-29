@@ -1563,8 +1563,8 @@ class Adventure(BaseCog):
                     msg += (
                         f"\n {item.owned} - {str(item):<{rjust}} - "
                         f"({att_space}{item.att}  | "
-                        f"{int_space}{item.int}  | "
-                        f"{cha_space}{item.cha}  | "
+                        f"{int_space}{item.cha}  | "
+                        f"{cha_space}{item.int}  | "
                         f"{dex_space}{item.dex}  | "
                         f"{luck_space}{item.luck} )"
                     )
@@ -3305,12 +3305,6 @@ class Adventure(BaseCog):
             elif roll > 125 and roll <= 375:
                 chance = self.TR_COMMON
             else:
-                await open_msg.edit(
-                    content=box(
-                        f"{chest_msg}\nThe {user[:1] + user[1:]} found nothing of value.",
-                        lang="css",
-                    )
-                )
                 return None
         if chest_type == "normal":
             if roll <= 5:
@@ -3353,7 +3347,7 @@ class Adventure(BaseCog):
             log.error("Error with the new character sheet", exc_info=True)
             return
         await asyncio.sleep(2)
-        items = [await self._roll_chest(chest_type, c) for i in range(1, ammount)]
+        items = [await self._roll_chest(chest_type, c) for i in range(0, ammount)]
 
         for item in items:
             if item.name in c.backpack:
@@ -3381,7 +3375,15 @@ class Adventure(BaseCog):
         open_msg = await ctx.send(box(chest_msg, lang="css"))
         await asyncio.sleep(2)
 
-        item = await self._roll_chest(chest_type, c)
+        item = await self._roll_chest(chest_type, c, open_msg)
+        if chest_type == "pet" and not item:
+            await open_msg.edit(
+                    content=box(
+                        f"{chest_msg}\nThe {user[:1] + user[1:]} found nothing of value.",
+                        lang="css",
+                    )
+                )
+            return None
         slot = item.slot[0]
         old_item = getattr(c, item.slot[0], None)
         old_stats = ""
