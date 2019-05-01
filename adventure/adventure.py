@@ -812,7 +812,7 @@ class Adventure(BaseCog):
         """
 
         # Thanks to flare#0001 for the idea and writing the first instance of this
-        if ammount < 1:
+        if amount < 1:
             return await ctx.send("Nice try :smirk:")
         try:
             c = await Character._from_json(self.config, ctx.author)
