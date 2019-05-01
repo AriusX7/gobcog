@@ -115,7 +115,7 @@ class Item:
 
     @staticmethod
     def _remove_markdowns(item):
-        if item.startswith("."):
+        if item.startswith(".") or "_" in item:
             item = item.replace("_", " ").replace(".", "")
         if item.startswith("["):
             item = item.replace("[", "").replace("]", "")

@@ -9,6 +9,7 @@ from typing import Optional
 
 from redbot.core import commands, bank, checks, Config
 from redbot.core.commands.context import Context
+from redbot.core.errors import BalanceTooHigh
 from redbot.core.data_manager import bundled_data_path, cog_data_path
 from redbot.core.utils.chat_formatting import box, pagify, bold, humanize_list, escape
 from redbot.core.utils.common_filters import filter_various_mentions
@@ -317,6 +318,8 @@ class Adventure(BaseCog):
             item = item.replace("[", "").replace("]", "")
         if item.startswith("{.:'"):
             item = item.replace("{.:'", "").replace("':.}", "")
+        if item.startswith("{Legendary:'"):
+            item = item.replace("{Legendary:'", "").replace("'}", "")
         try:
             c = await Character._from_json(self.config, ctx.author)
         except Exception:
@@ -372,7 +375,10 @@ class Adventure(BaseCog):
                 )
                 if item.owned <= 0:
                     del c.backpack[item.name]
-            await bank.deposit_credits(ctx.author, price)
+            try:
+                await bank.deposit_credits(ctx.author, price)
+            except BalanceTooHigh:
+                pass
         if pred.result == 1:  # user wants to sell all owned.
             for item in lookup:
                 price = 0
@@ -385,7 +391,10 @@ class Adventure(BaseCog):
                     f"{self.E(ctx.author.display_name)} sold all their "
                     f"{box(item, lang='css')} for {price} {currency_name}.\n"
                 )
-            await bank.deposit_credits(ctx.author, price)
+            try:
+                await bank.deposit_credits(ctx.author, price)
+            except BalanceTooHigh:
+                pass
         if pred.result == 2:  # user wants to sell all but one.
             price = 0
             for item in lookup:
@@ -397,7 +406,10 @@ class Adventure(BaseCog):
                         f"{self.E(ctx.author.display_name)} sold all their "
                         f"{box(item, lang='css')} for {price} {currency_name}.\n"
                     )
-                    await bank.deposit_credits(ctx.author, price)
+                    try:
+                        await bank.deposit_credits(ctx.author, price)
+                    except BalanceTooHigh:
+                        pass
         if pred.result == 3:  # user doesn't want to sell those items.
             msg = "Not selling those items."
 
@@ -1174,7 +1186,11 @@ class Adventure(BaseCog):
                 f"I could not find that user, {self.E(ctx.author.display_name)}."
                 " Try using their full Discord name (name#0000)."
             )
-        bal = await bank.deposit_credits(to, amount)
+        try:
+            bal = await bank.deposit_credits(to, amount)
+        except BalanceTooHigh:
+            bal = 9223372036854775807
+            pass
         currency = await bank.get_currency_name(ctx.guild)
         if str(currency).startswith("<:"):
             currency = "credits"
@@ -2367,7 +2383,7 @@ class Adventure(BaseCog):
 
         return user.id not in await self.bot.db.blacklist()
 
-    #  @commands.Cog.listener() #  Red 3.1 requirement uncomment when 3.1 is live
+    @commands.Cog.listener() #  Red 3.1 requirement uncomment when 3.1 is live
     async def on_reaction_add(self, reaction, user):
         """This will be a cog level reaction_add listener for game logic"""
         if user.bot:
@@ -3186,7 +3202,10 @@ class Adventure(BaseCog):
             return
         c.exp += exp
         member = ctx.guild.get_member(user.id)
-        await bank.deposit_credits(member, cp)
+        try:
+            await bank.deposit_credits(member, cp)
+        except BalanceTooHigh:
+            pass
         lvl_start = c.lvl
         lvl_end = int(c.exp ** (1 / 4))
 
@@ -3470,7 +3489,10 @@ class Adventure(BaseCog):
         await self._clear_react(open_msg)
         if self._treasure_controls[react.emoji] == "sell":
             price = await self._sell(ctx.author, item)
-            await bank.deposit_credits(ctx.author, price)
+            try:
+                await bank.deposit_credits(ctx.author, price)
+            except BalanceTooHigh:
+                pass
             currency_name = await bank.get_currency_name(ctx.guild)
             if str(currency_name).startswith("<"):
                 currency_name = "credits"
@@ -3557,7 +3579,6 @@ class Adventure(BaseCog):
             if (
                 roll == 5
                 and c.heroclass["name"] == "Ranger"
-                and c.heroclass["ability"]
                 and c.heroclass["pet"]
             ):
                 self._rewards[user.id]["xp"] = int(xp * c.heroclass["pet"]["bonus"])
