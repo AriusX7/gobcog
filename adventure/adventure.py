@@ -117,7 +117,7 @@ class Adventure(BaseCog):
         self.cleanup_loop = self.bot.loop.create_task(self.cleanup_tasks())
 
     # def cog_unload(self): #  another 3.1 change
-    def cog_unload(self):
+    def __unload(self):
         for task in self.tasks:
             log.debug(f"removing task {task}")
             task.cancel()
@@ -1527,6 +1527,8 @@ class Adventure(BaseCog):
         """
         if not await self.allow_in_dm(ctx):
             return await ctx.send("This command is not available in DM's on this bot.")
+        if ammount < 1:
+            return await ctx.send("Nice try :smirk:")
         try:
             c = await Character._from_json(self.config, ctx.author)
         except Exception:
@@ -2387,7 +2389,7 @@ class Adventure(BaseCog):
 
         return user.id not in await self.bot.db.blacklist()
 
-    @commands.Cog.listener() #  Red 3.1 requirement uncomment when 3.1 is live
+    # @commands.Cog.listener() #  Red 3.1 requirement uncomment when 3.1 is live
     async def on_reaction_add(self, reaction, user):
         """This will be a cog level reaction_add listener for game logic"""
         if user.bot:
