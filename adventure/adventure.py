@@ -3394,7 +3394,7 @@ class Adventure(BaseCog):
         open_msg = await ctx.send(box(chest_msg, lang="css"))
         await asyncio.sleep(2)
 
-        item = await self._roll_chest(chest_type, c, open_msg)
+        item = await self._roll_chest(chest_type, c)
         if chest_type == "pet" and not item:
             await open_msg.edit(
                     content=box(
