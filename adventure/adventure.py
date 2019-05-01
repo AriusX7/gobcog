@@ -2385,7 +2385,7 @@ class Adventure(BaseCog):
 
         return user.id not in await self.bot.db.blacklist()
 
-    @commands.Cog.listener() #  Red 3.1 requirement uncomment when 3.1 is live
+    # @commands.Cog.listener() #  Red 3.1 requirement uncomment when 3.1 is live
     async def on_reaction_add(self, reaction, user):
         """This will be a cog level reaction_add listener for game logic"""
         if user.bot:
