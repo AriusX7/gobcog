@@ -1520,14 +1520,14 @@ class Adventure(BaseCog):
 
     @commands.command()
     @commands.cooldown(rate=1, per=4, type=commands.BucketType.user)
-    async def loot(self, ctx: Context, box_type: str = None, ammount: int = 1):
+    async def loot(self, ctx: Context, box_type: str = None, amount: int = 1):
         """This opens one of your precious treasure chests.
 
         Use the box rarity type with the command: normal, rare, epic or legendary.
         """
         if not await self.allow_in_dm(ctx):
             return await ctx.send("This command is not available in DM's on this bot.")
-        if ammount < 1:
+        if amount < 1:
             return await ctx.send("Nice try :smirk:")
         try:
             c = await Character._from_json(self.config, ctx.author)
@@ -1558,16 +1558,16 @@ class Adventure(BaseCog):
                 f"There is talk of a {box_type} treasure chest but nobody ever saw one."
             )
         treasure = c.treasure[redux.index(1)]
-        if treasure < ammount:
+        if treasure < amount:
             await ctx.send(
                 f"{self.E(ctx.author.display_name)}, "
                 f"you do not have enough {box_type} treasure chest to open."
             )
         else:
-            c.treasure[redux.index(1)] -= ammount
+            c.treasure[redux.index(1)] -= amount
             await self.config.user(ctx.author).set(c._to_json())
-            if ammount > 1:
-                items = await self._open_chests(ctx, ctx.author, box_type, ammount)
+            if amount > 1:
+                items = await self._open_chests(ctx, ctx.author, box_type, amount)
                 msg = (
                     f"{self.E(ctx.author.display_name)}, "
                     "you've opened the following items:\n"
@@ -3364,7 +3364,7 @@ class Adventure(BaseCog):
         itemname = random.choice(list(chance.keys()))
         return Item._from_json({itemname: chance[itemname]})
 
-    async def _open_chests(self, ctx: Context, user: discord.Member, chest_type: str, ammount: int):
+    async def _open_chests(self, ctx: Context, user: discord.Member, chest_type: str, amount: int):
         """This allows you you to open multiple chests at once and put them in your inventory"""
         try:
             c = await Character._from_json(self.config, ctx.author)
@@ -3372,7 +3372,7 @@ class Adventure(BaseCog):
             log.error("Error with the new character sheet", exc_info=True)
             return
         await asyncio.sleep(2)
-        items = [await self._roll_chest(chest_type, c) for i in range(0, ammount)]
+        items = [await self._roll_chest(chest_type, c) for i in range(0, amount)]
 
         for item in items:
             if item.name in c.backpack:
