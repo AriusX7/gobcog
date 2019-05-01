@@ -2003,7 +2003,7 @@ class Adventure(BaseCog):
         )
 
     @commands.command()
-    async def skill(self, ctx: Context, spend: str = None):
+    async def skill(self, ctx: Context, spend: str = None, amount: int = 1):
         """This allows you to spend skillpoints.
 
         `[p]skill attack/diplomacy/intelligence`
@@ -2011,6 +2011,8 @@ class Adventure(BaseCog):
         """
         if not await self.allow_in_dm(ctx):
             return await ctx.send("This command is not available in DM's on this bot.")
+        if amount < 1:
+            return await ctx.send("Nice try :smirk:")
         try:
             c = await Character._from_json(self.config, ctx.author)
         except Exception:
@@ -2050,7 +2052,7 @@ class Adventure(BaseCog):
                 await ctx.send(f"Don't play games with me, {self.E(ctx.author.display_name)}.")
             return
 
-        if c.skill["pool"] == 0:
+        if c.skill["pool"] < amount:
             return await ctx.send(
                 f"{self.E(ctx.author.display_name)}, you do not have unspent skillpoints."
             )
@@ -2068,18 +2070,18 @@ class Adventure(BaseCog):
             if spend not in ["attack", "diplomacy", "intelligence"]:
                 return await ctx.send(f"Don't try to fool me! There is no such thing as {spend}.")
             elif spend == "attack":
-                c.skill["pool"] -= 1
-                c.skill["att"] += 1
+                c.skill["pool"] -= amount
+                c.skill["att"] += amount
             elif spend == "diplomacy":
-                c.skill["pool"] -= 1
-                c.skill["cha"] += 1
+                c.skill["pool"] -= amount
+                c.skill["cha"] += amount
             elif spend == "intelligence":
-                c.skill["pool"] -= 1
-                c.skill["int"] += 1
+                c.skill["pool"] -= amount
+                c.skill["int"] += amount
             await self.config.user(ctx.author).set(c._to_json())
             await ctx.send(
                 f"{self.E(ctx.author.display_name)}, you "
-                f"permanently raised your {spend} value by one."
+                f"permanently raised your {spend} value by {amount}."
             )
 
     @commands.command()
