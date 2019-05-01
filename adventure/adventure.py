@@ -33,10 +33,10 @@ class Adventure(BaseCog):
         self.bot = bot
         self._last_trade = {}
 
-        self._adventure_actions = ["🗡", "🌟", "🗨", "🛐", "🏃"]
+        self._adventure_actions = ["🗡", "✨", "🗨", "🛐", "🏃"]
         self._adventure_controls = {
             "fight": "🗡",
-            "magic": "🌟",
+            "magic": "✨",
             "talk": "🗨",
             "pray": "🛐",
             "run": "🏃",
@@ -117,7 +117,7 @@ class Adventure(BaseCog):
         self.cleanup_loop = self.bot.loop.create_task(self.cleanup_tasks())
 
     # def cog_unload(self): #  another 3.1 change
-    def __unload(self):
+    def cog_unload(self):
         for task in self.tasks:
             log.debug(f"removing task {task}")
             task.cancel()
@@ -1115,7 +1115,7 @@ class Adventure(BaseCog):
                 (
                     f"{self.E(ctx.author.display_name)}, your forging roll was 🎲({roll}).\n"
                     f"The device you tinkered will have "
-                    f"{newatt * 2}🗡, {newdip * 2}🗨 and {newint * 2}🌟 and be {hand}."
+                    f"{newatt * 2}🗡, {newdip * 2}🗨 and {newint * 2}✨ and be {hand}."
                 )
             )
         else:
@@ -1123,7 +1123,7 @@ class Adventure(BaseCog):
                 (
                     f"{self.E(ctx.author.display_name)}, your forging roll was 🎲({roll}).\n"
                     "The device you tinkered will have "
-                    f"{newatt}🗡, {newdip}🗨 and {newint}🌟 and be {hand}."
+                    f"{newatt}🗡, {newdip}🗨 and {newint}✨ and be {hand}."
                 )
             )
         await ctx.send(
@@ -2387,7 +2387,7 @@ class Adventure(BaseCog):
 
         return user.id not in await self.bot.db.blacklist()
 
-    # @commands.Cog.listener() #  Red 3.1 requirement uncomment when 3.1 is live
+    @commands.Cog.listener() #  Red 3.1 requirement uncomment when 3.1 is live
     async def on_reaction_add(self, reaction, user):
         """This will be a cog level reaction_add listener for game logic"""
         if user.bot:
@@ -3006,7 +3006,7 @@ class Adventure(BaseCog):
                     magic += int((roll - bonus + int_value) / mdef)
                     report += (
                         f"| {bold(self.E(user.display_name))}: "
-                        f"🎲({roll}) +💥{bonus} +🌟{str(int_value)} | "
+                        f"🎲({roll}) +💥{bonus} +✨{str(int_value)} | "
                     )
             elif crit_roll == 20 or (c.heroclass["name"] == "Wizard" and c.heroclass["ability"]):
                 ability = ""
@@ -3022,11 +3022,11 @@ class Adventure(BaseCog):
                 bonus = ability + str(bonus)
                 report += (
                     f"| {bold(self.E(user.display_name))}: "
-                    f"🎲({roll}) +💥{bonus} +🌟{str(int_value)} | "
+                    f"🎲({roll}) +💥{bonus} +✨{str(int_value)} | "
                 )
             else:
                 magic += int((roll + int_value) / mdef)
-                report += f"| {bold(self.E(user.display_name))}: 🎲({roll}) +🌟{str(int_value)} | "
+                report += f"| {bold(self.E(user.display_name))}: 🎲({roll}) +✨{str(int_value)} | "
         msg = msg + report + "\n"
         for user in fumblelist:
             if user in session.fight:
@@ -3066,7 +3066,7 @@ class Adventure(BaseCog):
                     fumblelist.append(user)
                     msg += (
                         f"{bold(self.E(user.display_name))}'s sermon offended the mighty {god}. "
-                        f"(-{5 * len(fight_list)}🗡/-{5 * len(talk_list)}🗨/-{5 * len(magic_list)}🌟)\n"
+                        f"(-{5 * len(fight_list)}🗡/-{5 * len(talk_list)}🗨/-{5 * len(magic_list)}✨)\n"
                     )
 
                 elif roll in range(2, 10):
@@ -3075,7 +3075,7 @@ class Adventure(BaseCog):
                     magic += len(magic_list)
                     msg += (
                         f"{bold(self.E(user.display_name))} blessed you all in {god}'s name. "
-                        f"(+{len(fight_list)}🗡/+{len(talk_list)}🗨/+{len(magic_list)}🌟)\n"
+                        f"(+{len(fight_list)}🗡/+{len(talk_list)}🗨/+{len(magic_list)}✨)\n"
                     )
 
                 elif roll in range(11, 19):
@@ -3084,7 +3084,7 @@ class Adventure(BaseCog):
                     magic += 5 * len(magic_list)
                     msg += (
                         f"{bold(self.E(user.display_name))} blessed you all in {god}'s name. "
-                        f"(+{5 * len(fight_list)}🗡/+{5 * len(talk_list)}🗨/+{5 * len(magic_list)}🌟)\n"
+                        f"(+{5 * len(fight_list)}🗡/+{5 * len(talk_list)}🗨/+{5 * len(magic_list)}✨)\n"
                     )
 
                 else:
@@ -3094,7 +3094,7 @@ class Adventure(BaseCog):
                     msg += (
                         f"{bold(self.E(user.display_name))} "
                         f"turned into an avatar of mighty {god}. "
-                        f"(+{10 * len(fight_list)}🗡/+{10 * len(talk_list)}🗨/+{10 * len(magic_list)}🌟)\n"
+                        f"(+{10 * len(fight_list)}🗡/+{10 * len(talk_list)}🗨/+{10 * len(magic_list)}✨)\n"
                     )
             else:
                 roll = random.randint(1, 4)
@@ -3111,7 +3111,7 @@ class Adventure(BaseCog):
                     msg += (
                         f"{bold(self.E(user.display_name))}'s prayer "
                         f"called upon the mighty {god} to help you. "
-                        f"(+{10 * len(fight_list)}🗡/+{10 * len(talk_list)}🗨/+{10 * len(magic_list)}🌟)\n"
+                        f"(+{10 * len(fight_list)}🗡/+{10 * len(talk_list)}🗨/+{10 * len(magic_list)}✨)\n"
                     )
                 else:
                     fumblelist.append(user)
