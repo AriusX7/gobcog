@@ -28,6 +28,7 @@ class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan"""
 
     __version__ = "2.2.0"
+    listener = getattr(commands.Cog, "listener", lambda x: lambda y: y)
 
     def __init__(self, bot):
         self.bot = bot
@@ -115,6 +116,7 @@ class Adventure(BaseCog):
         self.config.register_global(**default_global)
         self.config.register_user(**default_user)
         self.cleanup_loop = self.bot.loop.create_task(self.cleanup_tasks())
+        self.cog_unload = self.__unload
 
     # def cog_unload(self): #  another 3.1 change
     def __unload(self):
@@ -2393,7 +2395,7 @@ class Adventure(BaseCog):
 
         return user.id not in await self.bot.db.blacklist()
 
-    # @commands.Cog.listener() #  Red 3.1 requirement uncomment when 3.1 is live
+    @listener()  # 3.1 backwards compatibility fix Thanks Sinbad!
     async def on_reaction_add(self, reaction, user):
         """This will be a cog level reaction_add listener for game logic"""
         if user.bot:
@@ -3298,6 +3300,7 @@ class Adventure(BaseCog):
         epoch += seconds
         return epoch
 
+    @listener()  # backwards compatibility 3.1 fix, thanks Sinbad!
     async def on_message(self, message):
         if not message.guild:
             return
