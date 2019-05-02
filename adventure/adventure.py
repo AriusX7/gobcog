@@ -22,13 +22,17 @@ from .charsheet import Character, Item, GameSession, Stats
 BaseCog = getattr(commands, "Cog", object)
 
 log = logging.getLogger("red.adventure")
+listener = getattr(commands.Cog, "listener", None)
+
+if listener is None:
+    def listener(name=None):
+        return lambda x: x
 
 
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan"""
 
     __version__ = "2.2.0"
-    listener = getattr(commands.Cog, "listener", lambda x: lambda y: y)
 
     def __init__(self, bot):
         self.bot = bot
