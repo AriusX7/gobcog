@@ -1412,14 +1412,17 @@ class Adventure(BaseCog):
                         lang="css",
                     )
                 )
+                ctx.command.reset_cooldown(ctx)
                 return await self._clear_react(class_msg)
             if bal < spend:
                 await class_msg.edit(content=broke)
+                ctx.command.reset_cooldown(ctx)
                 return await self._clear_react(class_msg)
             try:
                 await bank.withdraw_credits(ctx.author, spend)
             except ValueError:
                 return await class_msg.edit(content=broke)
+                ctx.command.reset_cooldown(ctx)
 
             if clz in classes and action is None:
                 now_class_msg = (
