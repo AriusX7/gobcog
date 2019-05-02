@@ -1474,15 +1474,16 @@ class Adventure(BaseCog):
                                 for item in tinker_wep:
                                     del c.backpack[item.name]
                                 await self.config.user(ctx.author).set(c._to_json())
-                                await class_msg.edit(
-                                    content=box(
-                                        (
-                                            f"{humanize_list(tinker_wep)} has "
-                                            "run off to find a new master."
-                                        ),
-                                        lang="css",
+                                if tinker_wep:
+                                    await class_msg.edit(
+                                        content=box(
+                                            (
+                                                f"{humanize_list(tinker_wep)} has "
+                                                "run off to find a new master."
+                                            ),
+                                            lang="css",
+                                        )
                                     )
-                                )
 
                             else:
                                 c.heroclass["ability"] = False
