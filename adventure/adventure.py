@@ -2278,10 +2278,13 @@ class Adventure(BaseCog):
         if self.MONSTERS[challenge]["boss"]:
             timer = 120
             text = box(f"\n [{challenge} Alarm!]", lang="css")
+            self.bot.dispatch("adventure_boss", ctx)  # dispatches an event on bosses
         elif self.MONSTERS[challenge]["miniboss"]:
             timer = 60
+            self.bot.dispatch("adventure_miniboss", ctx)
         else:
             timer = 30
+            self.bot.dispatch("adventure", ctx)
         self._sessions[ctx.guild.id] = GameSession(
             challenge=challenge,
             attribute=attribute,
@@ -2422,6 +2425,8 @@ class Adventure(BaseCog):
         if guild.id in self._current_traders:
             if reaction.message.id == self._current_traders[guild.id]["msg"]:
                 log.debug("handling cart")
+                if user in self._current_traders[guild.id]["users"]:
+                    return
                 await self._handle_cart(reaction, user)
 
     async def _handle_adventure(self, reaction, user):
@@ -2448,11 +2453,29 @@ class Adventure(BaseCog):
         emojis = ReactionPredicate.NUMBER_EMOJIS[:5]
         itemindex = emojis.index(str(reaction.emoji)) - 1
         items = self._current_traders[guild.id]["stock"][itemindex]
+        self._current_traders[guild.id]["users"].append(user)
         spender = user
         channel = reaction.message.channel
         currency_name = await bank.get_currency_name(guild)
-        if await bank.can_spend(spender, int(items["price"])):
-            await bank.withdraw_credits(spender, int(items["price"]))
+        item_data = box(items["itemname"] + " - " + str(items["price"]), lang="css")
+        to_delete = await channel.send(
+            f"{user.mention}, how many {item_data} would you like to buy?"
+        )
+        ctx = await self.bot.get_context(reaction.message)
+        ctx.author = user
+        pred = MessagePredicate.valid_int(ctx)
+        try:
+            await self.bot.wait_for("message", check=pred, timeout=30)
+        except asyncio.TimeoutError:
+            self._current_traders[guild.id]["users"].remove(user)
+            return
+        if pred.result < 1:
+            await to_delete.delete()
+            await ctx.send("You're wasting my time.")
+            self._current_traders[guild.id]["users"].remove(user)
+            return
+        if await bank.can_spend(spender, int(items["price"]) * pred.result):
+            await bank.withdraw_credits(spender, int(items["price"]) * pred.result)
             try:
                 c = await Character._from_json(self.config, user)
             except Exception:
@@ -2460,31 +2483,38 @@ class Adventure(BaseCog):
                 return
             if "chest" in items["itemname"]:
                 if items["itemname"] == ".rare_chest":
-                    c.treasure[1] += 1
+                    c.treasure[1] += pred.result
                 elif items["itemname"] == "[epic chest]":
-                    c.treasure[2] += 1
+                    c.treasure[2] += pred.result
                 else:
-                    c.treasure[0] += 1
+                    c.treasure[0] += pred.result
             else:
                 item = items["item"]
+                item.owned = pred.result
                 log.debug(item.name)
                 if item.name in c.backpack:
                     log.debug("item already in backpack")
-                    c.backpack[item.name].owned += 1
+                    c.backpack[item.name].owned += pred.result
                 else:
                     c.backpack[item.name] = item
             await self.config.user(user).set(c._to_json())
+            await to_delete.delete()
             await channel.send(
-                (
-                    f"{self.E(user.display_name)} bought the {items['itemname']} for "
-                    f"{str(items['price'])} {currency_name} and put it into their backpack."
+                box(
+                    f"{self.E(user.display_name)} bought "
+                    f"{pred.result} {items['itemname']} for "
+                    f"{str(items['price'] * pred.result)} {currency_name} "
+                    "and put it into their backpack.",
+                    lang="css"
                 )
             )
+            self._current_traders[guild.id]["users"].remove(user)
         else:
-            currency_name = await bank.get_currency_name(guild)
+            await to_delete.delete()
             await channel.send(
-                f"{self.E(user.display_name)} does not have enough {currency_name}."
+                f"{self.E(user.display_name)}, you do not have enough {currency_name}."
             )
+            self._current_traders[guild.id]["users"].remove(user)
 
     async def _result(self, ctx: commands.Context, message: discord.Message):
         calc_msg = await ctx.send("Calculating...")
@@ -3657,6 +3687,7 @@ class Adventure(BaseCog):
         return price
 
     async def _trader(self, ctx):
+        self.bot.dispatch("adventure_cart", ctx)
         em_list = ReactionPredicate.NUMBER_EMOJIS[:5]
         react = False
         controls = {em_list[1]: 0, em_list[2]: 1, em_list[3]: 2, em_list[4]: 3}
@@ -3686,6 +3717,8 @@ class Adventure(BaseCog):
                     att = item["item"].att * 2
                     cha = item["item"].cha * 2
                     intel = item["item"].int * 2
+                    luck = item["item"].luck * 2
+                    dex = item["item"].dex * 2
                 else:
                     if item["item"].slot[0] == "right" or item["item"].slot[0] == "left":
                         hand = item["item"].slot[0] + " handed"
@@ -3719,7 +3752,7 @@ class Adventure(BaseCog):
         text += "Do you want to buy any of these fine items? Tell me which one below:"
         msg = await ctx.send(text)
         start_adding_reactions(msg, controls.keys())
-        self._current_traders[ctx.guild.id] = {"msg": msg.id, "stock": stock}
+        self._current_traders[ctx.guild.id] = {"msg": msg.id, "stock": stock, "users": []}
         timeout = self._last_trade[ctx.guild.id] + 180 - time.time()
         if timeout <= 0:
             timeout = 0
