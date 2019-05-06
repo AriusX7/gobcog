@@ -3367,6 +3367,7 @@ class Adventure(BaseCog):
             roll = random.randint(1, 20)
             if roll == 20:
                 ctx = await self.bot.get_context(message)
+                await asyncio.sleep(5)
                 await self._trader(ctx)
 
     async def _roll_chest(self, chest_type: str, c: Character):
@@ -3882,7 +3883,6 @@ class Adventure(BaseCog):
 
     # def cog_unload(self): #  another 3.1 change
     def cog_unload(self):
-        log.info("cog is unloading")
         for task in self.tasks:
             log.debug(f"removing task {task}")
             task.cancel()
