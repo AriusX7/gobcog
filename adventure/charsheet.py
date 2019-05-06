@@ -1,10 +1,12 @@
-from redbot.core import Config, bank
 import discord
-from typing import List, Set, Dict
 import logging
 import re
 
+from typing import List, Set, Dict, Optional
+from datetime import timedelta
+
 from redbot.core import commands
+from redbot.core import Config, bank
 
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
@@ -30,6 +32,17 @@ TINKER_OPEN = r"{.:'"
 TINKER_CLOSE = r"':.}"
 LEGENDARY_OPEN = r"{Legendary:'"
 LEGENDARY_CLOSE = r"'}"
+
+TIME_RE_STRING = r"\s?".join(
+    [
+        r"((?P<days>\d+?)\s?(d(ays?)?))?",
+        r"((?P<hours>\d+?)\s?(hours?|hrs|hr?))?",
+        r"((?P<minutes>\d+?)\s?(minutes?|mins?|m))?",
+        r"((?P<seconds>\d+?)\s?(seconds?|secs?|s))?",
+    ]
+)
+
+TIME_RE = re.compile(TIME_RE_STRING, re.I)
 
 
 class Stats(Converter):
@@ -84,6 +97,15 @@ class Stats(Converter):
             except (AttributeError, ValueError):
                 pass
         return result
+
+
+def parse_timedelta(argument: str) -> Optional[timedelta]:
+    matches = TIME_RE.match(argument)
+    if matches:
+        params = {k: int(v) for k, v in matches.groupdict().items() if v is not None}
+        if params:
+            return timedelta(**params)
+    return None
 
 
 class Item:

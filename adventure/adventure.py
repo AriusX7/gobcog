@@ -16,7 +16,7 @@ from redbot.core.utils.common_filters import filter_various_mentions
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS, start_adding_reactions
 
-from .charsheet import Character, Item, GameSession, Stats
+from .charsheet import Character, Item, GameSession, Stats, parse_timedelta
 
 
 BaseCog = getattr(commands, "Cog", object)
@@ -102,7 +102,13 @@ class Adventure(BaseCog):
             "skill": {"pool": 0, "att": 0, "cha": 0, "int": 0},
         }
 
-        default_guild = {"cart_channels": [], "god_name": "", "cart_name": "", "embed": True}
+        default_guild = {
+            "cart_channels": [],
+            "god_name": "",
+            "cart_name": "",
+            "embed": True,
+            "cart_timeout": 10800
+        }
         default_global = {"god_name": "Herbert", "cart_name": "Hawl's brother", "theme": "default"}
 
         self.RAISINS: list = None
@@ -120,13 +126,6 @@ class Adventure(BaseCog):
         self.config.register_global(**default_global)
         self.config.register_user(**default_user)
         self.cleanup_loop = self.bot.loop.create_task(self.cleanup_tasks())
-        self.cog_unload = self.__unload
-
-    # def cog_unload(self): #  another 3.1 change
-    def __unload(self):
-        for task in self.tasks:
-            log.debug(f"removing task {task}")
-            task.cancel()
 
     async def initialize(self):
         """This will load all the bundled data into respective variables"""
@@ -727,6 +726,21 @@ class Adventure(BaseCog):
     async def cartname(self, ctx: Context, *, name):
         """[Admin] Set the server's name of the cart"""
         await self.config.guild(ctx.guild).cart_name.set(name)
+        await ctx.tick()
+
+    @adventureset.command()
+    @checks.admin_or_permissions(administrator=True)
+    async def carttime(self, ctx: Context, *, time: str):
+        """[Admin] Set the cooldown of the cart"""
+        time_delta = parse_timedelta(time)
+        if time_delta is None:
+            return await ctx.send("You must supply a ammount and time unit like `120 seconds`.")
+        if time_delta.seconds < 600:
+            cartname = await self.config.guild(ctx.guild).cart_name()
+            if not cartname:
+                cartname = await self.config.cart_name()
+            return await ctx.send(f"{cartname} doesn't have the energy to return that often.")
+        await self.config.guild(ctx.guild).cart_timeout.set(time_delta.seconds)
         await ctx.tick()
 
     @adventureset.command()
@@ -3687,7 +3701,7 @@ class Adventure(BaseCog):
         return price
 
     async def _trader(self, ctx):
-        self.bot.dispatch("adventure_cart", ctx)
+
         em_list = ReactionPredicate.NUMBER_EMOJIS[:5]
         react = False
         controls = {em_list[1]: 0, em_list[2]: 1, em_list[3]: 2, em_list[4]: 3}
@@ -3695,15 +3709,16 @@ class Adventure(BaseCog):
         if await self.config.guild(ctx.guild).cart_name():
             cart = await self.config.guild(ctx.guild).cart_name()
         text = box(f"[{cart} is bringing the cart around!]", lang="css")
+        timeout = await self.config.guild(ctx.guild).cart_timeout()
         if ctx.guild.id not in self._last_trade:
             self._last_trade[ctx.guild.id] = 0
 
         if self._last_trade[ctx.guild.id] == 0:
             self._last_trade[ctx.guild.id] = time.time()
-        elif (
-            self._last_trade[ctx.guild.id] >= time.time() - 10800
-        ):  # trader can return after 3 hours have passed since last visit.
+        elif self._last_trade[ctx.guild.id] >= time.time() - timeout:
+            # trader can return after 3 hours have passed since last visit.
             return  # silent return.
+        self.bot.dispatch("adventure_cart", ctx)  # dispatch after silent return
         self._last_trade[ctx.guild.id] = time.time()
         stock = await self._trader_get_items()
         currency_name = await bank.get_currency_name(ctx.guild)
@@ -3864,3 +3879,12 @@ class Adventure(BaseCog):
         for index, item in enumerate(items):
             output.update({index: items[item]})
         return output
+
+    # def cog_unload(self): #  another 3.1 change
+    def cog_unload(self):
+        log.info("cog is unloading")
+        for task in self.tasks:
+            log.debug(f"removing task {task}")
+            task.cancel()
+
+    __unload = cog_unload
