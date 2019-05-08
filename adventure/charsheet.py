@@ -307,7 +307,7 @@ class Character(Item):
             f"A level {self.lvl} {class_desc} \n\n- "
             f"ATTACK: {self.att} [+{self.skill['att']}] - "
             f"INTELLIGENCE: {self.int} [+{self.skill['int']}] - "
-            f"DIPLOMACY: {self.cha} [+{self.skill['cha']}] -\n\n- "
+            f"CHARISMA: {self.cha} [+{self.skill['cha']}] -\n\n- "
             f"DEXTERITY: {self.dex} - "
             f"LUCK: {self.luck} \n\n "
             f"Currency: {self.bal} \n- "
