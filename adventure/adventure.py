@@ -32,7 +32,7 @@ if listener is None:
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan"""
 
-    __version__ = "2.2.3"
+    __version__ = "2.2.4"
 
     def __init__(self, bot):
         self.bot = bot
@@ -497,8 +497,12 @@ class Adventure(BaseCog):
             trade_talk = box(
                 (
                     f"{self.E(ctx.author.display_name)} wants to sell "
-                    f"{item}. (Attack: {str(item.att)}, Intelligence: {str(item.int)}), "
-                    f"Charisma: {str(item.cha)} "
+                    f"{item}. "
+                    f"(ATT: {str(item.att)} | "
+                    f"CHA: {str(item.cha)} | "
+                    f"INT: {str(item.int)} | "
+                    f"DEX: {str(item.dex)} | "
+                    f"LUCK: {str(item.luck)}) "
                     f"[{hand}])\n{self.E(buyer.display_name)}, "
                     f"do you want to buy this item for {str(asking)} {currency_name}?"
                 ),
@@ -2781,6 +2785,7 @@ class Adventure(BaseCog):
                     try:
                         await bank.withdraw_credits(user, loss)
                     except ValueError:
+                        await bank.set_balance(user, 0)
                         pass
                 else:
                     pass
@@ -2823,6 +2828,7 @@ class Adventure(BaseCog):
                     try:
                         await bank.withdraw_credits(user, loss)
                     except ValueError:
+                        await bank.set_balance(user, 0)
                         pass
                 else:
                     pass
@@ -2888,6 +2894,7 @@ class Adventure(BaseCog):
                         try:
                             await bank.withdraw_credits(user, loss)
                         except ValueError:
+                            await bank.set_balance(user, 0)
                             pass
                     else:
                         pass
@@ -3016,6 +3023,7 @@ class Adventure(BaseCog):
                         try:
                             await bank.withdraw_credits(user, loss)
                         except ValueError:
+                            await bank.set_balance(user, 0)
                             pass
                     else:
                         pass
