@@ -32,7 +32,7 @@ if listener is None:
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan"""
 
-    __version__ = "2.2.2"
+    __version__ = "2.2.3"
 
     def __init__(self, bot):
         self.bot = bot
@@ -2769,9 +2769,9 @@ class Adventure(BaseCog):
                 multiplier = 0.05
                 if c.dex != 0:
                     if c.dex < 0:
-                        dex = abs(c.dex)
-                    else:
                         dex = 1 / c.dex
+                    else:
+                        dex = abs(c.dex)
                     multiplier = multiplier / dex
                 loss = round(c.bal * multiplier)
                 if loss > c.bal:
@@ -2811,9 +2811,9 @@ class Adventure(BaseCog):
                 multiplier = 0.05
                 if c.dex != 0:
                     if c.dex < 0:
-                        dex = abs(c.dex)
-                    else:
                         dex = 1 / c.dex
+                    else:
+                        dex = abs(c.dex)
                     multiplier = multiplier / dex
                 loss = round(c.bal * multiplier)
                 if loss > c.bal:
@@ -2876,9 +2876,9 @@ class Adventure(BaseCog):
                     multiplier = 0.05
                     if c.dex != 0:
                         if c.dex < 0:
-                            dex = abs(c.dex)
-                        else:
                             dex = 1 / c.dex
+                        else:
+                            dex = abs(c.dex)
                         multiplier = multiplier / dex
                     loss = round(c.bal * multiplier)
                     if loss > c.bal:
