@@ -1,8 +1,15 @@
-from redbot.core import Config, bank
 import discord
-from typing import Optional, Dict, List, Set
-from copy import copy
 import logging
+import re
+
+from typing import List, Set, Dict, Optional
+from datetime import timedelta
+
+from redbot.core import commands
+from redbot.core import Config, bank
+
+from discord.ext.commands.converter import Converter
+from discord.ext.commands.errors import BadArgument
 
 log = logging.getLogger("red.adventure")
 
@@ -23,6 +30,82 @@ ORDER = [
 ]
 TINKER_OPEN = r"{.:'"
 TINKER_CLOSE = r"':.}"
+LEGENDARY_OPEN = r"{Legendary:'"
+LEGENDARY_CLOSE = r"'}"
+
+TIME_RE_STRING = r"\s?".join(
+    [
+        r"((?P<days>\d+?)\s?(d(ays?)?))?",
+        r"((?P<hours>\d+?)\s?(hours?|hrs|hr?))?",
+        r"((?P<minutes>\d+?)\s?(minutes?|mins?|m))?",
+        r"((?P<seconds>\d+?)\s?(seconds?|secs?|s))?",
+    ]
+)
+
+TIME_RE = re.compile(TIME_RE_STRING, re.I)
+
+
+class Stats(Converter):
+    """
+    This will parse a string for specific keywords like attack and dexterity followed by a number
+    to create an item object to be added to a users inventory
+    """
+    ATT = re.compile(r"([\d]*) (att(?:ack)?)")
+    CHA = re.compile(r"([\d]*) (cha(?:risma)?|dip(?:lo?(?:macy)?)?)")
+    INT = re.compile(r"([\d]*) (int(?:elligence)?)")
+    LUCK = re.compile(r"([\d]*) (luck)")
+    DEX = re.compile(r"([\d]*) (dex(?:terity)?)")
+    SLOT = re.compile(r"(head|neck|chest|gloves|belt|legs|boots|left|right|ring|charm|twohanded)")
+    RARITY = re.compile(r"(normal|rare|epic|legend(?:ary)?)")
+
+    async def convert(self, ctx: commands.Context, argument: str) -> Dict[str, int]:
+        result = {
+                "slot": ["left"],
+                "att": 0,
+                "cha": 0,
+                "int": 0,
+                "dex": 0,
+                "luck": 0,
+                "rarity": "normal"
+            }
+        possible_stats = dict(
+            att=self.ATT.search(argument),
+            cha=self.CHA.search(argument),
+            int=self.INT.search(argument),
+            dex=self.DEX.search(argument),
+            luck=self.LUCK.search(argument)
+        )
+        try:
+            slot = [self.SLOT.search(argument).group(0)]
+            if slot == ["twohanded"]:
+                slot = ["left", "right"]
+            result["slot"] = slot
+        except AttributeError:
+            raise BadArgument("No slot position was provided.")
+        try:
+            result["rarity"] = self.RARITY.search(argument).group(0)
+        except AttributeError:
+            raise BadArgument("No rarity was provided.")
+        for key, value in possible_stats.items():
+            try:
+                stat = int(value.group(1))
+                if stat > 10 and not await ctx.bot.is_owner(ctx.author):
+                    raise BadArgument(
+                        "Don't you think that's a bit overpowered? Not creating item."
+                    )
+                result[key] = stat
+            except (AttributeError, ValueError):
+                pass
+        return result
+
+
+def parse_timedelta(argument: str) -> Optional[timedelta]:
+    matches = TIME_RE.match(argument)
+    if matches:
+        params = {k: int(v) for k, v in matches.groupdict().items() if v is not None}
+        if params:
+            return timedelta(**params)
+    return None
 
 
 class Item:
@@ -32,6 +115,7 @@ class Item:
         self.name: str = kwargs.pop("name")
         self.slot: List[str] = kwargs.pop("slot")
         self.att: int = kwargs.pop("att")
+        self.int: int = kwargs.pop("int")
         self.cha: int = kwargs.pop("cha")
         self.rarity: str = kwargs.pop("rarity")
         self.dex: int = kwargs.pop("dex")
@@ -45,16 +129,20 @@ class Item:
             return "." + self.name.replace(" ", "_")
         if self.rarity == "epic":
             return f"[{self.name}]"
+        if self.rarity == "legendary":
+            return f"{LEGENDARY_OPEN}{self.name}{LEGENDARY_CLOSE}"
         if self.rarity == "forged":
             return f"{TINKER_OPEN}{self.name}{TINKER_CLOSE}"
             # Thanks Sinbad!
 
     @staticmethod
     def _remove_markdowns(item):
-        if item.startswith("."):
+        if item.startswith(".") or "_" in item:
             item = item.replace("_", " ").replace(".", "")
         if item.startswith("["):
             item = item.replace("[", "").replace("]", "")
+        if item.startswith("{Legendary:'"):
+            item = item.replace("{Legendary:'", "").replace("'}", "")
         if item.startswith("{.:'"):
             item = item.replace("{.:'", "").replace("':.}", "")
         return item
@@ -74,18 +162,25 @@ class Item:
         if name.startswith("["):
             name = name.replace("[", "").replace("]", "")
             rarity = "epic"
+        if name.startswith("{Legendary:'"):
+            name = name.replace("{Legendary:'", "").replace("'}", "")
+            rarity = "legendary"
         if name.startswith("{.:'"):
             name = name.replace("{.:'", "").replace("':.}", "")
             rarity = "forged"
         rarity = data["rarity"] if "rarity" in data else rarity
+        att = data["att"] if "att" in data else 0
         dex = data["dex"] if "dex" in data else 0
+        inter = data["int"] if "int" in data else 0
+        cha = data["cha"] if "cha" in data else 0
         luck = data["luck"] if "luck" in data else 0
         owned = data["owned"] if "owned" in data else 1
         item_data = {
             "name": name,
             "slot": data["slot"],
-            "att": data["att"],
-            "cha": data["cha"],
+            "att": att,
+            "int": inter,
+            "cha": cha,
             "rarity": rarity,
             "dex": dex,
             "luck": luck,
@@ -99,6 +194,7 @@ class Item:
                 "name": self.name,
                 "slot": self.slot,
                 "att": self.att,
+                "int": self.int,
                 "cha": self.cha,
                 "rarity": self.rarity,
                 "dex": self.dex,
@@ -121,6 +217,7 @@ class GameSession:
     message_id: int
     participants: Set[discord.Member] = set()
     fight: List[discord.Member] = []
+    magic: List[discord.Member] = []
     talk: List[discord.Member] = []
     pray: List[discord.Member] = []
     run: List[discord.Member] = []
@@ -136,6 +233,7 @@ class GameSession:
         self.message_id: int = 0
         self.participants: Set[discord.Member] = set()
         self.fight: List[discord.Member] = []
+        self.magic: List[discord.Member] = []
         self.talk: List[discord.Member] = []
         self.pray: List[discord.Member] = []
         self.run: List[discord.Member] = []
@@ -167,6 +265,7 @@ class Character(Item):
         self.user: discord.Member = kwargs.pop("user")
         self.att = self.__stat__("att")
         self.cha = self.__stat__("cha")
+        self.int = self.__stat__("int")
         self.dex = self.__stat__("dex")
         self.luck = self.__stat__("luck")
 
@@ -183,7 +282,7 @@ class Character(Item):
                 # log.debug(item)
                 if item:
                     stats += getattr(item, stat)
-            except Exception as e:
+            except Exception:
                 log.error(f"error calculating {stat}", exc_info=True)
                 pass
         return stats
@@ -202,16 +301,19 @@ class Character(Item):
                     class_desc += f"\n\n- Current pet: {self.heroclass['pet']['name']}"
         else:
             class_desc = "Hero."
-
+        legend = "( ATT  |  CHA  |  INT  |  DEX  |  LUCK)"
         return (
             f"[{self.user.display_name}'s Character Sheet]\n\n"
             f"A level {self.lvl} {class_desc} \n\n- "
             f"ATTACK: {self.att} [+{self.skill['att']}] - "
+            f"INTELLIGENCE: {self.int} [+{self.skill['int']}] - "
             f"DIPLOMACY: {self.cha} [+{self.skill['cha']}] -\n\n- "
+            f"DEXTERITY: {self.dex} - "
+            f"LUCK: {self.luck} \n\n "
             f"Currency: {self.bal} \n- "
             f"Experience: {round(self.exp)}/{next_lvl} \n- "
             f"Unspent skillpoints: {self.skill['pool']}\n\n"
-            f"Items Equipped:{self.__equipment__()}"
+            f"Items Equipped:\n{legend}{self.__equipment__()}"
         )
 
     def __equipment__(self):
@@ -220,6 +322,7 @@ class Character(Item):
         """
         form_string = ""
         last_slot = ""
+        rjust = max([len(str(getattr(self, i))) for i in ORDER if i != "two handed"])
         for slots in ORDER:
             if slots == "two handed":
                 continue
@@ -237,19 +340,36 @@ class Character(Item):
             # rjust = max([len(i) for i in item.name])
             # for name, stats in data.items():
             att = item.att * 2 if slot_name == "two handed" else item.att
+            inter = item.int * 2 if slot_name == "two handed" else item.int
             cha = item.cha * 2 if slot_name == "two handed" else item.cha
-            form_string += f"\n  - {str(item)} - (ATT: {att} | DPL: {cha})"
+            dex = item.dex * 2 if slot_name == "two handed" else item.dex
+            luck = item.luck * 2 if slot_name == "two handed" else item.luck
+            att_space = " " if len(str(att)) == 1 else ""
+            cha_space = " " if len(str(cha)) == 1 else ""
+            int_space = " " if len(str(inter)) == 1 else ""
+            dex_space = " " if len(str(dex)) == 1 else ""
+            luck_space = " " if len(str(luck)) == 1 else ""
+            form_string += (
+                f"\n {item.owned} - {str(item):<{rjust}} - "
+                f"({att_space}{att}  | "
+                f"{cha_space}{cha}  | "
+                f"{int_space}{inter}  | "
+                f"{dex_space}{dex}  | "
+                f"{luck_space}{luck} )"
+            )
 
         return form_string + "\n"
 
     @staticmethod
     def _get_rarity(item):
-        if item[0][0] == "[":  # epic
+        if item[0][0] == "{":  # legendary
             return 0
-        elif item[0][0] == ".":  # rare
+        elif item[0][0] == "[":  # epic
             return 1
+        elif item[0][0] == ".":  # rare
+            return 2
         else:
-            return 2  # common / normal
+            return 3  # common / normal
 
     def _sort_new_backpack(self, backpack: dict):
         tmp = {}
@@ -276,21 +396,30 @@ class Character(Item):
 
     def __backpack__(self, forging: bool = False, consumed: list = []):
         bkpk = self._sort_new_backpack(self.backpack)
-        form_string = "Items in Backpack:"
+        form_string = "Items in Backpack:\n( ATT  |  CHA  |  INT  |  DEX  |  LUCK)"
         consumed_list = [i for i in consumed]
         for slot_group in bkpk:
 
             slot_name = slot_group[0][1].slot
             slot_name = slot_name[0] if len(slot_name) < 2 else "two handed"
             form_string += f"\n\n {slot_name.title()} slot"
-            rjust = max([len(str(i[0])) for i in slot_group])
+            rjust = max([len(str(i[1])) for i in slot_group])
             for item in slot_group:
                 # log.debug(item[1])
                 if forging and (item[1].rarity == "forged" or item[1] in consumed_list):
                     continue
+                att_space = " " if len(str(item[1].att)) == 1 else ""
+                cha_space = " " if len(str(item[1].cha)) == 1 else ""
+                int_space = " " if len(str(item[1].int)) == 1 else ""
+                dex_space = " " if len(str(item[1].dex)) == 1 else ""
+                luck_space = " " if len(str(item[1].luck)) == 1 else ""
                 form_string += (
                     f"\n {item[1].owned} - {str(item[1]):<{rjust}} - "
-                    f"(ATT: {item[1].att} | DPL: {item[1].cha})"
+                    f"({att_space}{item[1].att}  | "
+                    f"{cha_space}{item[1].cha}  | "
+                    f"{int_space}{item[1].int}  | "
+                    f"{dex_space}{item[1].dex}  | "
+                    f"{luck_space}{item[1].luck} )"
                 )
 
         return form_string + "\n"
@@ -325,7 +454,7 @@ class Character(Item):
                 continue
             if current and current.name != name:
                 await self._unequip_item(current)
-            if current and name not in self.backpack:
+            if name not in self.backpack:
                 log.debug(f"{name} is missing")
                 setattr(self, slot, None)
             else:
@@ -388,6 +517,11 @@ class Character(Item):
             for k, v in data["items"].items()
             if k != "backpack"
         }
+        if "int" not in data["skill"]:
+            data["skill"]["int"] = 0
+            # auto update old users with new skill slot
+            # likely unnecessary since this worked without it but this prevents
+            # potential issues
         loadouts = data["loadouts"]
         heroclass = "Hero"
         if "class" in data:
@@ -405,10 +539,13 @@ class Character(Item):
         else:
             backpack = {n: Item._from_json({n: i}) for n, i in data["backpack"].items()}
         # log.debug(data["items"]["backpack"])
+        if len(data["treasure"]) < 4:
+            data["treasure"].append(0)
         hero_data = {
             "exp": data["exp"],
             "lvl": data["lvl"],
             "att": data["att"],
+            "int": data["int"],
             "cha": data["cha"],
             "treasure": data["treasure"],
             "backpack": backpack,
@@ -432,6 +569,7 @@ class Character(Item):
             "exp": self.exp,
             "lvl": self.lvl,
             "att": self.att,
+            "int": self.int,
             "cha": self.cha,
             "treasure": self.treasure,
             "items": {
