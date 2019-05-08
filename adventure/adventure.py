@@ -998,7 +998,7 @@ class Adventure(BaseCog):
         """
         if not await self.allow_in_dm(ctx):
             return await ctx.send("This command is not available in DM's on this bot.")
-        async with self.get_Lock(ctx.author):
+        async with self.get_lock(ctx.author):
             try:
                 c = await Character._from_json(self.config, ctx.author)
             except Exception:
