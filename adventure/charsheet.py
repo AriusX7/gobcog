@@ -89,7 +89,7 @@ class Stats(Converter):
         for key, value in possible_stats.items():
             try:
                 stat = int(value.group(1))
-                if stat > 6 and not await ctx.bot.is_owner(ctx.author):
+                if stat > 10 and not await ctx.bot.is_owner(ctx.author):
                     raise BadArgument(
                         "Don't you think that's a bit overpowered? Not creating item."
                     )
@@ -301,7 +301,7 @@ class Character(Item):
                     class_desc += f"\n\n- Current pet: {self.heroclass['pet']['name']}"
         else:
             class_desc = "Hero."
-
+        legend = "( ATT  |  CHA  |  INT  |  DEX  |  LUCK)"
         return (
             f"[{self.user.display_name}'s Character Sheet]\n\n"
             f"A level {self.lvl} {class_desc} \n\n- "
@@ -313,7 +313,7 @@ class Character(Item):
             f"Currency: {self.bal} \n- "
             f"Experience: {round(self.exp)}/{next_lvl} \n- "
             f"Unspent skillpoints: {self.skill['pool']}\n\n"
-            f"Items Equipped:{self.__equipment__()}"
+            f"Items Equipped:\n{legend}{self.__equipment__()}"
         )
 
     def __equipment__(self):
@@ -322,6 +322,7 @@ class Character(Item):
         """
         form_string = ""
         last_slot = ""
+        rjust = max([len(str(getattr(self, i))) for i in ORDER if i != "two handed"])
         for slots in ORDER:
             if slots == "two handed":
                 continue
@@ -341,7 +342,21 @@ class Character(Item):
             att = item.att * 2 if slot_name == "two handed" else item.att
             inter = item.int * 2 if slot_name == "two handed" else item.int
             cha = item.cha * 2 if slot_name == "two handed" else item.cha
-            form_string += f"\n  - {str(item)} - (ATT: {att} | INT: {inter} | DPL: {cha})"
+            dex = item.dex * 2 if slot_name == "two handed" else item.dex
+            luck = item.luck * 2 if slot_name == "two handed" else item.luck
+            att_space = " " if len(str(att)) == 1 else ""
+            cha_space = " " if len(str(cha)) == 1 else ""
+            int_space = " " if len(str(inter)) == 1 else ""
+            dex_space = " " if len(str(dex)) == 1 else ""
+            luck_space = " " if len(str(luck)) == 1 else ""
+            form_string += (
+                f"\n {item.owned} - {str(item):<{rjust}} - "
+                f"({att_space}{att}  | "
+                f"{cha_space}{cha}  | "
+                f"{int_space}{inter}  | "
+                f"{dex_space}{dex}  | "
+                f"{luck_space}{luck} )"
+            )
 
         return form_string + "\n"
 
@@ -401,8 +416,8 @@ class Character(Item):
                 form_string += (
                     f"\n {item[1].owned} - {str(item[1]):<{rjust}} - "
                     f"({att_space}{item[1].att}  | "
-                    f"{int_space}{item[1].int}  | "
                     f"{cha_space}{item[1].cha}  | "
+                    f"{int_space}{item[1].int}  | "
                     f"{dex_space}{item[1].dex}  | "
                     f"{luck_space}{item[1].luck} )"
                 )
