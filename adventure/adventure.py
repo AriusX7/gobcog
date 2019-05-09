@@ -32,7 +32,7 @@ if listener is None:
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan"""
 
-    __version__ = "2.2.5"
+    __version__ = "2.3.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -478,12 +478,12 @@ class Adventure(BaseCog):
             )
             return
         if any([x for x in lookup if x.rarity == "forged"]):
-            device = [x for x in lookup if "{.:'" in x.lower()]
+            device = [x for x in lookup if x.rarity == "forged"]
             return await ctx.send(
                 box(
                     (
                         f"\n{self.E(ctx.author.display_name)}, your "
-                        f"{device} does not want to leave you."
+                        f"{str(device[0])} does not want to leave you."
                     ),
                     lang="css",
                 )
@@ -1028,17 +1028,24 @@ class Adventure(BaseCog):
                     "of item 1 to select for forging. Try to be specific.)"
                 )
                 for page in pagify(forgeables, delims=["\n"], shorten_by=20):
-                    await ctx.send(box(page, lang="css"))
+                    try:
+                        await ctx.author.send(box(page, lang="css"))
+                    except discord.errors.Forbidden:
+                        await ctx.send(box(page, lang="css"))
 
                 try:
                     reply = await ctx.bot.wait_for(
-                        "message", check=MessagePredicate.same_context(ctx), timeout=30
+                        "message", check=MessagePredicate.same_context(user=ctx.author), timeout=30
                     )
                 except asyncio.TimeoutError:
                     ctx.command.reset_cooldown(ctx)
-                    return await ctx.send(
-                        f"I don't have all day you know, {self.E(ctx.author.display_name)}."
-                    )
+                    timeout_msg = (
+                            f"I don't have all day you know, {self.E(ctx.author.display_name)}."
+                        )
+                    try:
+                        return await ctx.author.send(timeout_msg)
+                    except discord.errors.Forbidden:
+                        return await ctx.send(timeout_msg)
                 for name, item in c.backpack.items():
                     if reply.content.lower() in name.lower():
                         if item.rarity != "forgeable":
@@ -1052,27 +1059,36 @@ class Adventure(BaseCog):
                             )
                 if not consumed:
                     ctx.command.reset_cooldown(ctx)
-                    return await ctx.send(
-                        f"{self.E(ctx.author.display_name)}, I could not"
-                        " find that item - check your spelling."
-                    )
+                    wrong_item = (
+                            f"{self.E(ctx.author.display_name)}, I could not"
+                            " find that item - check your spelling."
+                        )
+                    try:
+                        return await ctx.author.send(wrong_item)
+                    except discord.errors.Forbidden:
+                        return await ctx.send(wrong_item)
                 forgeables = (
-                    f"[{self.E(ctx.author.display_name)}'s forgeables]\n"
-                    f"{c.__backpack__(True, consumed)}\n(Reply with the full or partial name "
+                    "(Reply with the full or partial name "
                     "of item 2 to select for forging. Try to be specific.)"
                 )
-                for page in pagify(forgeables, delims=["\n"], shorten_by=20):
-                    await ctx.send(box(page, lang="css"))
+                try:
+                    await ctx.author.send(box(forgeables, lang="css"))
+                except discord.errors.Forbidden:
+                    await ctx.send(box(forgeables, lang="css"))
                 # check = lambda m: m.author == ctx.author and not m.content.isnumeric()
                 try:
                     reply = await ctx.bot.wait_for(
-                        "message", check=MessagePredicate.same_context(ctx), timeout=30
+                        "message", check=MessagePredicate.same_context(user=ctx.author), timeout=30
                     )
                 except asyncio.TimeoutError:
                     ctx.command.reset_cooldown(ctx)
-                    return await ctx.send(
+                    timeout_msg = (
                         f"I don't have all day you know, {self.E(ctx.author.display_name)}."
                     )
+                    try:
+                        return await ctx.author.send(timeout_msg)
+                    except discord.errors.Forbidden:
+                        return await ctx.send(timeout_msg)
                 for name, item in c.backpack.items():
                     if reply.content.lower() in name and item not in consumed:
                         if item.rarity != "forged":
@@ -1081,16 +1097,28 @@ class Adventure(BaseCog):
                             break
                         else:
                             ctx.command.reset_cooldown(ctx)
-                            return await ctx.send(
-                                f"{self.E(ctx.author.display_name)}, "
-                                "tinkered devices cannot be reforged."
-                            )
+                            try:
+                                return await ctx.author.send(
+                                    f"{self.E(ctx.author.display_name)}, "
+                                    "tinkered devices cannot be reforged."
+                                )
+                            except discord.errors.Forbidden:
+                                return await ctx.send(
+                                    f"{self.E(ctx.author.display_name)}, "
+                                    "tinkered devices cannot be reforged."
+                                )
                 if len(consumed) < 2:
                     ctx.command.reset_cooldown(ctx)
-                    return await ctx.send(
-                        f"{self.E(ctx.author.display_name)}, I could"
-                        " not find that item - check your spelling."
-                    )
+                    try:
+                        return await ctx.author.send(
+                            f"{self.E(ctx.author.display_name)}, I could"
+                            " not find that item - check your spelling."
+                        )
+                    except discord.errors.forbidden:
+                        return await ctx.send(
+                            f"{self.E(ctx.author.display_name)}, I could"
+                            " not find that item - check your spelling."
+                        )
 
                 newitem = await self._to_forge(ctx, consumed)
                 for x in consumed:
@@ -1105,13 +1133,15 @@ class Adventure(BaseCog):
                         c = await c._unequip_item(items)
                 lookup = list(i for n, i in c.backpack.items() if i.rarity == "forged")
                 if len(lookup) > 0:
-                    forge_msg = await ctx.send(
-                        box(
+                    forge_str = box(
                             f"{self.E(ctx.author.display_name)}, you already have a device. "
                             f"Do you want to replace {', '.join([str(x) for x in lookup])}?",
                             lang="css",
                         )
-                    )
+                    try:
+                        forge_msg = await ctx.author.send(forge_str)
+                    except discord.errors.Forbidden:
+                        forge_msg = await ctx.send(forge_str)
                     start_adding_reactions(forge_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
                     pred = ReactionPredicate.yes_or_no(forge_msg, ctx.author)
                     try:
@@ -1124,38 +1154,44 @@ class Adventure(BaseCog):
                     except discord.errors.Forbidden:
                         pass
                     if pred.result:  # user reacted with Yes.
+                        created_item = box(
+                                        (
+                                            f"{self.E(ctx.author.display_name)}, your new {newitem} "
+                                            f"consumed {', '.join([str(x) for x in lookup])}"
+                                            " and is now lurking in your backpack."
+                                        ),
+                                        lang="css",
+                                    )
                         for item in lookup:
                             del c.backpack[item.name]
-                            await ctx.send(
-                                box(
-                                    (
-                                        f"{self.E(ctx.author.display_name)}, your new {newitem} "
-                                        f"consumed {', '.join([str(x) for x in lookup])}"
-                                        " and is now lurking in your backpack."
-                                    ),
-                                    lang="css",
-                                )
-                            )
+                        try:
+                            await ctx.author.send(created_item)
+                        except discord.errors.Forbidden:
+                            await ctx.send(created_item)
                         c.backpack[newitem.name] = newitem
                         await self.config.user(ctx.author).set(c._to_json())
                     else:
-                        return await ctx.send(
-                            box(
+                        mad_forge = box(
                                 f"{self.E(ctx.author.display_name)}, {newitem} got"
                                 " mad at your rejection and blew itself up.",
                                 lang="css",
                             )
-                        )
+                        try:
+                            return await ctx.author.send(mad_forge)
+                        except discord.errors.Forbidden:
+                            return await ctx.send(mad_forge)
                 else:
                     c.backpack[newitem.name] = newitem
                     await self.config.user(ctx.author).set(c._to_json())
-                    await ctx.send(
-                        box(
-                            f"{self.E(ctx.author.display_name)}, your new {newitem}"
-                            " is lurking in your backpack.",
-                            lang="css",
-                        )
+                    forged_item = box(
+                                f"{self.E(ctx.author.display_name)}, your new {newitem}"
+                                " is lurking in your backpack.",
+                                lang="css",
                     )
+                    try:
+                        await ctx.send(forged_item)
+                    except discord.errors.Forbidden:
+                        await ctx.send(forged_item)
 
     async def _to_forge(self, ctx: Context, consumed):
         item1 = consumed[0]
@@ -1183,6 +1219,8 @@ class Adventure(BaseCog):
         newatt = round((int(item1.att) + int(item2.att)) * modifier)
         newdip = round((int(item1.cha) + int(item2.cha)) * modifier)
         newint = round((int(item1.int) + int(item2.int)) * modifier)
+        newdex = round((int(item1.dex) + int(item2.dex)) * modifier)
+        newluck = round((int(item1.luck) + int(item2.luck)) * modifier)
         newslot = random.choice([item1.slot, item2.slot])
         if len(newslot) == 2:  # two handed weapons add their bonuses twice
             hand = "two handed"
@@ -1192,32 +1230,50 @@ class Adventure(BaseCog):
             else:
                 hand = newslot[0] + " slot"
         if len(newslot) == 2:
-            await ctx.send(
-                (
-                    f"{self.E(ctx.author.display_name)}, your forging roll was 🎲({roll}).\n"
-                    f"The device you tinkered will have "
-                    f"{newatt * 2}🗡, {newdip * 2}🗨 and {newint * 2}✨ and be {hand}."
-                )
-            )
-        else:
-            await ctx.send(
-                (
+            two_handed_msg = box(
                     f"{self.E(ctx.author.display_name)}, your forging roll was 🎲({roll}).\n"
                     "The device you tinkered will have "
-                    f"{newatt}🗡, {newdip}🗨 and {newint}✨ and be {hand}."
+                    f"(ATT {newatt * 2} | "
+                    f"CHA {newdip * 2} | "
+                    f"INT {newint * 2} | "
+                    f"DEX {newdex * 2} | "
+                    f"LUCK {newluck * 2})"
+                    f" and be {hand}.",
+                    lang="css"
                 )
-            )
-        await ctx.send(
-            (
+            try:
+                await ctx.author.send(two_handed_msg)
+            except discord.errors.Forbidden:
+                await ctx.send(two_handed_msg)
+        else:
+            reg_item = box(
+                    f"{self.E(ctx.author.display_name)}, your forging roll was 🎲({roll}).\n"
+                    "The device you tinkered will have "
+                    f"(ATT {newatt} | "
+                    f"CHA {newdip} | "
+                    f"INT {newint} | "
+                    f"DEX {newdex} | "
+                    f"LUCK {newluck})"
+                    f" and be {hand}.",
+                    lang="css"
+                )
+            try:
+                await ctx.author.send(reg_item)
+            except discord.errors.Forbidden:
+                await ctx.send(reg_item)
+        get_name = (
                 f"{self.E(ctx.author.display_name)}, please respond with "
                 "a name for your creation within 30s.\n"
                 "(You will not be able to change it afterwards. 40 characters maximum.)"
             )
-        )
+        try:
+            await ctx.author.send(get_name)
+        except discord.errors.Forbidden:
+            await ctx.send(get_name)
         reply = None
         try:
             reply = await ctx.bot.wait_for(
-                "message", check=MessagePredicate.same_context(ctx), timeout=30
+                "message", check=MessagePredicate.same_context(user=ctx.author), timeout=30
             )
         except asyncio.TimeoutError:
             name = "Unnamed Artifact"
@@ -1235,6 +1291,8 @@ class Adventure(BaseCog):
                 "att": newatt,
                 "cha": newdip,
                 "int": newint,
+                "dex": newdex,
+                "luck": newluck,
                 "rarity": "forged",
             }
         }
