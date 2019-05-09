@@ -1,0 +1,1528 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2019-05-09 13:11+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: redgettext 2.2\n"
+
+
+#: adventure.py:38
+#, docstring
+msgid "Adventure, derived from the Goblins Adventure cog by locastan"
+msgstr ""
+
+#: adventure.py:103
+msgid "Hero"
+msgstr ""
+
+#: adventure.py:105
+msgid "Your basic adventuring hero."
+msgstr ""
+
+#: adventure.py:119
+msgid "Herbert"
+msgstr ""
+
+#: adventure.py:120
+msgid "Hawl's brother"
+msgstr ""
+
+#: adventure.py:218
+#, docstring
+msgid ""
+"\n"
+"            Force cart to appear in a channel\n"
+"        "
+msgstr ""
+
+#: adventure.py:225
+#, docstring
+msgid ""
+"This shows the contents of your backpack.\n"
+"\n"
+"        Selling: `[p]backpack sell item_name`\n"
+"        Trading: `[p]backpack trade @user price item_name`\n"
+"        Equip:   `[p]backpack equip item_name`\n"
+"        or respond with the item name to the backpack command output.\n"
+"        "
+msgstr ""
+
+#: adventure.py:233 adventure.py:641 adventure.py:675 adventure.py:708
+#: adventure.py:748 adventure.py:1121 adventure.py:1134 adventure.py:1626
+#: adventure.py:1867 adventure.py:2138 adventure.py:2446 adventure.py:2546
+#: adventure.py:2604
+msgid "This command is not available in DM's on this bot."
+msgstr ""
+
+#: adventure.py:241
+msgid ""
+"[{author}'s backpack] \n"
+"\n"
+"{backpack}\n"
+msgstr ""
+
+#: adventure.py:273 adventure.py:339
+msgid "{author} equipped {item} ({slot} slot)."
+msgstr ""
+
+#: adventure.py:280 adventure.py:346
+msgid "{author} equipped {item} ({slot} slot) and put {put} into their backpack."
+msgstr ""
+
+#: adventure.py:293
+msgid "{author}'s new stats: Attack: {att} [{att_skill}], Intelligence: {int} [{int_skill}], Diplomacy: {cha} [{cha_skill}]."
+msgstr ""
+
+#: adventure.py:321
+#, docstring
+msgid "Equip an item from your backpack"
+msgstr ""
+
+#: adventure.py:369
+#, docstring
+msgid "Sell an item from your backpack"
+msgstr ""
+
+#: adventure.py:385
+msgid "{}, you have to specify an item (or partial name) from your backpack to sell."
+msgstr ""
+
+#: adventure.py:395
+msgid ""
+"\n"
+"{author}, your {device} is refusing to be sold and bit your finger for trying."
+msgstr ""
+
+#: adventure.py:404
+msgid "{author}, do you want to sell these items? {item}"
+msgstr ""
+
+#: adventure.py:436
+msgid ""
+"{author} sold one {item} for {price} {currency_name}.\n"
+msgstr ""
+
+#: adventure.py:457
+msgid ""
+"{author} sold all their {old_item} for {price} {currency_name}.\n"
+msgstr ""
+
+#: adventure.py:477
+msgid ""
+"{author} sold all but one of their {old_item} for {price} {currency_name}.\n"
+msgstr ""
+
+#: adventure.py:490
+msgid "Not selling those items."
+msgstr ""
+
+#: adventure.py:501
+#, docstring
+msgid "Trade an item from your backpack to another user"
+msgstr ""
+
+#: adventure.py:509
+msgid "{author}, you have to specify an item from your backpack to trade."
+msgstr ""
+
+#: adventure.py:516
+msgid ""
+"{author}, I found multiple items ({items}) matching that name in your backpack.\n"
+"Please be more specific."
+msgstr ""
+
+#: adventure.py:529
+msgid ""
+"\n"
+"{author}, your {device} does not want to leave you."
+msgstr ""
+
+#: adventure.py:542
+msgid ""
+"{author} wants to sell {item}. (ATT: {att_item} | CHA: {cha_item} | INT: {int_item} | DEX: {dex_item} | LUCK: {luck_item}) [{hand}])\n"
+"{buyer}, do you want to buy this item for {asking} {currency_name}?"
+msgstr ""
+
+#: adventure.py:603
+msgid ""
+"\n"
+"{author} traded {item} to {buyer} for {asking} {currency_name}."
+msgstr ""
+
+#: adventure.py:620
+msgid "{buyer}, you do not have enough {currency_name}."
+msgstr ""
+
+#: adventure.py:634 adventure.py:845
+#, docstring
+msgid "Setup various adventure settings"
+msgstr ""
+
+#: adventure.py:639
+#, docstring
+msgid "Save your current equipment as a loadout"
+msgstr ""
+
+#: adventure.py:650
+msgid "{author}, you already have a loadout named {name}."
+msgstr ""
+
+#: adventure.py:666
+msgid "{author}, your current equipment has been saved to {name}."
+msgstr ""
+
+#: adventure.py:673
+#, docstring
+msgid "Delete a saved loadout"
+msgstr ""
+
+#: adventure.py:684 adventure.py:723 adventure.py:757
+msgid "{author}, you don't have a loadout named {name}."
+msgstr ""
+
+#: adventure.py:699
+msgid "{author}, loadout {name} has been deleted."
+msgstr ""
+
+#: adventure.py:706
+#, docstring
+msgid "Show saved loadouts"
+msgstr ""
+
+#: adventure.py:716
+msgid "{author}, you don't have any loadouts saved."
+msgstr ""
+
+#: adventure.py:736
+msgid ""
+"[{name} Loadout for {author}]\n"
+"\n"
+"{stats}"
+msgstr ""
+
+#: adventure.py:746
+#, docstring
+msgid "Equip a saved loadout"
+msgstr ""
+
+#: adventure.py:771
+msgid "{author}'s new stats: Attack: {stat_att} [{skill_att}], Intelligence: {stat_int} [{skill_int}], Diplomacy: {stat_cha} [{skill_cha}]."
+msgstr ""
+
+#: adventure.py:799 adventure.py:1708
+msgid "This will cost {spend} {currency_name}. Do you want to continue, {author}?"
+msgstr ""
+
+#: adventure.py:810
+msgid "You don't have enough {currency_name} to pay your squire."
+msgstr ""
+
+#: adventure.py:827
+msgid "{author} decided not to change his loadout."
+msgstr ""
+
+#: adventure.py:836
+msgid "Your squire changed you in record time."
+msgstr ""
+
+#: adventure.py:851
+#, docstring
+msgid "Display the version of adventure being used"
+msgstr ""
+
+#: adventure.py:852
+msgid "Adventure version: {}"
+msgstr ""
+
+#: adventure.py:857
+#, docstring
+msgid "[Admin] Set the server's name of the god"
+msgstr ""
+
+#: adventure.py:864
+#, docstring
+msgid "[Owner] Set the default name of the god"
+msgstr ""
+
+#: adventure.py:871
+#, docstring
+msgid "[Admin] Set whether or not to use embeds for the adventure game"
+msgstr ""
+
+#: adventure.py:874
+msgid "Embeds: {}"
+msgstr ""
+
+#: adventure.py:879
+#, docstring
+msgid "[Admin] Set the server's name of the cart"
+msgstr ""
+
+#: adventure.py:886
+#, docstring
+msgid "[Admin] Set the cooldown of the cart"
+msgstr ""
+
+#: adventure.py:889
+msgid "You must supply a ammount and time unit like `120 seconds`."
+msgstr ""
+
+#: adventure.py:895
+msgid "{} doesn't have the energy to return that often."
+msgstr ""
+
+#: adventure.py:903
+#, docstring
+msgid "[Owner] Set the default name of the cart"
+msgstr ""
+
+#: adventure.py:910
+#, docstring
+msgid "Change the theme for adventure"
+msgstr ""
+
+#: adventure.py:914
+msgid "Going back to the default theme."
+msgstr ""
+
+#: adventure.py:918
+msgid "That theme pack does not exist!"
+msgstr ""
+
+#: adventure.py:938
+msgid "That theme pack is missing the following files {}"
+msgstr ""
+
+#: adventure.py:952
+#, docstring
+msgid ""
+"[Admin] Add or remove a text channel that the Trader cart can appear in.\n"
+"\n"
+"        If the channel is already in the list, it will be removed.\n"
+"        Use `[p]adventureset cart` with no arguments to show the channel list.\n"
+"        "
+msgstr ""
+
+#: adventure.py:962
+msgid ""
+"Active Cart Channels:\n"
+msgstr ""
+
+#: adventure.py:964
+msgid "None."
+msgstr ""
+
+#: adventure.py:974
+msgid "The {} channel has been removed from the cart delivery list."
+msgstr ""
+
+#: adventure.py:980
+msgid "The {} channel has been added to the cart delivery list."
+msgstr ""
+
+#: adventure.py:987
+#, docstring
+msgid ""
+"Convert normal, rare or epic chests.\n"
+"\n"
+"        Trade 5 normal treasure chests for 1 rare treasure chest.\n"
+"        Trade 4 rare treasure chests for 1 epic treasure chest.\n"
+"        "
+msgstr ""
+
+#: adventure.py:995 adventure.py:1869 adventure.py:2448
+msgid "Nice try :smirk:"
+msgstr ""
+
+#: adventure.py:1012
+msgid ""
+"Successfully converted {converted} normal treasure chests to {to} rare treasure chest{plur}.\n"
+"{author} now owns {normal} normal, {rare} rare, {epic} epic and {leg} legendary treasure chests."
+msgstr ""
+
+#: adventure.py:1033
+msgid "{author}, you do not have {amount} normal treasure chests to convert."
+msgstr ""
+
+#: adventure.py:1044
+msgid ""
+"Successfully converted {converted} rare treasure chests to {to} epic treasure chest{plur}. \n"
+"{author} now owns {normal} normal, {rare} rare, {epic} epic and {leg} legendary treasure chests."
+msgstr ""
+
+#: adventure.py:1065
+msgid "{}, you do not have {(4 * amount)} rare treasure chests to convert."
+msgstr ""
+
+#: adventure.py:1072
+msgid "{}, I cannot convert loot rarer than epic."
+msgstr ""
+
+#: adventure.py:1081
+msgid ""
+"Successfully converted {converted} epic treasure chests to {to} legendary treasure chest{plural}. \n"
+"{author} now owns {normal} normal, {rare} rare, {epic} epic and {leg} legendary treasure chests."
+msgstr ""
+
+#: adventure.py:1102
+msgid "{author}, you do not have {amount} epic treasure chests to convert."
+msgstr ""
+
+#: adventure.py:1109
+msgid "{}, please select between normal or rare treasure chests to convert."
+msgstr ""
+
+#: adventure.py:1116
+#, docstring
+msgid ""
+"This equips an item from your backpack.\n"
+"\n"
+"        `[p]equip name of item`\n"
+"        "
+msgstr ""
+
+#: adventure.py:1128
+#, docstring
+msgid ""
+"[Tinkerer Class Only]\n"
+"\n"
+"        This allows a Tinkerer to forge two items into a device.\n"
+"        (2h cooldown)\n"
+"        "
+msgstr ""
+
+#: adventure.py:1144
+msgid "{}, you need to be a Tinkerer to do this."
+msgstr ""
+
+#: adventure.py:1154
+msgid "{}, you need at least two forgeable items in your backpack to forge."
+msgstr ""
+
+#: adventure.py:1158
+msgid ""
+"[{author}'s forgeables]\n"
+"{bc}\n"
+"(Reply with the full or partial name of item 1 to select for forging. Try to be specific.)"
+msgstr ""
+
+#: adventure.py:1175 adventure.py:1218
+msgid "I don't have all day you know, {}."
+msgstr ""
+
+#: adventure.py:1190 adventure.py:1235 adventure.py:1241
+msgid "{}, tinkered devices cannot be reforged."
+msgstr ""
+
+#: adventure.py:1196 adventure.py:1249 adventure.py:1255
+msgid "{}, I could not find that item - check your spelling."
+msgstr ""
+
+#: adventure.py:1203
+msgid "(Reply with the full or partial name of item 2 to select for forging. Try to be specific.)"
+msgstr ""
+
+#: adventure.py:1274
+msgid "{author}, you already have a device. Do you want to replace {replace}?"
+msgstr ""
+
+#: adventure.py:1300
+msgid "{author}, your new {newitem} consumed {lk} and is now lurking in your backpack."
+msgstr ""
+
+#: adventure.py:1320
+msgid "{author}, {newitem} got mad at your rejection and blew itself up."
+msgstr ""
+
+#: adventure.py:1333
+msgid "{author}, your new {newitem} is lurking in your backpack."
+msgstr ""
+
+#: adventure.py:1381
+msgid ""
+"{author}, your forging roll was 🎲({roll}).\n"
+"The device you tinkered will have (ATT {new_att} | CHA {new_cha} | INT {new_int} | DEX {new_dex} | LUCK {new_luck}) and be {hand}."
+msgstr ""
+
+#: adventure.py:1408
+msgid ""
+"{author}, your forging roll was 🎲({roll}).\n"
+"The device you tinkered will have (ATT {new_att} | CHA {new_dip} | INT {new_int} | DEX {new_dex} | LUCK {new_luck}) and be {hand}."
+msgstr ""
+
+#: adventure.py:1432
+msgid ""
+"{}, please respond with a name for your creation within 30s.\n"
+"(You will not be able to change it afterwards. 40 characters maximum.)"
+msgstr ""
+
+#: adventure.py:1447 adventure.py:1449
+msgid "Unnamed Artifact"
+msgstr ""
+
+#: adventure.py:1453
+msgid "Long-winded Artifact"
+msgstr ""
+
+#: adventure.py:1464
+msgid "forged"
+msgstr ""
+
+#: adventure.py:1474
+#, docstring
+msgid "[Admin] Commands to add things to players' inventories."
+msgstr ""
+
+#: adventure.py:1481
+#, docstring
+msgid ""
+"[Admin] Adds currency to a specified member's balance.\n"
+"\n"
+"        `[p]give funds 10 @Elder Aramis`\n"
+"        will create 10 currency and add to Elder Aramis' total.\n"
+"        "
+msgstr ""
+
+#: adventure.py:1487
+msgid "You are not worthy."
+msgstr ""
+
+#: adventure.py:1490
+msgid "You need to specify a receiving member, {}."
+msgstr ""
+
+#: adventure.py:1497
+msgid "I could not find that user, {}. Try using their full Discord name (name#0000)."
+msgstr ""
+
+#: adventure.py:1511
+msgid "{author}, you funded {amount} {currency}. {to} now has {bal} {currency}."
+msgstr ""
+
+#: adventure.py:1528
+#, docstring
+msgid ""
+"[Admin] Adds a custom item to a specified member.\n"
+"\n"
+"        Item names containing spaces must be enclosed in double quotes.\n"
+"        `[p]give item @locastan \"fine dagger\" 1 att 1 diplomacy rare twohanded`\n"
+"        will give a two handed .fine_dagger with 1 attack and 1 diplomacy to locastan.\n"
+"        if a stat is not specified it will default to 0, order does not matter.\n"
+"        available stats are attack(att), diplomacy(diplo) or charisma(cha),\n"
+"        intelligence(int), dexterity(dex), and luck.\n"
+"        "
+msgstr ""
+
+#: adventure.py:1539
+msgid "Item names cannot be numbers."
+msgstr ""
+
+#: adventure.py:1557
+msgid "An item named {item} has been created and placed in {author}'s backpack."
+msgstr ""
+
+#: adventure.py:1568
+#, docstring
+msgid ""
+"[Admin] This rewards a treasure chest to a specified member.\n"
+"\n"
+"        `[p]give loot normal @locastan 5`\n"
+"        will give locastan 5 normal chests.\n"
+"        Loot types: normal, rare, epic, legendary\n"
+"        "
+msgstr ""
+
+#: adventure.py:1580
+msgid "Valid loot types: `normal`, `rare`, `epic` or `legendary`: ex. `{}give loot normal @locastan` "
+msgstr ""
+
+#: adventure.py:1586
+msgid "You are not worthy to award legendary loot."
+msgstr ""
+
+#: adventure.py:1604
+msgid "{author} now owns {normal} normal, {rare} rare, {epic} epic and {leg} legendary chests."
+msgstr ""
+
+#: adventure.py:1621
+#, docstring
+msgid ""
+"This allows you to select a class if you are Level 10 or above.\n"
+"\n"
+"        For information on class use: `[p]heroclass \"classname\" info`\n"
+"        "
+msgstr ""
+
+#: adventure.py:1630
+msgid "Wizard"
+msgstr ""
+
+#: adventure.py:1632
+msgid ""
+"Wizards have the option to focus and add large bonuses to their magic, but their focus can sometimes go astray...\n"
+"Use the focus command when attacking in an adventure."
+msgstr ""
+
+#: adventure.py:1638
+msgid "Tinkerer"
+msgstr ""
+
+#: adventure.py:1640
+msgid ""
+"Tinkerers can forge two different items into a device bound to their very soul.\n"
+"Use the forge command."
+msgstr ""
+
+#: adventure.py:1646
+msgid "Berserker"
+msgstr ""
+
+#: adventure.py:1648
+msgid ""
+"Berserkers have the option to rage and add big bonuses to attacks, but fumbles hurt.\n"
+"Use the rage command when attacking in an adventure."
+msgstr ""
+
+#: adventure.py:1654
+msgid "Cleric"
+msgstr ""
+
+#: adventure.py:1656
+msgid ""
+"Clerics can bless the entire group when praying.\n"
+"Use the bless command when fighting in an adventure."
+msgstr ""
+
+#: adventure.py:1662
+msgid "Ranger"
+msgstr ""
+
+#: adventure.py:1664
+msgid ""
+"Rangers can gain a special pet, which can find items and give reward bonuses.\n"
+"Use the pet command to see pet options."
+msgstr ""
+
+#: adventure.py:1672
+msgid "Bard"
+msgstr ""
+
+#: adventure.py:1674
+msgid ""
+"Bards can perform to aid their comrades in diplomacy.\n"
+"Use the music command when being diplomatic in an adventure."
+msgstr ""
+
+#: adventure.py:1684
+msgid ""
+"So you feel like taking on a class, **{author}**?\n"
+"Available classes are: Tinkerer, Berserker, Wizard, Cleric, Ranger and Bard.\n"
+"Use `{prefix}heroclass name-of-class` to choose one."
+msgstr ""
+
+#: adventure.py:1699
+msgid "{} may be a class somewhere, but not on my watch."
+msgstr ""
+
+#: adventure.py:1720
+msgid "You don't have enough {currency_name} to train to be a {clz}."
+msgstr ""
+
+#: adventure.py:1741
+msgid "{author} decided to continue being a {h_class}."
+msgstr ""
+
+#: adventure.py:1766
+msgid ""
+"Congratulations, {author}.\n"
+"You are now a {clz}."
+msgstr ""
+
+#: adventure.py:1775
+msgid ""
+"{}, you will lose your forged device if you change your class.\n"
+"Shall I proceed?"
+msgstr ""
+
+#: adventure.py:1786
+msgid ""
+"{}, you will lose your pet if you change your class.\n"
+"Shall I proceed?"
+msgstr ""
+
+#: adventure.py:1815
+msgid "{} has run off to find a new master."
+msgstr ""
+
+#: adventure.py:1830
+msgid ""
+"{} released their pet into the wild.\n"
+msgstr ""
+
+#: adventure.py:1854
+msgid "{}, you need to be at least level 10 to choose a class."
+msgstr ""
+
+#: adventure.py:1862
+#, docstring
+msgid ""
+"This opens one of your precious treasure chests.\n"
+"\n"
+"        Use the box rarity type with the command: normal, rare, epic or legendary.\n"
+"        "
+msgstr ""
+
+#: adventure.py:1878
+msgid "{author} owns {normal} normal, {rare} rare, {epic} epic and {leg} legendary chests."
+msgstr ""
+
+#: adventure.py:1901
+msgid "There is talk of a {} treasure chest but nobody ever saw one."
+msgstr ""
+
+#: adventure.py:1906
+msgid "{author}, you do not have enough {box} treasure chest to open."
+msgstr ""
+
+#: adventure.py:1923
+msgid ""
+"{}, you've opened the following items:\n"
+"( ATT  |  CHA  |  INT  |  DEX  |  LUCK)"
+msgstr ""
+
+#: adventure.py:1953
+#, docstring
+msgid ""
+"This will send you to fight a nega-member!\n"
+"\n"
+"        `[p]negaverse offering`\n"
+"        'offering' in this context is the amount of currency you are sacrificing for this fight.\n"
+"        "
+msgstr ""
+
+#: adventure.py:1964
+msgid "{author}, you need to specify how many {currency_name} you are willing to offer to the gods for your success."
+msgstr ""
+
+#: adventure.py:1971
+msgid "The gods refuse your pitiful offering."
+msgstr ""
+
+#: adventure.py:1976
+msgid ""
+"{author}, this will cost you at least {offer} {currency_name}.\n"
+"You currently have {bal}. Do you want to proceed?"
+msgstr ""
+
+#: adventure.py:1997
+msgid "{} decides against visiting the negaverse... for now."
+msgstr ""
+
+#: adventure.py:2014
+msgid "A swirling void slowly grows and you watch in horror as it rushes to wash over you, leaving you cold... and your coin pouch significantly lighter. The portal to the negaverse remains closed."
+msgstr ""
+
+#: adventure.py:2021
+msgid "Shadowy hands reach out to take your offering from you and a swirling black void slowly grows and engulfs you, transporting you to the negaverse."
+msgstr ""
+
+#: adventure.py:2031
+msgid "{author} enters the negaverse and meets {negachar}."
+msgstr ""
+
+#: adventure.py:2046 adventure.py:2112
+msgid "all of their"
+msgstr ""
+
+#: adventure.py:2047
+msgid ", losing {loss} {currency_name} as {negachar} rifled through their belongings"
+msgstr ""
+
+#: adventure.py:2051
+msgid ""
+"{content}\n"
+"{author} fumbled and died to {negachar}'s savagery{loss_msg}."
+msgstr ""
+
+#: adventure.py:2062
+msgid ""
+"{content}\n"
+"{author} decapitated {negachar}. You gain {xp_gain} xp and take {offering} {currency_name} back from the shadowy corpse."
+msgstr ""
+
+#: adventure.py:2079
+msgid ""
+"{content}\n"
+"{author} 🎲({roll}) bravely defeated {negachar} 🎲({versus}). You gain {xp_gain} xp."
+msgstr ""
+
+#: adventure.py:2095
+msgid ""
+"{content}\n"
+"{author} 🎲({roll}) almost killed {negachar} 🎲({versus})."
+msgstr ""
+
+#: adventure.py:2113
+msgid ", losing {loss} {currency_name} as {negachar} looted their backpack"
+msgstr ""
+
+#: adventure.py:2117
+msgid "{author} 🎲({roll}) was killed by {negachar} 🎲({versus}){loss_msg}."
+msgstr ""
+
+#: adventure.py:2131
+#, docstring
+msgid ""
+"[Ranger Class Only]\n"
+"\n"
+"        This allows a Ranger to tame or set free a pet or send it foraging.\n"
+"        (2h cooldown)\n"
+"        "
+msgstr ""
+
+#: adventure.py:2147 adventure.py:2231 adventure.py:2277
+msgid "{}, you need to be a Ranger to do this."
+msgstr ""
+
+#: adventure.py:2158
+msgid "{author}, you already have a pet. Try foraging ({prefix}pet forage)."
+msgstr ""
+
+#: adventure.py:2176
+msgid "{} is trying to tame a pet."
+msgstr ""
+
+#: adventure.py:2182
+msgid "{author} started tracking a wild {pet_name} with a roll of 🎲({roll})."
+msgstr ""
+
+#: adventure.py:2195
+msgid "But they stepped on a twig and scared it away."
+msgstr ""
+
+#: adventure.py:2197
+msgid "They happen to have its favorite food."
+msgstr ""
+
+#: adventure.py:2201
+msgid ""
+"{bonus}\n"
+"They successfully tamed the {pet_name}."
+msgstr ""
+
+#: adventure.py:2211
+msgid ""
+"{bonus}\n"
+"The {pet_name} escaped."
+msgstr ""
+
+#: adventure.py:2220
+#, docstring
+msgid ""
+"\n"
+"            Use your pet to forage for items!\n"
+"        "
+msgstr ""
+
+#: adventure.py:2240
+msgid "{}, you need to have a pet to do this."
+msgstr ""
+
+#: adventure.py:2261
+msgid "This command is on cooldown. Try again in {:g}s"
+msgstr ""
+
+#: adventure.py:2266
+#, docstring
+msgid ""
+"\n"
+"            Free your pet :cry:\n"
+"        "
+msgstr ""
+
+#: adventure.py:2294
+msgid "You don't have a pet."
+msgstr ""
+
+#: adventure.py:2300
+#, docstring
+msgid ""
+"[Cleric Class Only]\n"
+"\n"
+"        This allows a praying Cleric to add substantial bonuses for heroes fighting the battle.\n"
+"        (10 minute cooldown)\n"
+"        "
+msgstr ""
+
+#: adventure.py:2314
+msgid "{}, you need to be a Cleric to do this."
+msgstr ""
+
+#: adventure.py:2321 adventure.py:2357 adventure.py:2393 adventure.py:2427
+msgid "{}, ability already in use."
+msgstr ""
+
+#: adventure.py:2327
+msgid "📜 {} is starting an inspiring sermon. 📜"
+msgstr ""
+
+#: adventure.py:2336
+#, docstring
+msgid ""
+"[Berserker Class Only]\n"
+"\n"
+"        This allows a Berserker to add substantial attack bonuses for one battle.\n"
+"        (10 minute cooldown)\n"
+"        "
+msgstr ""
+
+#: adventure.py:2350
+msgid "{}, you need to be a Berserker to do this."
+msgstr ""
+
+#: adventure.py:2363
+msgid "🗯️ {} is starting to froth at the mouth...🗯️"
+msgstr ""
+
+#: adventure.py:2372
+#, docstring
+msgid ""
+"[Wizard Class Only]\n"
+"\n"
+"        This allows a Wizard to add substantial magic bonuses for one battle.\n"
+"        (10 minute cooldown)\n"
+"        "
+msgstr ""
+
+#: adventure.py:2386
+msgid "{}, you need to be a Wizard to do this."
+msgstr ""
+
+#: adventure.py:2399
+msgid "⚡️ {} is focusing all of their energy...⚡️"
+msgstr ""
+
+#: adventure.py:2408
+#, docstring
+msgid ""
+"[Bard Class Only]\n"
+"\n"
+"        This allows a Bard to add substantial diplomacy bonuses for one battle.\n"
+"        (10 minute cooldown)\n"
+"        "
+msgstr ""
+
+#: adventure.py:2422
+msgid "{}, you need to be a Bard to do this."
+msgstr ""
+
+#: adventure.py:2433
+msgid "♪♫♬ {} is whipping up a performance...♬♫♪"
+msgstr ""
+
+#: adventure.py:2440
+#, docstring
+msgid ""
+"This allows you to spend skillpoints.\n"
+"\n"
+"        `[p]skill attack/diplomacy/intelligence`\n"
+"        `[p]skill reset` Will allow you to reset your skill points for a cost.\n"
+"        "
+msgstr ""
+
+#: adventure.py:2460
+msgid ""
+"{author}, this will cost you at least {offering} {currency_name}.\n"
+"You currently have {bal}. Do you want to proceed?"
+msgstr ""
+
+#: adventure.py:2487
+msgid "{}, your skill points have been reset."
+msgstr ""
+
+#: adventure.py:2493
+msgid "Don't play games with me, {}."
+msgstr ""
+
+#: adventure.py:2499
+msgid "{}, you do not have unspent skillpoints."
+msgstr ""
+
+#: adventure.py:2505
+msgid ""
+"{author}, you currently have {skillpoints} unspent skillpoints.\n"
+"If you want to put them towards a permanent attack, diplomacy or intelligence bonus, use `{prefix}skill attack`, `{prefix}skill diplomacy` or  `{prefix}skill intelligence`"
+msgstr ""
+
+#: adventure.py:2518
+msgid "Don't try to fool me! There is no such thing as {}."
+msgstr ""
+
+#: adventure.py:2532
+msgid "{author}, you permanently raised your {spend} value by {amount}."
+msgstr ""
+
+#: adventure.py:2539
+#, docstring
+msgid ""
+"This draws up a charsheet of you or an optionally specified member.\n"
+"\n"
+"        `[p]stats @locastan`\n"
+"        will bring up locastans stats.\n"
+"        `[p]stats` without user will open your stats.\n"
+"        "
+msgstr ""
+
+#: adventure.py:2570
+msgid "Items Equipped:"
+msgstr ""
+
+#: adventure.py:2582 adventure.py:2587 charsheet.py:356 charsheet.py:359
+msgid ""
+"\n"
+"\n"
+" {} slot"
+msgstr ""
+
+#: adventure.py:2586 adventure.py:4027 adventure.py:4043 charsheet.py:425
+msgid "two handed"
+msgstr ""
+
+#: adventure.py:2590
+msgid ""
+"\n"
+"  - {item:<{rjust}} - (ATT: {item_att} | DPL: {item_cha} | INT: {item_int})"
+msgstr ""
+
+#: adventure.py:2598
+#, docstring
+msgid ""
+"This stashes a specified equipped item into your backpack.\n"
+"\n"
+"        `[p]unequip name of item` or `[p]unequip slot`\n"
+"        You can only have one of each uniquely named item in your backpack.\n"
+"        "
+msgstr ""
+
+#: adventure.py:2629 adventure.py:2636
+msgid "{author} removed the {current_item} and put it into their backpack."
+msgstr ""
+
+#: adventure.py:2644
+msgid "{author}, you do not have an item matching {item} equipped."
+msgstr ""
+
+#: adventure.py:2653
+#, docstring
+msgid ""
+"This will send you on an adventure!\n"
+"\n"
+"        You play by reacting with the offered emojis.\n"
+"        "
+msgstr ""
+
+#: adventure.py:2658
+msgid "There's already another adventure going on in this server."
+msgstr ""
+
+#: adventure.py:2662
+msgid "You feel adventurous, {}?"
+msgstr ""
+
+#: adventure.py:2721
+msgid ""
+"\n"
+" [{} Alarm!]"
+msgstr ""
+
+#: adventure.py:2750
+msgid ""
+"but **a{attr} {chall}** just landed in front of you glaring! \n"
+"\n"
+"What will you do and will other heroes be brave enough to help you?\n"
+"Heroes have 2 minutes to participate via reaction:"
+msgstr ""
+
+#: adventure.py:2755
+msgid ""
+"but **a{attr} {chall}** stepped out looking around. \n"
+"\n"
+"What will you do and will other heroes help your cause?\n"
+"Heroes have 1 minute to participate via reaction:"
+msgstr ""
+
+#: adventure.py:2760
+msgid ""
+"but **a{attr} {chall}** is guarding it with{threat}. \n"
+"\n"
+"What will you do and will other heroes help your cause?\n"
+"Heroes have 30s to participate via reaction:"
+msgstr ""
+
+#: adventure.py:2769
+msgid "Time remaining: "
+msgstr ""
+
+#: adventure.py:2904
+msgid "{user}, how many {item} would you like to buy?"
+msgstr ""
+
+#: adventure.py:2918
+msgid "You're wasting my time."
+msgstr ""
+
+#: adventure.py:2949
+msgid "{author} bought {p_result} {item_name} for {item_price} {currency_name} and put it into their backpack."
+msgstr ""
+
+#: adventure.py:2966
+msgid "{author}, you do not have enough {currency_name}."
+msgstr ""
+
+#: adventure.py:2973
+msgid "Calculating..."
+msgstr ""
+
+#: adventure.py:3025
+msgid ""
+"The group {status} {challenge} **({result}/{int_hp})**.\n"
+msgstr ""
+
+#: adventure.py:3026
+msgid "hit the"
+msgstr ""
+
+#: adventure.py:3026
+msgid "killed the"
+msgstr ""
+
+#: adventure.py:3032
+msgid ""
+"The group {status} the {challenge} with {how} **({diplomacy}/{int_dipl})**.\n"
+msgstr ""
+
+#: adventure.py:3035
+msgid "tried to persuade"
+msgstr ""
+
+#: adventure.py:3035
+msgid "distracted"
+msgstr ""
+
+#: adventure.py:3037
+msgid "flattery"
+msgstr ""
+
+#: adventure.py:3037
+msgid "insults"
+msgstr ""
+
+#: adventure.py:3145 adventure.py:3433
+msgid "{user} used {loss} {currency_name}"
+msgstr ""
+
+#: adventure.py:3151
+msgid ""
+"\n"
+"{loss_list} to repay a passing cleric that unfroze the group."
+msgstr ""
+
+#: adventure.py:3195
+msgid ""
+"The {item} countered the {miniboss}'s {special}, but he still managed to kill you.\n"
+"{loss_l} to repay a passing cleric that resurrected the group."
+msgstr ""
+
+#: adventure.py:3207
+msgid "{b_group} has slain the {chall} in an epic battle!"
+msgstr ""
+
+#: adventure.py:3219
+msgid "{b_talkers} almost died in battle, but confounded the {chall} in the last second."
+msgstr ""
+
+#: adventure.py:3264
+msgid "to repair their gear."
+msgstr ""
+
+#: adventure.py:3267 adventure.py:3445
+msgid ""
+"No amount of diplomacy or valiant fighting could save you.\n"
+"{}"
+msgstr ""
+
+#: adventure.py:3270
+msgid ""
+"This challenge was too much for one hero.\n"
+"{}"
+msgstr ""
+
+#: adventure.py:3271
+msgid ""
+"You tried your best, but the group couldn't succeed at their attempt.\n"
+"{}"
+msgstr ""
+
+#: adventure.py:3283
+msgid "{b_fighters} slayed the {chall} in battle, while {b_talkers} distracted with flattery, {b_wizard} chanted magical incantations and {b_preachers} aided in {god}'s name."
+msgstr ""
+
+#: adventure.py:3298
+msgid "{b_group} slayed the {chall} in battle, while {b_talkers} distracted with flattery and {b_preachers} aided in {god}'s name."
+msgstr ""
+
+#: adventure.py:3311
+msgid "{b_fighters} slayed the {chall} in battle, while {b_talkers} distracted with insults and {b_wizard} chanted magical incantations."
+msgstr ""
+
+#: adventure.py:3323
+msgid "{b_group} slayed the {chall} in battle, while {b_talkers} distracted with insults."
+msgstr ""
+
+#: adventure.py:3339
+msgid "{b_talkers} talked the {chall} down with {b_preachers}'s blessing."
+msgstr ""
+
+#: adventure.py:3347
+msgid "{b_talkers} talked the {chall} down."
+msgstr ""
+
+#: adventure.py:3357
+msgid "{b_fighters} killed the {chall} in a most heroic battle with a little help from {b_preachers} and {b_wizard} chanting magical incantations."
+msgstr ""
+
+#: adventure.py:3369
+msgid "{b_group} killed the {chall} in a most heroic battle with a little help from {b_preachers}."
+msgstr ""
+
+#: adventure.py:3379
+msgid "{b_fighters} killed the {chall} in a most heroic battle with {b_wizard} chanting magical incantations."
+msgstr ""
+
+#: adventure.py:3389
+msgid "{b_group} killed the {chall} in an epic fight."
+msgstr ""
+
+#: adventure.py:3442
+msgid "{} to repair their gear."
+msgstr ""
+
+#: adventure.py:3448
+msgid ""
+"This challenge was too much for the group.\n"
+"{}"
+msgstr ""
+
+#: adventure.py:3449
+msgid ""
+"You tried your best, but couldn't succeed.\n"
+"{}"
+msgstr ""
+
+#: adventure.py:3469
+msgid ""
+"{} just ran away.\n"
+msgstr ""
+
+#: adventure.py:3481
+msgid ""
+"Swords bounce off this monster as it's skin is **almost impenetrable!**\n"
+msgstr ""
+
+#: adventure.py:3485
+msgid ""
+"This monster has **extremely tough** armour!\n"
+msgstr ""
+
+#: adventure.py:3487
+msgid ""
+"Swords don't cut this monster **quite as well!**\n"
+msgstr ""
+
+#: adventure.py:3489
+msgid ""
+"This monster is **soft and easy** to slice!\n"
+msgstr ""
+
+#: adventure.py:3491
+msgid ""
+"Swords slice through this monster like a **hot knife through butter!**\n"
+msgstr ""
+
+#: adventure.py:3496
+msgid ""
+"Magic? Pfft, your puny magic is **no match** for this creature!\n"
+msgstr ""
+
+#: adventure.py:3498
+msgid ""
+"This monster has **substantial magic resistance!**\n"
+msgstr ""
+
+#: adventure.py:3500
+msgid ""
+"This monster has increased **magic resistance!**\n"
+msgstr ""
+
+#: adventure.py:3502
+msgid ""
+"This monster's hide **melts to magic!**\n"
+msgstr ""
+
+#: adventure.py:3504
+msgid ""
+"Magic spells are **hugely effective** against this monster!\n"
+msgstr ""
+
+#: adventure.py:3505
+msgid "Attack Party: "
+msgstr ""
+
+#: adventure.py:3523
+msgid ""
+"{} fumbled the attack.\n"
+msgstr ""
+
+#: adventure.py:3539
+msgid ""
+"{} landed a critical hit.\n"
+msgstr ""
+
+#: adventure.py:3565
+msgid ""
+"{} almost set themselves on fire.\n"
+msgstr ""
+
+#: adventure.py:3581
+msgid ""
+"{} had a surge of energy.\n"
+msgstr ""
+
+#: adventure.py:3624
+msgid ""
+"{} blessed like a madman but nobody was there to receive it.\n"
+msgstr ""
+
+#: adventure.py:3633
+msgid ""
+"{user}'s sermon offended the mighty {god}. (-{len_f_list}🗡/-{len_t_list}🗨/-{len_m_list}✨)\n"
+msgstr ""
+
+#: adventure.py:3648 adventure.py:3663
+msgid ""
+"{user} blessed you all in {god}'s name. (+{len_f_list}🗡/+{len_t_list}🗨/+{len_m_list}✨)\n"
+msgstr ""
+
+#: adventure.py:3678
+msgid ""
+"{user} turned into an avatar of mighty {god}. (+{len_f_list}🗡/+{}🗨/+{len_m_list}✨)\n"
+msgstr ""
+
+#: adventure.py:3691
+msgid ""
+"{} prayed like a madman but nobody else helped them.\n"
+msgstr ""
+
+#: adventure.py:3699
+msgid ""
+"{user}'s prayer called upon the mighty {god} to help you. (+{len_f_list}🗡/+{len_t_list}🗨/+{len_m_list}✨)\n"
+msgstr ""
+
+#: adventure.py:3711
+msgid ""
+"{}'s prayers went unanswered.\n"
+msgstr ""
+
+#: adventure.py:3722
+msgid "Talking Party: "
+msgstr ""
+
+#: adventure.py:3735
+msgid ""
+"{} accidentally offended the enemy.\n"
+msgstr ""
+
+#: adventure.py:3749
+msgid ""
+"{} made a compelling argument.\n"
+msgstr ""
+
+#: adventure.py:3825
+msgid "{}, you have skillpoints available."
+msgstr ""
+
+#: adventure.py:3997
+msgid "{} is opening a treasure chest. What riches lay inside?"
+msgstr ""
+
+#: adventure.py:4001
+msgid "{user}'s {f} is foraging for treasure. What will it find?"
+msgstr ""
+
+#: adventure.py:4016
+msgid ""
+"{c_msg}\n"
+"The {user} found nothing of value."
+msgstr ""
+
+#: adventure.py:4031
+msgid "{user} found {item} [{slot}]."
+msgstr ""
+
+#: adventure.py:4045
+msgid "You currently have {item} [{slot}] equipped."
+msgstr ""
+
+#: adventure.py:4056
+msgid ""
+"{c_msg}\n"
+"\n"
+"{c_msg_2}\n"
+"\n"
+"Do you want to equip this item, put in your backpack, or sell this item?\n"
+"\n"
+"{old_stats}"
+msgstr ""
+
+#: adventure.py:4066
+msgid "The {user} found {item} [{slot}]."
+msgstr ""
+
+#: adventure.py:4075
+msgid ""
+"{c_msg}\n"
+"{c_msg_2}\n"
+"Do you want to equip this item, put in your backpack, or sell this item?"
+msgstr ""
+
+#: adventure.py:4109 adventure.py:4190
+msgid "{user} put the {item} into their backpack."
+msgstr ""
+
+#: adventure.py:4131
+msgid "{user} sold the {item} for {price} {currency_name}."
+msgstr ""
+
+#: adventure.py:4153
+msgid "{user} equipped {item} ({slot} slot)."
+msgstr ""
+
+#: adventure.py:4160
+msgid "{user} equipped {item} ({slot} slot) and put {old_item} into their backpack."
+msgstr ""
+
+#: adventure.py:4236
+msgid ""
+"\n"
+"{user} received a {percent}% reward bonus from their {pet_name}."
+msgstr ""
+
+#: adventure.py:4264
+msgid ""
+"\n"
+"{b_reward} {word} been awarded {xp} xp and found {cp} {currency_name}. You also secured **a{chest_type} treasure chest**!"
+msgstr ""
+
+#: adventure.py:4276
+msgid ""
+"\n"
+"{b_reward} {word} been awarded {xp} xp and found {cp} {currency_name}. You also secured **several treasure chests**!"
+msgstr ""
+
+#: adventure.py:4283
+msgid ""
+"\n"
+"{b_reward} {word} been awarded {xp} xp and found {cp} {currency_name}."
+msgstr ""
+
+#: adventure.py:4313
+msgid "[{} is bringing the cart around!]"
+msgstr ""
+
+#: adventure.py:4341
+msgid " handed"
+msgstr ""
+
+#: adventure.py:4343
+msgid " slot"
+msgstr ""
+
+#: adventure.py:4350
+msgid ""
+"\n"
+"[{i}] {item_name} (Attack: {str_att}, Intelligence: {str_int}, Charisma: {str_cha} Luck: {str_luck} Dexterity: {str_dex} [{hand}]) for {item_price} {currency_name}."
+msgstr ""
+
+#: adventure.py:4374
+msgid ""
+"\n"
+"[{i}] {item_name} for {item_price} {currency_name}."
+msgstr ""
+
+#: adventure.py:4382
+msgid "Do you want to buy any of these fine items? Tell me which one below:"
+msgstr ""
+
+#: adventure.py:4389
+msgid "The cart will leave in: "
+msgstr ""
+
+#: adventure.py:4421
+msgid "normal chest"
+msgstr ""
+
+#: charsheet.py:302
+msgid ""
+"\n"
+"\n"
+"- Current pet: None"
+msgstr ""
+
+#: charsheet.py:304
+msgid ""
+"\n"
+"\n"
+"- Current pet: {}"
+msgstr ""
+
+#: charsheet.py:306
+msgid "Hero."
+msgstr ""
+
+#: charsheet.py:307
+msgid "( ATT  |  CHA  |  INT  |  DEX  |  LUCK)"
+msgstr ""
+
+#: charsheet.py:308
+msgid ""
+"[{user}'s Character Sheet]\n"
+"\n"
+"A level {lvl} {class_desc} \n"
+"\n"
+"- ATTACK: {att} [+{att_skill}] - INTELLIGENCE: {int} [+{int_skill}] - CHARISMA: {cha} [+{cha_skill}] -\n"
+"\n"
+"- DEXTERITY: {dex} - LUCK: {luck} \n"
+"\n"
+" Currency: {bal} \n"
+"- Experience: {xp}/{next_lvl} \n"
+"- Unspent skillpoints: {skill_points}\n"
+"\n"
+"Items Equipped:\n"
+"{legend}{equip}"
+msgstr ""
+
+#: charsheet.py:420
+msgid ""
+"Items in Backpack: \n"
+"( ATT  |  CHA  |  INT  |  DEX  |  LUCK)"
+msgstr ""
+
