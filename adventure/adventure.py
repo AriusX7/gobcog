@@ -2709,7 +2709,7 @@ class Adventure(BaseCog):
         return random.choice(possible_monsters)
 
     async def _simple(self, ctx: Context, adventure_msg, challenge=None):
-
+        self.bot.dispatch("adventure", ctx)
         text = ""
         if challenge and challenge.title() in list(self.MONSTERS.keys()):
             challenge = challenge.title()
@@ -2726,7 +2726,6 @@ class Adventure(BaseCog):
             self.bot.dispatch("adventure_miniboss", ctx)
         else:
             timer = 30
-            self.bot.dispatch("adventure", ctx)
         self._sessions[ctx.guild.id] = GameSession(
             challenge=challenge,
             attribute=attribute,
