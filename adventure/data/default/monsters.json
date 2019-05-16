@@ -113,7 +113,7 @@
     "Incubus": {"hp": 165, "pdef": 1, "mdef": 1.1, "dipl": 99, "image": "https://upload.wikimedia.org/wikipedia/commons/7/7e/Incubus.jpg", "boss": false, "miniboss": {}, "color":""},
     "Fire Fairy": {"hp": 165, "pdef": 0.9, "mdef": 1.2, "dipl": 130, "image": "https://www.maxpixel.net/static/photo/1x/Fee-Magic-Mystical-Fantasy-Fire-Surreal-Elf-3350952.jpg", "boss": false, "miniboss": {}, "color":""},
     "Forest Spirit": {"hp": 168, "pdef": 1, "mdef": 1.25, "dipl": 140, "image": "https://cdn.pixabay.com/photo/2017/12/29/10/44/magician-3047235_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
-    "Skeleton Trooper": {"hp": 168, "pdef": 1.25, "mdef": 1, "dipl": 140, "image": "https://cdn.pixabay.com/photo/2019/02/18/19/02/halloween-4005104_960_720.png", "boss": false, "miniboss": {}, "color":""},
+    "Skeleton Trooper": {"hp": 168, "pdef": 1.25, "mdef": 1, "dipl": 140, "image": "https://cdn.pixabay.com/photo/2019/02/18/19/02/halloween-4005104_960_720.png", "boss": false, "miniboss": {}, "color":""},  
     "Magma Giant": {"hp": 170, "pdef": 1, "mdef": 0.9, "dipl": 175, "image": "https://cdn.pixabay.com/photo/2014/07/30/09/00/arc-405098_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
     "Elder Forest Spirit": {"hp": 170, "pdef": 1.1, "mdef": 0.9, "dipl": 190, "image": "https://cdn.pixabay.com/photo/2017/03/19/11/31/horror-2156302_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
     "Carved Totem": {"hp": 170, "pdef": 1.2, "mdef": 1, "dipl": 185, "image": "https://cdn.pixabay.com/photo/2015/06/01/10/53/face-793186_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
@@ -138,7 +138,7 @@
     "Skull Spirit": {"hp": 208, "pdef": 1.1, "mdef": 1.2, "dipl": 200, "image": "https://cdn.pixabay.com/photo/2018/02/17/22/25/skull-3161081_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
     "Centaur Mage": {"hp": 209, "pdef": 0.9, "mdef": 1.5, "dipl": 240, "image": "https://cdn.pixabay.com/photo/2013/07/13/12/16/centaur-159538_960_720.png", "boss": false, "miniboss": {}, "color":""},
     "Vapor Spirit": {"hp": 210, "pdef": 0.8, "mdef": 1, "dipl": 192, "image": "https://cdn.pixabay.com/photo/2015/09/23/14/46/yellowstone-953835_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
-    "Totem Spirit": {"hp": 210, "pdef": 1, "mdef": 1, "dipl": 190, "image": "https://cdn.pixabay.com/photo/2016/10/25/18/18/book-1769625_960_720.png", "boss": false, "miniboss": {}, "color":""},
+    "Totem Spirit": {"hp": 210, "pdef": 1, "mdef": 1, "dipl": 190, "image": "https://cdn.pixabay.com/photo/2016/10/25/18/18/book-1769625_960_720.png", "boss": false, "miniboss": {}, "color":""},	
     "Skeleton Captain": {"hp": 214, "pdef": 1.1, "mdef": 1, "dipl": 215, "image": "https://cdn.pixabay.com/photo/2015/05/24/20/51/skull-782385_960_720.png", "boss": false, "miniboss": {}, "color":""},
     "Pterosaur": {"hp": 215, "pdef": 1.1, "mdef": 0.7, "dipl": 190, "image": "https://cdn.pixabay.com/photo/2017/09/10/13/06/pterosaur-2735500_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
     "Ancient Earth Spirit": {"hp": 215, "pdef": 1.25, "mdef": 1, "dipl": 235, "image": "https://cdn.pixabay.com/photo/2015/05/26/21/32/control-785555_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
@@ -163,7 +163,7 @@
     "Ethereal Cat Spirit": {"hp": 290, "pdef": 0.9, "mdef": 1.1, "dipl": 270, "image": "https://cdn.pixabay.com/photo/2014/03/09/07/45/lion-283639_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
     "Ethereal Wolf Spirit": {"hp": 295, "pdef": 0.8, "mdef": 1.15, "dipl": 310, "image": "https://cdn.pixabay.com/photo/2017/07/31/17/38/wolf-2559374_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
     "Ethereal Bird Spirit": {"hp": 295, "pdef": 0.8, "mdef": 1.15, "dipl": 315, "image": "https://cdn.pixabay.com/photo/2018/05/17/18/49/pentecost-3409407_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
-    "Three-Headed Hydra": {"hp": 320, "pdef": 1.5, "mdef": 0.8, "dipl": 295, "image": "https://cdn.pixabay.com/photo/2017/04/24/10/05/monster-2255973_960_720.png", "boss": false, "miniboss": {"requirements": ["members", 3], "defeat": "The Hydra tore everyone in three.", "special": "extra head"}, "color":""},
+    "Three-Headed Hydra": {"hp": 320, "pdef": 1.5, "mdef": 0.8, "dipl": 295, "image": "https://cdn.pixabay.com/photo/2017/04/24/10/05/monster-2255973_960_720.png", "boss": false, "miniboss": {}, "color":""},
     "Primal Light Elemental": {"hp": 380, "pdef": 1, "mdef": 1.2, "dipl": 420, "image": "https://cdn.pixabay.com/photo/2018/01/22/12/19/travel-3098815_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
     "Primal Forest Elemental": {"hp": 380, "pdef": 1, "mdef": 1.2, "dipl": 420, "image": "https://cdn.pixabay.com/photo/2019/03/09/02/12/eyes-4043559_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
     "Basilisk": {"hp": 300, "pdef": 1.2, "mdef": 0.8, "dipl": 320, "image": "http://mythicalarchive.com/wp-content/uploads/2015/12/basilisk_by_wretchedspawn2012-d8sc6ps-1024x921.jpg", "boss": false, "miniboss": {"requirements": [".mirror_shield", "left"], "defeat": "The Basilisk's gaze turned everyone to stone.", "special": "gaze"}, "color":""},
@@ -204,4 +204,4 @@
     "Celestial Wyrm": {"hp": 450, "pdef": 1.1, "mdef": 0.95, "dipl": 420, "image": "https://i.imgur.com/BbBmEOF.jpg", "boss": true, "miniboss": {}, "color":""},
     "Golden Guardian Wyrm": {"hp": 530, "pdef": 1.1, "mdef": 1.2, "dipl": 520, "image": "https://cdn.pixabay.com/photo/2013/10/19/05/21/sculpture-197772_960_720.jpg", "boss": true, "miniboss": {}, "color":""},
     "Quintessence Dragon": {"hp": 560, "pdef": 0.8, "mdef": 1.25, "dipl": 520, "image": "https://cdn.pixabay.com/photo/2017/09/13/21/29/fantasy-2747066_960_720.jpg", "boss": true, "miniboss": {}, "color":""}
-}
+} 

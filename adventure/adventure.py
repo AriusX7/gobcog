@@ -17,14 +17,7 @@ from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS, start_adding_reactions
 from redbot.core.i18n import Translator, cog_i18n
 
-from .charsheet import (
-    Character,
-    Item,
-    GameSession,
-    Stats,
-    parse_timedelta,
-    ItemConverter,
-)
+from .charsheet import Character, Item, GameSession, Stats, parse_timedelta
 
 
 BaseCog = getattr(commands, "Cog", object)
@@ -44,7 +37,7 @@ if listener is None:
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan"""
 
-    __version__ = "2.4.0"
+    __version__ = "2.3.1"
 
     def __init__(self, bot):
         self.bot = bot
@@ -324,22 +317,27 @@ class Adventure(BaseCog):
                         await self.config.user(ctx.author).set(c._to_json())
 
     @_backpack.command(name="equip")
-    async def backpack_equip(self, ctx: Context, *, equip_item: ItemConverter):
+    async def backpack_equip(self, ctx: Context, *, equip_item: str):
         """Equip an item from your backpack"""
         try:
             c = await Character._from_json(self.config, ctx.author)
         except Exception:
             log.exception("Error with the new character sheet")
             return
-        equip = c.backpack[equip_item.name]
+        equip = None
+        for name, item in c.backpack.items():
+            if equip_item.lower() in item.name.lower() or equip_item.lower() in str(item).lower():
+                equip = item
+                break
+        # log.debug(equip._to_json())
         if equip:
-            slot = equip.slot[0]
-            if len(equip.slot) > 1:
+            slot = item.slot[0]
+            if len(item.slot) > 1:
                 slot = "two handed"
-            if not getattr(c, equip.slot[0]):
+            if not getattr(c, item.slot[0]):
                 equip_msg = box(
                     _("{author} equipped {item} ({slot} slot).").format(
-                        author=self.E(ctx.author.display_name), item=str(equip), slot=slot
+                        author=self.E(ctx.author.display_name), item=item, slot=slot
                     ),
                     lang="css",
                 )
@@ -350,9 +348,9 @@ class Adventure(BaseCog):
                         "({slot} slot) and put {put} into their backpack."
                     ).format(
                         author=self.E(ctx.author.display_name),
-                        item=str(equip),
+                        item=item,
                         slot=slot,
-                        put=getattr(c, equip.slot[0]),
+                        put=getattr(c, item.slot[0]),
                     ),
                     lang="css",
                 )
@@ -363,26 +361,48 @@ class Adventure(BaseCog):
                 except Exception:
                     log.exception("Error with the new character sheet")
                     return
-                c = await c._equip_item(equip, True)
+                c = await c._equip_item(item, True)
                 await self.config.user(ctx.author).set(c._to_json())
 
     @_backpack.command(name="sell")
-    async def backpack_sell(self, ctx: Context, *, item: ItemConverter):
+    async def backpack_sell(self, ctx: Context, *, item: str):
         """Sell an item from your backpack"""
-
-        if item.rarity == "forged":
+        if item.startswith("."):
+            item = item.replace("_", " ").replace(".", "")
+        if item.startswith("["):
+            item = item.replace("[", "").replace("]", "")
+        if item.startswith("{.:'"):
+            item = item.replace("{.:'", "").replace("':.}", "")
+        if item.startswith("{Legendary:'"):
+            item = item.replace("{Legendary:'", "").replace("'}", "")
+        try:
+            c = await Character._from_json(self.config, ctx.author)
+        except Exception:
+            log.exception("Error with the new character sheet")
+            return
+        if not any([x for x in c.backpack if item.lower() in x.lower()]):
+            await ctx.send(
+                _(
+                    "{}, you have to specify an item (or partial name) from your backpack to sell."
+                ).format(self.E(ctx.author.display_name))
+            )
+            return
+        lookup = list(i for x, i in c.backpack.items() if item.lower() in x.lower())
+        if any([x for x in lookup if x.rarity == "forged"]):
+            device = lookup[0]
             return await ctx.send(
                 box(
                     _(
                         "\n{author}, your {device} is "
                         "refusing to be sold and bit your finger for trying."
-                    ).format(author=self.E(ctx.author.display_name), device=str(item)),
+                    ).format(author=self.E(ctx.author.display_name), device=device),
                     lang="css",
                 )
             )
+        item_str = box(humanize_list([f"{str(y)} - {y.owned}" for y in lookup]), lang="css")
         start_msg = await ctx.send(
-            _("{author}, do you want to sell this item? {item}").format(
-                author=self.E(ctx.author.display_name), item=box(str(item), lang="css")
+            _("{author}, do you want to sell these items? {item}").format(
+                author=self.E(ctx.author.display_name), item=item_str
             )
         )
         currency_name = await bank.get_currency_name(ctx.guild)
@@ -394,76 +414,78 @@ class Adventure(BaseCog):
             "\N{CROSS MARK}",
         ]
         start_adding_reactions(start_msg, emojis)
-        pred = ReactionPredicate.with_emojis(emojis, start_msg, user=ctx.author)
+        pred = ReactionPredicate.with_emojis(emojis, start_msg)
         try:
             await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
         except asyncio.TimeoutError:
             await self._clear_react(start_msg)
             return
-        async with self.get_lock(ctx.author):
+        async with self.get_lock(c.user):
             try:
                 c = await Character._from_json(self.config, ctx.author)
             except Exception:
                 log.exception("Error with the new character sheet")
                 return
-            item = c.backpack[item.name]
             msg = ""
             if pred.result == 0:  # user reacted with one to sell.
                 # sell one of the item
                 price = 0
-                item.owned -= 1
-                price += await self._sell(c, item)
-                msg += _("{author} sold one {item} for {price} {currency_name}.\n").format(
-                    author=self.E(ctx.author.display_name),
-                    item=box(item, lang="css"),
-                    price=price,
-                    currency_name=currency_name,
-                )
-                if item.owned <= 0:
-                    del c.backpack[item.name]
+                for item in lookup:
+                    item.owned -= 1
+                    price += await self._sell(ctx.author, item)
+                    msg += _("{author} sold one " "{item} for {price} {currency_name}.\n").format(
+                        author=self.E(ctx.author.display_name),
+                        item=box(item, lang="css"),
+                        price=price,
+                        currency_name=currency_name,
+                    )
+                    if item.owned <= 0:
+                        del c.backpack[item.name]
                 try:
                     await bank.deposit_credits(ctx.author, price)
                 except BalanceTooHigh:
                     pass
             if pred.result == 1:  # user wants to sell all owned.
-                price = 0
-                old_owned = item.owned
-                for x in range(0, item.owned):
-                    item.owned -= 1
-                    price += await self._sell(c, item)
-                    if item.owned <= 0:
-                        del c.backpack[item.name]
-                msg += _(
-                    "{author} sold all their {old_item} for {price} {currency_name}.\n"
-                ).format(
-                    author=self.E(ctx.author.display_name),
-                    old_item=box(str(item) + " - " + str(old_owned), lang="css"),
-                    price=price,
-                    currency_name=currency_name,
-                )
+                for item in lookup:
+                    price = 0
+                    old_owned = item.owned
+                    for x in range(0, item.owned):
+                        item.owned -= 1
+                        price += await self._sell(ctx.author, item)
+                        if item.owned <= 0:
+                            del c.backpack[item.name]
+                    msg += _(
+                        "{author} sold all their {old_item} for {price} {currency_name}.\n"
+                    ).format(
+                        author=self.E(ctx.author.display_name),
+                        old_item=box(str(item) + " - " + str(old_owned), lang="css"),
+                        price=price,
+                        currency_name=currency_name,
+                    )
                 try:
                     await bank.deposit_credits(ctx.author, price)
                 except BalanceTooHigh:
                     pass
             if pred.result == 2:  # user wants to sell all but one.
                 price = 0
-                old_owned = item.owned
-                for x in range(1, item.owned):
-                    item.owned -= 1
-                    price += await self._sell(c, item)
-                if price != 0:
-                    msg += _(
-                        "{author} sold all but one of their {old_item} for {price} {currency_name}.\n"
-                    ).format(
-                        author=self.E(ctx.author.display_name),
-                        old_item=box(str(item) + " - " + str(old_owned - 1), lang="css"),
-                        price=price,
-                        currency_name=currency_name,
-                    )
-                    try:
-                        await bank.deposit_credits(ctx.author, price)
-                    except BalanceTooHigh:
-                        pass
+                for item in lookup:
+                    old_owned = item.owned
+                    for x in range(1, item.owned):
+                        item.owned -= 1
+                        price += await self._sell(ctx.author, item)
+                    if price != 0:
+                        msg += _(
+                            "{author} sold all but one of their {old_item} for {price} {currency_name}.\n"
+                        ).format(
+                            author=self.E(ctx.author.display_name),
+                            old_item=box(str(item) + " - " + str(old_owned - 1), lang="css"),
+                            price=price,
+                            currency_name=currency_name,
+                        )
+                        try:
+                            await bank.deposit_credits(ctx.author, price)
+                        except BalanceTooHigh:
+                            pass
             if pred.result == 3:  # user doesn't want to sell those items.
                 msg = _("Not selling those items.")
 
@@ -998,7 +1020,7 @@ class Adventure(BaseCog):
                                 plur=plural,
                                 author=self.E(ctx.author.display_name),
                                 normal=c.treasure[0],
-                                rare=c.treasure[1],
+                                rare=c.treasure[0],
                                 epic=c.treasure[2],
                                 leg=c.treasure[3],
                             ),
@@ -1041,12 +1063,9 @@ class Adventure(BaseCog):
                 else:
                     await ctx.send(
                         _(
-                            "{author}, you do not have {amount} "
+                            "{}, you do not have {(4 * amount)} "
                             "rare treasure chests to convert."
-                        ).format(
-                            author=self.E(ctx.author.display_name),
-                            amount=(4 * amount)
-                        )
+                        ).format(self.E(ctx.author.display_name))
                     )
             elif box_rarity.lower() == "epic":
                 return await ctx.send(
@@ -1093,7 +1112,7 @@ class Adventure(BaseCog):
                 )
 
     @commands.command()
-    async def equip(self, ctx: Context, *, item: ItemConverter):
+    async def equip(self, ctx: Context, *, item: str):
         """This equips an item from your backpack.
 
         `[p]equip name of item`
@@ -2048,7 +2067,7 @@ class Adventure(BaseCog):
                     author=bold(ctx.author.display_name),
                     negachar=negachar,
                     xp_gain=int(offering / xp_mod),
-                    offering=offering,
+                    offer=offering,
                     currency_name=currency_name,
                 )
             )
@@ -2443,7 +2462,7 @@ class Adventure(BaseCog):
                     "You currently have {bal}. Do you want to proceed?"
                 ).format(
                     author=self.E(ctx.author.display_name),
-                    offering=offering,
+                    offer=offering,
                     currency_name=currency_name,
                     bal=bal,
                 )
@@ -2548,16 +2567,8 @@ class Adventure(BaseCog):
             await msg.delete()
 
     async def _build_loadout_display(self, userdata):
-        form_string = _(
-            "( ATT  |  CHA  |  INT  |  DEX  |  LUCK)\n"
-            "Items Equipped:"
-        )
+        form_string = _("Items Equipped:")
         last_slot = ""
-        att = 0
-        cha = 0
-        intel = 0
-        dex = 0
-        luck = 0
         for slot, data in userdata["items"].items():
 
             if slot == "backpack":
@@ -2576,23 +2587,10 @@ class Adventure(BaseCog):
             form_string += _("\n\n {} slot").format(slot_name.title())
             last_slot = slot_name
             rjust = max([len(i) for i in data.keys()])
-            form_string += f"\n  - {str(item):<{rjust}} - "
-            form_string += (
-                f"({item.att if len(item.slot) < 2 else (item.att * 2)} | "
-                f"{item.cha if len(item.slot) < 2 else (item.cha * 2)} | "
-                f"{item.int if len(item.slot) < 2 else (item.int * 2)} | "
-                f"{item.dex if len(item.slot) < 2 else (item.dex * 2)} | "
-                f"{item.luck if len(item.slot) < 2 else (item.luck * 2)})"
-            )
-            att += item.att if len(item.slot) < 2 else (item.att * 2)
-            cha += item.cha if len(item.slot) < 2 else (item.cha * 2)
-            intel += item.int if len(item.slot) < 2 else (item.int * 2)
-            dex += item.dex if len(item.slot) < 2 else (item.dex * 2)
-            luck += item.luck if len(item.slot) < 2 else (item.luck * 2)
-        form_string += _(
-                "\n\nTotal stats: "
-            )
-        form_string += f"({att} | {cha} | {intel} | {dex} | {luck})"
+            form_string += _(
+                "\n  - {item:<{rjust}} - (ATT: {item_att} | DPL: {item_cha} | INT: {item_int})"
+            ).format(item=str(item), item_att=item.att, item_cha=item.cha, item_int=item.int)
+
         return form_string + "\n"
 
     @commands.command()
@@ -3025,7 +3023,7 @@ class Adventure(BaseCog):
         diplo_str = ""
         if attack or magic:
             damage_str = _("The group {status} {challenge} **({result}/{int_hp})**.\n").format(
-                status=_("hit the") if failed or not slain else _("killed the"),
+                status=_("hit the") if not slain else _("killed the"),
                 challenge=challenge,
                 result=attack + magic,
                 int_hp=int(hp),
@@ -3036,7 +3034,7 @@ class Adventure(BaseCog):
             ).format(
                 status=_("tried to persuade") if not persuaded else _("distracted"),
                 challenge=challenge,
-                how=_("flattery") if failed or not persuaded else _("insults"),
+                how=_("flattery") if not persuaded else _("insults"),
                 diplomacy=diplomacy,
                 int_dipl=int(dipl),
             )
@@ -3110,7 +3108,7 @@ class Adventure(BaseCog):
                 treasure = False
         if session.miniboss and failed:
             session.participants = set(
-                fight_list + talk_list + pray_list + magic_list + fumblelist
+                fight_list + talk_list + pray_list + magic_list + run_list + fumblelist
             )
             currency_name = await bank.get_currency_name(ctx.guild)
             repair_list = []
@@ -3152,11 +3150,11 @@ class Adventure(BaseCog):
                     )
                 result_msg += _(
                     "\n{loss_list} to repay a passing cleric that unfroze the group."
-                ).format(loss_list=humanize_list(loss_list))
+                ).format(humanize_list(loss_list))
             return await ctx.send(result_msg)
         if session.miniboss and not slain and not persuaded:
             session.participants = set(
-                fight_list + talk_list + pray_list + magic_list + fumblelist
+                fight_list + talk_list + pray_list + magic_list + run_list + fumblelist
             )
             repair_list = []
             currency_name = await bank.get_currency_name(ctx.guild)
@@ -3228,7 +3226,7 @@ class Adventure(BaseCog):
             if not slain and not persuaded:
                 currency_name = await bank.get_currency_name(ctx.guild)
                 repair_list = []
-                users = fight_list + magic_list + talk_list + pray_list + fumblelist
+                users = fight_list + magic_list + talk_list + pray_list + run_list + fumblelist
                 for user in users:
                     try:
                         c = await Character._from_json(self.config, user)
@@ -3402,7 +3400,7 @@ class Adventure(BaseCog):
             if not slain and not persuaded:
                 currency_name = await bank.get_currency_name(ctx.guild)
                 repair_list = []
-                users = fight_list + magic_list + talk_list + pray_list + fumblelist
+                users = fight_list + magic_list + talk_list + pray_list + run_list + fumblelist
                 for user in users:
                     try:
                         c = await Character._from_json(self.config, user)
@@ -3509,18 +3507,17 @@ class Adventure(BaseCog):
             return (fumblelist, critlist, attack, magic, "")
 
         for user in session.fight:
+            roll = random.randint(1, 20)
             try:
                 c = await Character._from_json(self.config, user)
             except Exception:
                 log.exception("Error with the new character sheet")
                 continue
-            crit_mod = max(c.dex, c.luck) // 10
+            crit_mod = max(c.dex, c.luck)
             mod = 0
             if crit_mod != 0:
                 mod = round(crit_mod / 10)
-            if (mod + 1) > 20:
-                mod = 19
-            roll = random.randint((1 + mod), 20)
+            crit_roll = random.randint(1 + mod, 20)
             att_value = c.att + c.skill["att"]
             if roll == 1:
                 msg += _("{} fumbled the attack.\n").format(bold(self.E(user.display_name)))
@@ -3534,40 +3531,35 @@ class Adventure(BaseCog):
                         f"| {bold(self.E(user.display_name))}: "
                         f"🎲({roll}) + 💥{bonus} +🗡{str(att_value)} | "
                     )
-            elif roll == 20 or c.heroclass["name"] == "Berserker":
-                crit_str = ""
-                crit_bonus = 0
-                base_bonus = random.randint(5, 10)
-                if roll == 20:
+            elif crit_roll == 20 or (
+                c.heroclass["name"] == "Berserker" and c.heroclass["ability"]
+            ):
+                ability = ""
+                if crit_roll == 20:
                     msg += _("{} landed a critical hit.\n").format(bold(self.E(user.display_name)))
                     critlist.append(user)
-                    crit_bonus = random.randint(5, 20)
-                    crit_str = f"💥 {crit_bonus}"
                 if c.heroclass["ability"]:
-                    base_bonus = random.randint(15, 50)
-                base_str = f"🗯️ {base_bonus}"
-                attack += int((roll + base_bonus + crit_bonus + att_value) / pdef)
-                bonus = base_str + crit_str
+                    ability = "🗯️"
+                bonus_roll = random.randint(5, 15)
+                bonus_multi = random.choice([0.2, 0.3, 0.4, 0.5])
+                bonus = max(bonus_roll, int((roll + att_value) * bonus_multi))
+                attack += int((roll + bonus + att_value) / pdef)
+                bonus = ability + str(bonus)
                 report += (
                     f"| {bold(self.E(user.display_name))}: "
-                    f"🎲({roll}) +{bonus} +🗡{str(att_value)} | "
+                    f"🎲({roll}) +💥{bonus} +🗡{str(att_value)} | "
                 )
             else:
                 attack += int((roll + att_value) / pdef)
                 report += f"| {bold(self.E(user.display_name))}: 🎲({roll}) +🗡{str(att_value)} | "
         for user in session.magic:
+            roll = random.randint(1, 20)
+            crit_roll = random.randint(1, 20)
             try:
                 c = await Character._from_json(self.config, user)
             except Exception:
                 log.exception("Error with the new character sheet")
                 continue
-            crit_mod = max(c.dex, c.luck)
-            mod = 0
-            if crit_mod != 0:
-                mod = round(crit_mod / 10)
-            if (mod + 1) > 20:
-                mod = 19
-            roll = random.randint((1 + mod), 20)
             int_value = c.int + c.skill["int"]
             if roll == 1:
                 msg += _("{} almost set themselves on fire.\n").format(
@@ -3583,24 +3575,21 @@ class Adventure(BaseCog):
                         f"| {bold(self.E(user.display_name))}: "
                         f"🎲({roll}) +💥{bonus} +✨{str(int_value)} | "
                     )
-            elif roll == 20 or (c.heroclass["name"] == "Wizard"):
-                crit_str = ""
-                crit_bonus = 0
-                base_bonus = random.randint(5, 10)
-                base_str = f"⚡️ {base_bonus}"
-                if roll == 20:
+            elif crit_roll == 20 or (c.heroclass["name"] == "Wizard" and c.heroclass["ability"]):
+                ability = ""
+                if crit_roll == 20:
                     msg += _("{} had a surge of energy.\n").format(bold(self.E(user.display_name)))
                     critlist.append(user)
-                    crit_bonus = random.randint(5, 20)
-                    crit_str = f"💥 {crit_bonus}"
                 if c.heroclass["ability"]:
-                    base_bonus = random.randint(15, 50)
-                    base_str = f"⚡️ {base_bonus}"
-                magic += int((roll + base_bonus + crit_bonus + int_value) / mdef)
-                bonus = base_str + crit_str
+                    ability = "⚡️"
+                bonus_roll = random.randint(5, 15)
+                bonus_multi = random.choice([0.2, 0.3, 0.4, 0.5])
+                bonus = max(bonus_roll, int((roll + int_value) * bonus_multi))
+                magic += int((roll + bonus + int_value) / mdef)
+                bonus = ability + str(bonus)
                 report += (
                     f"| {bold(self.E(user.display_name))}: "
-                    f"🎲({roll}) +{bonus} +✨{str(int_value)} | "
+                    f"🎲({roll}) +💥{bonus} +✨{str(int_value)} | "
                 )
             else:
                 magic += int((roll + int_value) / mdef)
@@ -3629,14 +3618,8 @@ class Adventure(BaseCog):
             except Exception:
                 log.exception("Error with the new character sheet")
                 continue
-            if c.heroclass["name"] == "Cleric":
-                crit_mod = max(c.dex, c.luck)
-                mod = 0
-                if crit_mod != 0:
-                    mod = round(crit_mod / 10)
-                if (mod + 1) > 20:
-                    mod = 19
-                roll = random.randint((1 + mod), 20)
+            if c.heroclass["name"] == "Cleric" and c.heroclass["ability"]:
+                roll = random.randint(1, 20)
                 if len(fight_list + talk_list + magic_list) == 0:
                     msg += _(
                         "{} blessed like a madman but nobody was there to receive it.\n"
@@ -3658,27 +3641,49 @@ class Adventure(BaseCog):
                         len_m_list=(5 * len(magic_list)),
                     )
 
-                else:
-                    mod = roll if not c.heroclass["ability"] else roll * 2
-                    attack += mod * len(fight_list)
-                    diplomacy += mod * len(talk_list)
-                    magic += mod * len(magic_list)
-                    if roll == 20:
-                        roll_msg = _(
-                            "{user} turned into an avatar of mighty {god}. "
-                            "(+{len_f_list}🗡/+{len_t_list}🗨/+{len_m_list}✨)\n"
-                        )
-                    else:
-                        roll_msg = _(
-                            "{user} blessed you all in {god}'s name. "
-                            "(+{len_f_list}🗡/+{len_t_list}🗨/+{len_m_list}✨)\n"
-                        )
-                    msg += roll_msg.format(
+                elif roll in range(2, 10):
+                    attack += len(fight_list)
+                    diplomacy += len(talk_list)
+                    magic += len(magic_list)
+                    msg += _(
+                        "{user} blessed you all in {god}'s name. "
+                        "(+{len_f_list}🗡/+{len_t_list}🗨/+{len_m_list}✨)\n"
+                    ).format(
                         user=bold(self.E(user.display_name)),
                         god=god,
-                        len_f_list=(mod * len(fight_list)),
-                        len_t_list=(mod * len(talk_list)),
-                        len_m_list=(mod * len(magic_list)),
+                        len_f_list=len(fight_list),
+                        len_t_list=len(talk_list),
+                        len_m_list=len(magic_list),
+                    )
+
+                elif roll in range(11, 19):
+                    attack += 5 * len(fight_list)
+                    diplomacy += 5 * len(talk_list)
+                    magic += 5 * len(magic_list)
+                    msg += _(
+                        "{user} blessed you all in {god}'s name. "
+                        "(+{len_f_list}🗡/+{len_t_list}🗨/+{len_m_list}✨)\n"
+                    ).format(
+                        user=bold(self.E(user.display_name)),
+                        god=god,
+                        len_f_list=(5 * len(fight_list)),
+                        len_t_list=(5 * len(talk_list)),
+                        len_m_list=(5 * len(magic_list)),
+                    )
+
+                else:
+                    attack += 10 * len(fight_list)
+                    diplomacy += 10 * len(talk_list)
+                    magic += 10 * len(magic_list)
+                    msg += _(
+                        "{user} turned into an avatar of mighty {god}. "
+                        "(+{len_f_list}🗡/+{}🗨/+{len_m_list}✨)\n"
+                    ).format(
+                        user=bold(self.E(user.display_name)),
+                        god=god,
+                        len_f_list=(10 * len(fight_list)),
+                        len_t_list=(10 * len(talk_list)),
+                        len_m_list=(10 * len(magic_list)),
                     )
             else:
                 roll = random.randint(1, 4)
@@ -3724,13 +3729,7 @@ class Adventure(BaseCog):
             except Exception:
                 log.exception("Error with the new character sheet")
                 continue
-            crit_mod = max(c.dex, c.luck)
-            mod = 0
-            if crit_mod != 0:
-                mod = round(crit_mod / 10)
-            if (mod + 1) > 20:
-                mod = 19
-            roll = random.randint((1 + mod), 20)
+            roll = random.randint(1, 20)
             dipl_value = c.cha + c.skill["cha"]
             if roll == 1:
                 msg += _("{} accidentally offended the enemy.\n").format(
@@ -3744,26 +3743,21 @@ class Adventure(BaseCog):
                         f"| {bold(self.E(user.display_name))} "
                         f"🎲({roll}) +💥{bonus} +🗨{str(dipl_value)} | "
                     )
-            elif roll == 20 or c.heroclass["name"] == "Bard":
-                crit_str = ""
-                crit_bonus = 0
-                base_bonus = random.randint(5, 10)
+            elif roll == 20 or c.heroclass["name"] == "Bard" and c.heroclass["ability"]:
+                ability = ""
                 if roll == 20:
                     msg += _("{} made a compelling argument.\n").format(
                         bold(self.E(user.display_name))
                     )
                     critlist.append(user)
-                    crit_bonus = random.randint(5, 20)
-                    crit_str = f"💥 {crit_bonus}"
-
                 if c.heroclass["ability"]:
-                    base_bonus = random.randint(15, 50)
-                base_str = f"🎵 {base_bonus}"
-                diplomacy += roll + base_bonus + crit_bonus + dipl_value
-                bonus = base_str + crit_str
+                    ability = "🎵"
+                bonus = random.randint(5, 15)
+                diplomacy += roll + bonus + dipl_value
+                bonus = ability + str(bonus)
                 report += (
                     f"| {bold(self.E(user.display_name))} "
-                    f"🎲({roll}) +{bonus} +🗨{str(dipl_value)} | "
+                    f"🎲({roll}) +💥{bonus} +🗨{str(dipl_value)} | "
                 )
             else:
                 diplomacy += roll + dipl_value
@@ -3780,31 +3774,25 @@ class Adventure(BaseCog):
         magic_list = session.magic
         talk_list = session.talk
         pray_list = session.pray
+        challenge = session.challenge
         if session.miniboss:
             failed = True
             item, slot = session.miniboss["requirements"]
-            if item == "members" and isinstance(slot, int):
-                if (len(fight_list) + len(magic_list) + len(talk_list) + len(pray_list)) > int(slot):
-                    failed = False
-            elif item == "emoji" and session.reacted:
-                failed = False
-            else:
-                for user in (
-                    fight_list + magic_list + talk_list + pray_list
-                ):  # check if any fighter has an equipped mirror shield to give them a chance.
-                    try:
-                        c = await Character._from_json(self.config, user)
-                    except Exception:
-                        log.exception("Error with the new character sheet")
-                        continue
-                    try:
-                        current_item = getattr(c, slot)
-                        if item in str(current_item):
-                            failed = False
-                            break
-                    except KeyError:
-                        continue
-
+            for user in (
+                fight_list + magic_list + talk_list + pray_list
+            ):  # check if any fighter has an equipped mirror shield to give them a chance.
+                try:
+                    c = await Character._from_json(self.config, user)
+                except Exception:
+                    log.exception("Error with the new character sheet")
+                    continue
+                try:
+                    current_item = getattr(c, slot)
+                    if item in str(current_item):
+                        failed = False
+                        break
+                except KeyError:
+                    continue
         else:
             failed = False
         return failed
@@ -3937,15 +3925,16 @@ class Adventure(BaseCog):
         # -multiplier because higher luck is better negative luck takes away
         roll = random.randint(1, multiplier)
         if chest_type == "pet":
-            if roll == 5:
+            if roll == 1:
                 chance = self.TR_LEGENDARY
-            elif roll <= 50:
+            elif roll <= 25:
                 chance = self.TR_EPIC
-            elif roll > 50 and roll <= 200:
+            elif roll > 25 and roll <= 125:
                 chance = self.TR_RARE
-            else:
+            elif roll > 125 and roll <= 375:
                 chance = self.TR_COMMON
-
+            else:
+                return None
         if chest_type == "normal":
             if roll <= 5:
                 chance = self.TR_EPIC
@@ -4128,7 +4117,7 @@ class Adventure(BaseCog):
                 return
         await self._clear_react(open_msg)
         if self._treasure_controls[react.emoji] == "sell":
-            price = await self._sell(c, item)
+            price = await self._sell(ctx.author, item)
             try:
                 await bank.deposit_credits(ctx.author, price)
             except BalanceTooHigh:
@@ -4299,7 +4288,7 @@ class Adventure(BaseCog):
         return phrase
 
     @staticmethod
-    async def _sell(c: Character, item: Item):
+    async def _sell(user, item: Item):
         if item.rarity == "legendary":
             base = (2000, 5000)
         elif item.rarity == "epic":
@@ -4308,16 +4297,9 @@ class Adventure(BaseCog):
             base = (100, 500)
         else:
             base = (10, 200)
-        price = (
-            random.randint(base[0], base[1]) *
-            max([item.att, item.cha, item.int, item.dex, item.luck], default=1)
-        )
-        if c.luck > 0:
-            price = price + round(price * (c.luck / 10))
-        if c.luck < 0:
-            price = price - round(price * (abs(c.luck) / 10))
-            if price < 0:
-                price = 0
+        price = random.randint(base[0], base[1]) * max([item.att, item.cha, item.int], default=1)
+        if item.luck > 0:
+            price = price + round(price * (item.luck / 10))
         return price
 
     async def _trader(self, ctx):

@@ -1,5 +1,4 @@
 import discord
-import asyncio
 import logging
 import re
 
@@ -9,9 +8,6 @@ from datetime import timedelta
 from redbot.core import commands
 from redbot.core import Config, bank
 from redbot.core.i18n import Translator, cog_i18n
-from redbot.core.utils.chat_formatting import box
-from redbot.core.utils.predicates import ReactionPredicate
-from redbot.core.utils.menus import start_adding_reactions
 
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
@@ -211,50 +207,6 @@ class Item:
         }
 
 
-class ItemConverter(Converter):
-    async def convert(self, ctx, argument):
-        try:
-            c = await Character._from_json(ctx.bot.get_cog("Adventure").config, ctx.author)
-        except Exception:
-            log.exception("Error with the new character sheet")
-            return
-        no_markdown = Item._remove_markdowns(argument)
-        lookup = list(i for x, i in c.backpack.items() if no_markdown.lower() in x.lower())
-        lookup_m = list(i for x, i in c.backpack.items() if argument.lower() == str(i).lower())
-        if len(lookup) == 1:
-            return lookup[0]
-        elif len(lookup_m) == 1:
-            return lookup_m[0]
-        elif len(lookup) == 0 and len(lookup_m) == 0:
-            raise BadArgument(
-                _("`{}` doesn't seem to match any items you own.").format(argument)
-            )
-        else:
-            if len(lookup) > 10:
-                raise BadArgument(
-                    _("You have too matching the name `{}`, please be more specific").format(
-                        argument
-                    )
-                )
-            items = ""
-            for number, item in enumerate(lookup):
-                items += f"{number}. {str(item)} (owned {item.owned})\n"
-
-            msg = await ctx.send(
-                    _("Multiple items share that name, which one would you like?\n{items}").format(
-                        items=box(items, lang="css")
-                    )
-                )
-            emojis = ReactionPredicate.NUMBER_EMOJIS[:len(lookup)]
-            start_adding_reactions(msg, emojis)
-            pred = ReactionPredicate.with_emojis(emojis, msg, user=ctx.author)
-            try:
-                await ctx.bot.wait_for("reaction_add", check=pred, timeout=30)
-            except asyncio.TimeoutError:
-                raise BadArgument(_("Alright then."))
-            return lookup[pred.result]
-
-
 class GameSession:
     """A class to represent and hold current game sessions per server"""
 
@@ -266,7 +218,6 @@ class GameSession:
     miniboss: dict
     monster: dict
     message_id: int
-    reacted: bool = False
     participants: Set[discord.Member] = set()
     fight: List[discord.Member] = []
     magic: List[discord.Member] = []
@@ -283,7 +234,6 @@ class GameSession:
         self.timer: int = kwargs.pop("timer")
         self.monster: dict = kwargs.pop("monster")
         self.message_id: int = 0
-        self.reacted = False
         self.participants: Set[discord.Member] = set()
         self.fight: List[discord.Member] = []
         self.magic: List[discord.Member] = []
@@ -359,8 +309,8 @@ class Character(Item):
             "[{user}'s Character Sheet]\n\n"
             "A level {lvl} {class_desc} \n\n- "
             "ATTACK: {att} [+{att_skill}] - "
-            "CHARISMA: {cha} [+{cha_skill}] -"
-            "INTELLIGENCE: {int} [+{int_skill}] -\n\n-  "
+            "INTELLIGENCE: {int} [+{int_skill}] - "
+            "CHARISMA: {cha} [+{cha_skill}] -\n\n- "
             "DEXTERITY: {dex} - "
             "LUCK: {luck} \n\n "
             "Currency: {bal} \n- "
