@@ -1515,7 +1515,6 @@ class Adventure(BaseCog):
         available stats are attack(att), diplomacy(diplo) or charisma(cha),
         intelligence(int), dexterity(dex), and luck.
         """
-        item_name = item_name.lower()
         if item_name.isnumeric():
             return await ctx.send(_("Item names cannot be numbers."))
         if user is None:
