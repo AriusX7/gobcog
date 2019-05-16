@@ -359,7 +359,7 @@ class Character(Item):
             "[{user}'s Character Sheet]\n\n"
             "A level {lvl} {class_desc} \n\n- "
             "ATTACK: {att} [+{att_skill}] - "
-            "CHARISMA: {cha} [+{cha_skill}] -"
+            "CHARISMA: {cha} [+{cha_skill}] - "
             "INTELLIGENCE: {int} [+{int_skill}] -\n\n-  "
             "DEXTERITY: {dex} - "
             "LUCK: {luck} \n\n "
