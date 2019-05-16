@@ -1515,7 +1515,6 @@ class Adventure(BaseCog):
         available stats are attack(att), diplomacy(diplo) or charisma(cha),
         intelligence(int), dexterity(dex), and luck.
         """
-        item_name = item_name.lower()
         if item_name.isnumeric():
             return await ctx.send(_("Item names cannot be numbers."))
         if user is None:
@@ -2901,6 +2900,8 @@ class Adventure(BaseCog):
         spender = user
         channel = reaction.message.channel
         currency_name = await bank.get_currency_name(guild)
+        if currency_name.startswith("<"):
+            currency_name = "credits"
         item_data = box(items["itemname"] + " - " + str(items["price"]), lang="css")
         to_delete = await channel.send(
             _("{user}, how many {item} would you like to buy?").format(
