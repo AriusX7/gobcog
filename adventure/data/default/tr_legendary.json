@@ -71,7 +71,7 @@
     "{Legendary:'Robes of Decay'}": {"slot": ["chest"], "att": 3, "cha": -5, "int": 10, "luck": 4},
     "{Legendary:'Storm Inscriptions'}": {"slot": ["chest"], "att": 6, "cha": 8, "int": 6, "dex": 3, "luck": 2},
     "{Legendary:'Athanasia Mirror'}": {"slot": ["chest"], "att": 7, "cha": 7, "int": 3},
-    "{Legendary:'Fortune's Fountain'}": {"slot": ["chest"], "att": 3, "cha": 8, "int": 8},
+    "{Legendary:'Fountain of Fortune'}": {"slot": ["chest"], "att": 3, "cha": 8, "int": 8},
     "{Legendary:'Celestial Robes'}": {"slot": ["chest"], "cha": 12, "luck": 6},
     "{Legendary:'Ancient Chestplate'}": {"slot": ["chest"], "att": 4, "int": 4, "dex": 10, "luck": 2},
     "{Legendary:'Straps of the Berserker'}": {"slot": ["chest"], "att": 9, "cha": 2, "int": 2, "dex": 2, "luck": 2},

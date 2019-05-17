@@ -44,7 +44,7 @@ if listener is None:
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan"""
 
-    __version__ = "2.4.0"
+    __version__ = "2.5.0"
 
     def __init__(self, bot):
         self.bot = bot
@@ -366,6 +366,54 @@ class Adventure(BaseCog):
                 c = await c._equip_item(equip, True)
                 await self.config.user(ctx.author).set(c._to_json())
 
+    @_backpack.command(name="sellall")
+    async def backpack_sellall(self, ctx: Context, rarity: str = None):
+        """Sell all items in your backpack"""
+        if rarity and rarity.lower() not in ["normal", "rare", "epic", "legendary"]:
+            return await ctx.send(
+                _("I've never heard of `{}` rarity items before.").format(rarity)
+            )
+        async with self.get_lock(ctx.author):
+            msg = ""
+            try:
+                c = await Character._from_json(self.config, ctx.author)
+            except Exception:
+                log.exception("Error with the new character sheet")
+                return
+            total_price = 0
+            items = [i for n, i in c.backpack.items() if i.rarity != "forged"]
+            for item in items:
+                if not rarity or item.rarity == rarity:
+                    item_price = 0
+                    old_owned = item.owned
+                    for x in range(0, item.owned):
+                        item.owned -= 1
+                        item_price += await self._sell(c, item)
+                        if item.owned <= 0:
+                            del c.backpack[item.name]
+                    msg += _(
+                        "{old_item} sold for {price}.\n"
+                    ).format(
+                        old_item=str(old_owned) + " " + str(item),
+                        price=item_price,
+                    )
+                    total_price += item_price
+                try:
+                    await bank.deposit_credits(ctx.author, item_price)
+                except BalanceTooHigh:
+                    pass
+            await self.config.user(ctx.author).set(c._to_json())
+        msg_list = []
+        new_msg = _("{author} sold all their{rarity} items for {price}.\n\n{items}").format(
+            author=self.E(ctx.author.display_name),
+            rarity=" " + rarity if rarity else "",
+            price=total_price,
+            items=msg
+        )
+        for page in pagify(new_msg):
+            msg_list.append(box(page, lang="css"))
+        await menu(ctx, msg_list, DEFAULT_CONTROLS)
+
     @_backpack.command(name="sell")
     async def backpack_sell(self, ctx: Context, *, item: ItemConverter):
         """Sell an item from your backpack"""
@@ -446,6 +494,8 @@ class Adventure(BaseCog):
                 except BalanceTooHigh:
                     pass
             if pred.result == 2:  # user wants to sell all but one.
+                if item.owned == 1:
+                    return await ctx.send(_("You already only own one of those items."))
                 price = 0
                 old_owned = item.owned
                 for x in range(1, item.owned):
@@ -1160,18 +1210,16 @@ class Adventure(BaseCog):
                         return await ctx.author.send(timeout_msg)
                     except discord.errors.Forbidden:
                         return await ctx.send(timeout_msg)
-                for name, item in c.backpack.items():
-                    if reply.content.lower() in name.lower():
-                        if item.rarity != "forgeable":
-                            consumed.append(item)
-                            break
-                        else:
-                            ctx.command.reset_cooldown(ctx)
-                            return await ctx.send(
-                                _("{}, tinkered devices cannot be reforged.").format(
-                                    self.E(ctx.author.display_name)
-                                )
-                            )
+                new_ctx = await self.bot.get_context(reply)
+                item = await ItemConverter().convert(new_ctx, reply.content)
+                if item.rarity == "forgeable":
+                    ctx.command.reset_cooldown(ctx)
+                    return await ctx.send(
+                        _("{}, tinkered devices cannot be reforged.").format(
+                            self.E(ctx.author.display_name)
+                        )
+                    )
+                consumed.append(item)
                 if not consumed:
                     ctx.command.reset_cooldown(ctx)
                     wrong_item = _("{}, I could not find that item - check your spelling.").format(
@@ -1203,26 +1251,23 @@ class Adventure(BaseCog):
                         return await ctx.author.send(timeout_msg)
                     except discord.errors.Forbidden:
                         return await ctx.send(timeout_msg)
-                for name, item in c.backpack.items():
-                    if reply.content.lower() in name and item not in consumed:
-                        if item.rarity != "forged":
-                            # item2 = backpack_items.get(item)
-                            consumed.append(item)
-                            break
-                        else:
-                            ctx.command.reset_cooldown(ctx)
-                            try:
-                                return await ctx.author.send(
-                                    _("{}, tinkered devices cannot be reforged.").format(
-                                        self.E(ctx.author.display_name)
-                                    )
-                                )
-                            except discord.errors.Forbidden:
-                                return await ctx.send(
-                                    _("{}, tinkered devices cannot be reforged.").format(
-                                        self.E(ctx.author.display_name)
-                                    )
-                                )
+                new_ctx = await self.bot.get_context(reply)
+                item = await ItemConverter().convert(new_ctx, reply.content)
+                if item.rarity == "forgeable":
+                    ctx.command.reset_cooldown(ctx)
+                    try:
+                        return await ctx.author.send(
+                            _("{}, tinkered devices cannot be reforged.").format(
+                                self.E(ctx.author.display_name)
+                            )
+                        )
+                    except discord.errors.Forbidden:
+                        return await ctx.send(
+                            _("{}, tinkered devices cannot be reforged.").format(
+                                self.E(ctx.author.display_name)
+                            )
+                        )
+                consumed.append(item)
                 if len(consumed) < 2:
                     ctx.command.reset_cooldown(ctx)
                     try:
