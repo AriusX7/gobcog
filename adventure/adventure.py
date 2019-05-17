@@ -398,10 +398,10 @@ class Adventure(BaseCog):
                         price=item_price,
                     )
                     total_price += item_price
-                try:
-                    await bank.deposit_credits(ctx.author, item_price)
-                except BalanceTooHigh:
-                    pass
+                    try:
+                        await bank.deposit_credits(ctx.author, item_price)
+                    except BalanceTooHigh:
+                        pass
             await self.config.user(ctx.author).set(c._to_json())
         msg_list = []
         new_msg = _("{author} sold all their{rarity} items for {price}.\n\n{items}").format(
