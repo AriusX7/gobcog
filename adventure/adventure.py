@@ -382,6 +382,7 @@ class Adventure(BaseCog):
                 return
             total_price = 0
             items = [i for n, i in c.backpack.items() if i.rarity != "forged"]
+            count = 0
             for item in items:
                 if not rarity or item.rarity == rarity:
                     item_price = 0
@@ -391,6 +392,9 @@ class Adventure(BaseCog):
                         item_price += await self._sell(c, item)
                         if item.owned <= 0:
                             del c.backpack[item.name]
+                        if not count % 10:
+                            await asyncio.sleep(0.1)
+                        count += 1
                     msg += _(
                         "{old_item} sold for {price}.\n"
                     ).format(
@@ -398,6 +402,7 @@ class Adventure(BaseCog):
                         price=item_price,
                     )
                     total_price += item_price
+                    await asyncio.sleep(0.1)
                     try:
                         await bank.deposit_credits(ctx.author, item_price)
                     except BalanceTooHigh:
@@ -476,11 +481,15 @@ class Adventure(BaseCog):
             if pred.result == 1:  # user wants to sell all owned.
                 price = 0
                 old_owned = item.owned
+                count = 0
                 for x in range(0, item.owned):
                     item.owned -= 1
                     price += await self._sell(c, item)
                     if item.owned <= 0:
                         del c.backpack[item.name]
+                    if not count % 10:
+                        await asyncio.sleep(0.1)
+                    count += 1
                 msg += _(
                     "{author} sold all their {old_item} for {price} {currency_name}.\n"
                 ).format(
@@ -498,9 +507,13 @@ class Adventure(BaseCog):
                     return await ctx.send(_("You already only own one of those items."))
                 price = 0
                 old_owned = item.owned
+                count = 0
                 for x in range(1, item.owned):
                     item.owned -= 1
                     price += await self._sell(c, item)
+                if not count % 10:
+                    await asyncio.sleep(0.1)
+                count += 1
                 if price != 0:
                     msg += _(
                         "{author} sold all but one of their {old_item} for {price} {currency_name}.\n"
@@ -3976,7 +3989,7 @@ class Adventure(BaseCog):
                 await self._trader(ctx)
 
     async def _roll_chest(self, chest_type: str, c: Character):
-        multiplier = 500 + round(-c.luck * 5)
+        multiplier = 500 + round(-c.luck * 2)
         if multiplier < 1:
             multiplier = 1
         # -multiplier because higher luck is better negative luck takes away
