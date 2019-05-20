@@ -360,7 +360,7 @@ class Character(Item):
             "A level {lvl} {class_desc} \n\n- "
             "ATTACK: {att} [+{att_skill}] - "
             "CHARISMA: {cha} [+{cha_skill}] - "
-            "INTELLIGENCE: {int} [+{int_skill}] -\n\n-  "
+            "INTELLIGENCE: {int} [+{int_skill}]\n\n - "
             "DEXTERITY: {dex} - "
             "LUCK: {luck} \n\n "
             "Currency: {bal} \n- "
