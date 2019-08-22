@@ -2213,14 +2213,7 @@ class Adventure(BaseCog):
             log.exception("Error with the new character sheet")
             return
         if c.heroclass["name"] != "Ranger":
-            return await ctx.send(
-                box(
-                    _("{}, you need to be a Ranger to do this.").format(
-                        self.E(ctx.author.display_name)
-                    ),
-                    lang="css",
-                )
-            )
+            return
         if not c.heroclass["pet"]:
             return await ctx.send(
                 box(
