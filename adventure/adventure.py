@@ -4325,8 +4325,8 @@ class Adventure(BaseCog):
             price = price + round(price * (c.luck / 10))
         if c.luck < 0:
             price = price - round(price * (abs(c.luck) / 10))
-            if price < 0:
-                price = 0
+        if price < 0:
+            price = 0
         return price
 
     async def _trader(self, ctx):
