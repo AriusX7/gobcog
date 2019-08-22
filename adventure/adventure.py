@@ -17,21 +17,14 @@ from redbot.core.utils.chat_formatting import (
     bold,
     humanize_list,
     escape,
-    humanize_timedelta
+    humanize_timedelta,
 )
 from redbot.core.utils.common_filters import filter_various_mentions
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS, start_adding_reactions
 from redbot.core.i18n import Translator, cog_i18n
 
-from .charsheet import (
-    Character,
-    Item,
-    GameSession,
-    Stats,
-    parse_timedelta,
-    ItemConverter,
-)
+from .charsheet import Character, Item, GameSession, Stats, parse_timedelta, ItemConverter
 
 
 BaseCog = getattr(commands, "Cog", object)
@@ -402,11 +395,8 @@ class Adventure(BaseCog):
                         if not count % 10:
                             await asyncio.sleep(0.1)
                         count += 1
-                    msg += _(
-                        "{old_item} sold for {price}.\n"
-                    ).format(
-                        old_item=str(old_owned) + " " + str(item),
-                        price=item_price,
+                    msg += _("{old_item} sold for {price}.\n").format(
+                        old_item=str(old_owned) + " " + str(item), price=item_price
                     )
                     total_price += item_price
                     await asyncio.sleep(0.1)
@@ -420,7 +410,7 @@ class Adventure(BaseCog):
             author=self.E(ctx.author.display_name),
             rarity=" " + rarity if rarity else "",
             price=total_price,
-            items=msg
+            items=msg,
         )
         for page in pagify(new_msg):
             msg_list.append(box(page, lang="css"))
@@ -1117,10 +1107,7 @@ class Adventure(BaseCog):
                         _(
                             "{author}, you do not have {amount} "
                             "rare treasure chests to convert."
-                        ).format(
-                            author=self.E(ctx.author.display_name),
-                            amount=(4 * amount)
-                        )
+                        ).format(author=self.E(ctx.author.display_name), amount=(4 * amount))
                     )
             elif box_rarity.lower() == "epic":
                 return await ctx.send(
@@ -2568,10 +2555,7 @@ class Adventure(BaseCog):
             await msg.delete()
 
     async def _build_loadout_display(self, userdata):
-        form_string = _(
-            "( ATT  |  CHA  |  INT  |  DEX  |  LUCK)\n"
-            "Items Equipped:"
-        )
+        form_string = _("( ATT  |  CHA  |  INT  |  DEX  |  LUCK)\n" "Items Equipped:")
         last_slot = ""
         att = 0
         cha = 0
@@ -2609,9 +2593,7 @@ class Adventure(BaseCog):
             intel += item.int if len(item.slot) < 2 else (item.int * 2)
             dex += item.dex if len(item.slot) < 2 else (item.dex * 2)
             luck += item.luck if len(item.slot) < 2 else (item.luck * 2)
-        form_string += _(
-                "\n\nTotal stats: "
-            )
+        form_string += _("\n\nTotal stats: ")
         form_string += f"({att} | {cha} | {intel} | {dex} | {luck})"
         return form_string + "\n"
 
@@ -2647,6 +2629,11 @@ class Adventure(BaseCog):
 
             if item in slots:
                 current_item = getattr(c, item, None)
+                if not current_item:
+                    msg = _(
+                        "{author}, you do not have an item equipped in the {item} slot."
+                    ).format(author=self.E(ctx.author.display_name), item=item)
+                    return await ctx.send(box(msg, lang="css"))
                 await c._unequip_item(current_item)
                 msg = _(
                     "{author} removed the {current_item} and put it into their backpack."
@@ -3805,7 +3792,9 @@ class Adventure(BaseCog):
             failed = True
             item, slot = session.miniboss["requirements"]
             if item == "members" and isinstance(slot, int):
-                if (len(fight_list) + len(magic_list) + len(talk_list) + len(pray_list)) > int(slot):
+                if (len(fight_list) + len(magic_list) + len(talk_list) + len(pray_list)) > int(
+                    slot
+                ):
                     failed = False
             elif item == "emoji" and session.reacted:
                 failed = False
@@ -4329,9 +4318,8 @@ class Adventure(BaseCog):
             base = (100, 500)
         else:
             base = (10, 200)
-        price = (
-            random.randint(base[0], base[1]) *
-            max([item.att, item.cha, item.int, item.dex, item.luck], default=1)
+        price = random.randint(base[0], base[1]) * max(
+            [item.att, item.cha, item.int, item.dex, item.luck], default=1
         )
         if c.luck > 0:
             price = price + round(price * (c.luck / 10))
