@@ -3607,6 +3607,8 @@ class Adventure(BaseCog):
             else:
                 magic += int((roll + int_value) / mdef)
                 report += f"| {bold(self.E(user.display_name))}: 🎲({roll}) +✨{str(int_value)} | "
+        if len(report) == 14:
+            report = report + _("No one!")
         msg = msg + report + "\n"
         for user in fumblelist:
             if user in session.fight:
@@ -3770,6 +3772,8 @@ class Adventure(BaseCog):
             else:
                 diplomacy += roll + dipl_value
                 report += f"| {bold(self.E(user.display_name))} 🎲({roll}) +🗨{str(dipl_value)} | "
+        if len(report) == 15:
+            report = report + _("No one!")
         msg = msg + report + "\n"
         for user in fumblelist:
             if user in session.talk:
