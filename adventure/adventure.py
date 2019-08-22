@@ -11,7 +11,14 @@ from redbot.core import commands, bank, checks, Config
 from redbot.core.commands.context import Context
 from redbot.core.errors import BalanceTooHigh
 from redbot.core.data_manager import bundled_data_path, cog_data_path
-from redbot.core.utils.chat_formatting import box, pagify, bold, humanize_list, escape
+from redbot.core.utils.chat_formatting import (
+    box,
+    pagify,
+    bold,
+    humanize_list,
+    escape,
+    humanize_timedelta
+)
 from redbot.core.utils.common_filters import filter_various_mentions
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 from redbot.core.utils.menus import menu, DEFAULT_CONTROLS, start_adding_reactions
@@ -2300,7 +2307,9 @@ class Adventure(BaseCog):
         else:
             cooldown_time = (c.heroclass["forage"] + 7200) - time.time()
             return await ctx.send(
-                _("This command is on cooldown. Try again in {:g}s").format(cooldown_time)
+                _("This command is on cooldown. Try again in {}.").format(
+                    humanize_timedelta(seconds=cooldown_time)
+                )
             )
 
     @pet.command(name="free")
