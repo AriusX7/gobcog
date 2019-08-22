@@ -1216,10 +1216,7 @@ class Adventure(BaseCog):
                     "of item 1 to select for forging. Try to be specific.)"
                 ).format(author=self.E(ctx.author.display_name), bc=c.__backpack__(True))
                 for page in pagify(forgeables, delims=["\n"], shorten_by=20):
-                    try:
-                        await ctx.author.send(box(page, lang="css"))
-                    except discord.errors.Forbidden:
-                        await ctx.send(box(page, lang="css"))
+                    await ctx.send(box(page, lang="css"))
 
                 try:
                     reply = await ctx.bot.wait_for(
@@ -1230,10 +1227,7 @@ class Adventure(BaseCog):
                     timeout_msg = _("I don't have all day you know, {}.").format(
                         self.E(ctx.author.display_name)
                     )
-                    try:
-                        return await ctx.author.send(timeout_msg)
-                    except discord.errors.Forbidden:
-                        return await ctx.send(timeout_msg)
+                    return await ctx.send(timeout_msg)
                 new_ctx = await self.bot.get_context(reply)
                 item = await ItemConverter().convert(new_ctx, reply.content)
                 if item.rarity == "forgeable":
@@ -1249,18 +1243,12 @@ class Adventure(BaseCog):
                     wrong_item = _("{}, I could not find that item - check your spelling.").format(
                         self.E(ctx.author.display_name)
                     )
-                    try:
-                        return await ctx.author.send(wrong_item)
-                    except discord.errors.Forbidden:
-                        return await ctx.send(wrong_item)
+                    return await ctx.send(wrong_item)
                 forgeables = _(
                     "(Reply with the full or partial name "
                     "of item 2 to select for forging. Try to be specific.)"
                 )
-                try:
-                    await ctx.author.send(box(forgeables, lang="css"))
-                except discord.errors.Forbidden:
-                    await ctx.send(box(forgeables, lang="css"))
+                await ctx.send(box(forgeables, lang="css"))
                 # check = lambda m: m.author == ctx.author and not m.content.isnumeric()
                 try:
                     reply = await ctx.bot.wait_for(
@@ -1271,41 +1259,24 @@ class Adventure(BaseCog):
                     timeout_msg = _("I don't have all day you know, {}.").format(
                         self.E(ctx.author.display_name)
                     )
-                    try:
-                        return await ctx.author.send(timeout_msg)
-                    except discord.errors.Forbidden:
-                        return await ctx.send(timeout_msg)
+                    return await ctx.send(timeout_msg)
                 new_ctx = await self.bot.get_context(reply)
                 item = await ItemConverter().convert(new_ctx, reply.content)
                 if item.rarity == "forgeable":
                     ctx.command.reset_cooldown(ctx)
-                    try:
-                        return await ctx.author.send(
-                            _("{}, tinkered devices cannot be reforged.").format(
-                                self.E(ctx.author.display_name)
-                            )
+                    return await ctx.send(
+                        _("{}, tinkered devices cannot be reforged.").format(
+                            self.E(ctx.author.display_name)
                         )
-                    except discord.errors.Forbidden:
-                        return await ctx.send(
-                            _("{}, tinkered devices cannot be reforged.").format(
-                                self.E(ctx.author.display_name)
-                            )
-                        )
+                    )
                 consumed.append(item)
                 if len(consumed) < 2:
                     ctx.command.reset_cooldown(ctx)
-                    try:
-                        return await ctx.author.send(
-                            _("{}, I could not find that item - check your spelling.").format(
-                                self.E(ctx.author.display_name)
-                            )
+                    return await ctx.send(
+                        _("{}, I could not find that item - check your spelling.").format(
+                            self.E(ctx.author.display_name)
                         )
-                    except discord.errors.Forbidden:
-                        return await ctx.send(
-                            _("{}, I could not find that item - check your spelling.").format(
-                                self.E(ctx.author.display_name)
-                            )
-                        )
+                    )
 
                 newitem = await self._to_forge(ctx, consumed)
                 for x in consumed:
@@ -1330,10 +1301,7 @@ class Adventure(BaseCog):
                         ),
                         lang="css",
                     )
-                    try:
-                        forge_msg = await ctx.author.send(forge_str)
-                    except discord.errors.Forbidden:
-                        forge_msg = await ctx.send(forge_str)
+                    forge_msg = await ctx.send(forge_str)
                     start_adding_reactions(forge_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
                     pred = ReactionPredicate.yes_or_no(forge_msg, ctx.author)
                     try:
@@ -1359,10 +1327,7 @@ class Adventure(BaseCog):
                         )
                         for item in lookup:
                             del c.backpack[item.name]
-                        try:
-                            await ctx.author.send(created_item)
-                        except discord.errors.Forbidden:
-                            await ctx.send(created_item)
+                        await ctx.send(created_item)
                         c.backpack[newitem.name] = newitem
                         await self.config.user(ctx.author).set(c._to_json())
                     else:
@@ -1372,10 +1337,7 @@ class Adventure(BaseCog):
                             ).format(author=self.E(ctx.author.display_name), newitem=newitem),
                             lang="css",
                         )
-                        try:
-                            return await ctx.author.send(mad_forge)
-                        except discord.errors.Forbidden:
-                            return await ctx.send(mad_forge)
+                        return await ctx.send(mad_forge)
                 else:
                     c.backpack[newitem.name] = newitem
                     await self.config.user(ctx.author).set(c._to_json())
@@ -1385,10 +1347,7 @@ class Adventure(BaseCog):
                         ),
                         lang="css",
                     )
-                    try:
-                        await ctx.author.send(forged_item)
-                    except discord.errors.Forbidden:
-                        await ctx.send(forged_item)
+                    await ctx.send(forged_item)
 
     async def _to_forge(self, ctx: Context, consumed):
         item1 = consumed[0]
@@ -1449,10 +1408,7 @@ class Adventure(BaseCog):
                 ),
                 lang="css",
             )
-            try:
-                await ctx.author.send(two_handed_msg)
-            except discord.errors.Forbidden:
-                await ctx.send(two_handed_msg)
+            await ctx.send(two_handed_msg)
         else:
             reg_item = box(
                 _(
@@ -1475,19 +1431,13 @@ class Adventure(BaseCog):
                     hand=hand,
                 )
             )
-            try:
-                await ctx.author.send(reg_item)
-            except discord.errors.Forbidden:
-                await ctx.send(reg_item)
+            await ctx.send(reg_item)
         get_name = _(
             "{}, please respond with "
             "a name for your creation within 30s.\n"
             "(You will not be able to change it afterwards. 40 characters maximum.)"
         ).format(self.E(ctx.author.display_name))
-        try:
-            await ctx.author.send(get_name)
-        except discord.errors.Forbidden:
-            await ctx.send(get_name)
+        await ctx.send(get_name)
         reply = None
         try:
             reply = await ctx.bot.wait_for(
