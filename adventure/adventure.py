@@ -1416,7 +1416,8 @@ class Adventure(BaseCog):
                     new_dex=newdex,
                     new_luck=newluck,
                     hand=hand,
-                )
+                ),
+                lang="css",
             )
             await ctx.send(reg_item)
         get_name = _(
