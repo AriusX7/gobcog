@@ -4375,10 +4375,10 @@ class Adventure(BaseCog):
                     _(
                         "\n[{i}] {item_name} ("
                         "Attack: {str_att}, "
-                        "Intelligence: {str_int}, "
                         "Charisma: {str_cha} "
-                        "Luck: {str_luck} "
+                        "Intelligence: {str_int}, "
                         "Dexterity: {str_dex} "
+                        "Luck: {str_luck} "
                         "[{hand}]) for {item_price} {currency_name}."
                     ).format(
                         i=str(index + 1),
