@@ -4359,8 +4359,8 @@ class Adventure(BaseCog):
                     att = item["item"].att * 2
                     cha = item["item"].cha * 2
                     intel = item["item"].int * 2
-                    luck = item["item"].luck * 2
                     dex = item["item"].dex * 2
+                    luck = item["item"].luck * 2
                 else:
                     if item["item"].slot[0] == "right" or item["item"].slot[0] == "left":
                         hand = item["item"].slot[0] + _(" handed")
@@ -4369,8 +4369,8 @@ class Adventure(BaseCog):
                     att = item["item"].att
                     cha = item["item"].cha
                     intel = item["item"].int
-                    luck = item["item"].luck
                     dex = item["item"].dex
+                    luck = item["item"].luck
                 text += box(
                     _(
                         "\n[{i}] {item_name} ("
@@ -4384,10 +4384,10 @@ class Adventure(BaseCog):
                         i=str(index + 1),
                         item_name=item["itemname"],
                         str_att=str(att),
-                        str_int=str(intel),
                         str_cha=str(cha),
-                        str_luck=str(luck),
+                        str_int=str(intel),
                         str_dex=str(dex),
+                        str_luck=str(luck),
                         hand=hand,
                         item_price=item["price"],
                         currency_name=currency_name,
