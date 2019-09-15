@@ -414,7 +414,7 @@ class Adventure(BaseCog):
             price=total_price,
             items=msg,
         )
-        for page in pagify(new_msg):
+        for page in pagify(new_msg, shorten_by=10):
             msg_list.append(box(page, lang="css"))
         await menu(ctx, msg_list, DEFAULT_CONTROLS)
 
@@ -459,7 +459,10 @@ class Adventure(BaseCog):
             except Exception:
                 log.exception("Error with the new character sheet")
                 return
-            item = c.backpack[item.name]
+            try:
+                item = c.backpack[item.name]
+            except KeyError:
+                return
             msg = ""
             if pred.result == 0:  # user reacted with one to sell.
                 # sell one of the item
@@ -2725,6 +2728,9 @@ class Adventure(BaseCog):
                         msg = _(
                             "{author} removed the {current_item} and put it into their backpack."
                         ).format(author=self.E(ctx.author.display_name), current_item=current_item)
+                        # We break if this works because unequip 
+                        # will autmatically remove multiple items
+                        break
             if msg:
                 await ctx.send(box(msg, lang="css"))
                 await self.config.user(ctx.author).set(c._to_json())
@@ -2755,7 +2761,10 @@ class Adventure(BaseCog):
                 await self._clear_react(msg)
                 return
             if pred.result:
-                del self._sessions[ctx.guild.id]
+                try:
+                    del self._sessions[ctx.guild.id]
+                except KeyError:
+                    pass
             else:
                 return
         if challenge and not await ctx.bot.is_owner(ctx.author):
