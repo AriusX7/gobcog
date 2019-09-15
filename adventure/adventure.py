@@ -79,7 +79,7 @@ class Adventure(BaseCog):
         self._trader_countdown = {}
         self._current_traders = {}
         self._sessions = {}
-        self.tasks = []
+        self.tasks = {}
         self.locks = {}
 
         self.config = Config.get_conf(self, 2_710_801_001, force_registration=True)
@@ -196,9 +196,12 @@ class Adventure(BaseCog):
     async def cleanup_tasks(self):
         await self.bot.wait_until_ready()
         while self is self.bot.get_cog("Adventure"):
-            for task in self.tasks:
+            to_delete = []
+            for msg_id, task in self.tasks.items():
                 if task.done():
-                    self.tasks.remove(task)
+                    to_delete.append(msg_id)
+            for task in to_delete:
+                del self.tasks[task]
             await asyncio.sleep(300)
 
     async def allow_in_dm(self, ctx):
@@ -2776,6 +2779,8 @@ class Adventure(BaseCog):
         except Exception:
             log.error("Something went wrong controlling the game", exc_info=True)
             return
+        if not reward and not participants:
+            return
         reward_copy = reward.copy()
         for userid, rewards in reward_copy.items():
             if not rewards:
@@ -2850,6 +2855,8 @@ class Adventure(BaseCog):
             f"**{self.E(ctx.author.display_name)}**{random.choice(self.RAISINS)}"
         )
         await self._choice(ctx, adventure_msg)
+        if ctx.guild.id not in self._sessions:
+            return None, None
         rewards = self._rewards
         participants = self._sessions[ctx.guild.id].participants
         return (rewards, participants)
@@ -2876,8 +2883,7 @@ class Adventure(BaseCog):
             attr=session.attribute, chall=session.challenge, threat=random.choice(self.THREATEE)
         )
 
-        timer = await self._adv_countdown(ctx, session.timer, _("Time remaining: "))
-        self.tasks.append(timer)
+        
         embed = discord.Embed(colour=discord.Colour.blurple())
         use_embeds = (
             await self.config.guild(ctx.guild).embed()
@@ -2915,6 +2921,8 @@ class Adventure(BaseCog):
             timeout = 30
         session.message_id = adventure_msg.id
         start_adding_reactions(adventure_msg, self._adventure_actions, ctx.bot.loop)
+        timer = await self._adv_countdown(ctx, session.timer, _("Time remaining: "))
+        self.tasks[adventure_msg.id] = timer
         try:
             await asyncio.wait_for(timer, timeout=timeout + 5)
         except Exception:
@@ -3082,6 +3090,8 @@ class Adventure(BaseCog):
             self._current_traders[guild.id]["users"].remove(user)
 
     async def _result(self, ctx: commands.Context, message: discord.Message):
+        if ctx.guild.id not in self._sessions:
+            return
         calc_msg = await ctx.send(_("Calculating..."))
         attack = 0
         diplomacy = 0
@@ -4029,6 +4039,20 @@ class Adventure(BaseCog):
         epoch += seconds
         return epoch
 
+    @listener()
+    async def on_raw_message_delete(self, payload):
+        if payload.guild_id not in self._sessions:
+            return
+        if self._sessions[payload.guild_id].message_id == payload.message_id:
+            try:
+                del self._sessions[payload.guild_id]
+            except KeyError:
+                return
+            try:
+                self.tasks[payload.message_id].cancel()
+            except Exception:
+                pass
+
     @listener()  # backwards compatibility 3.1 fix, thanks Sinbad!
     async def on_message(self, message):
         if not message.guild:
@@ -4525,7 +4549,7 @@ class Adventure(BaseCog):
         if timeout <= 0:
             timeout = 0
         timer = await self._cart_countdown(ctx, timeout, _("The cart will leave in: "))
-        self.tasks.append(timer)
+        self.tasks[msg.id] = timer
         try:
             await asyncio.wait_for(timer, timeout + 5)
         except asyncio.TimeoutError:
@@ -4635,7 +4659,7 @@ class Adventure(BaseCog):
 
     # def cog_unload(self): #  another 3.1 change
     def cog_unload(self):
-        for task in self.tasks:
+        for msg_id, task in self.tasks.items():
             log.debug(f"removing task {task}")
             task.cancel()
 
