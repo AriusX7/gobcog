@@ -57,11 +57,11 @@ class Stats(Converter):
     to create an item object to be added to a users inventory
     """
 
-    ATT = re.compile(r"([\d]*) (att(?:ack)?)")
-    CHA = re.compile(r"([\d]*) (cha(?:risma)?|dip(?:lo?(?:macy)?)?)")
-    INT = re.compile(r"([\d]*) (int(?:elligence)?)")
-    LUCK = re.compile(r"([\d]*) (luck)")
-    DEX = re.compile(r"([\d]*) (dex(?:terity)?)")
+    ATT = re.compile(r"([\-\d]*) (att(?:ack)?)")
+    CHA = re.compile(r"([\-\d]*) (cha(?:risma)?|dip(?:lo?(?:macy)?)?)")
+    INT = re.compile(r"([\-\d]*) (int(?:elligence)?)")
+    LUCK = re.compile(r"([\-\d]*) (luck)")
+    DEX = re.compile(r"([\-\d]*) (dex(?:terity)?)")
     SLOT = re.compile(r"(head|neck|chest|gloves|belt|legs|boots|left|right|ring|charm|twohanded)")
     RARITY = re.compile(r"(normal|rare|epic|legend(?:ary)?)")
 
@@ -227,12 +227,13 @@ class ItemConverter(Converter):
             return lookup_m[0]
         elif len(lookup) == 0 and len(lookup_m) == 0:
             raise BadArgument(
-                _("`{}` doesn't seem to match any items you own.").format(argument)
+                _("`{}` doesn't seem to match any items in your backpack.").format(argument)
             )
         else:
             if len(lookup) > 10:
                 raise BadArgument(
-                    _("You have too matching the name `{}`, please be more specific").format(
+                    _("You have too many items matching the name `{}`,"
+                      " please be more specific").format(
                         argument
                     )
                 )

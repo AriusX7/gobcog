@@ -79,7 +79,7 @@ class Adventure(BaseCog):
         self._trader_countdown = {}
         self._current_traders = {}
         self._sessions = {}
-        self.tasks = []
+        self.tasks = {}
         self.locks = {}
 
         self.config = Config.get_conf(self, 2_710_801_001, force_registration=True)
@@ -196,9 +196,12 @@ class Adventure(BaseCog):
     async def cleanup_tasks(self):
         await self.bot.wait_until_ready()
         while self is self.bot.get_cog("Adventure"):
-            for task in self.tasks:
+            to_delete = []
+            for msg_id, task in self.tasks.items():
                 if task.done():
-                    self.tasks.remove(task)
+                    to_delete.append(msg_id)
+            for task in to_delete:
+                del self.tasks[task]
             await asyncio.sleep(300)
 
     async def allow_in_dm(self, ctx):
@@ -324,6 +327,7 @@ class Adventure(BaseCog):
                         await self.config.user(ctx.author).set(c._to_json())
 
     @_backpack.command(name="equip")
+    @commands.check(lambda ctx: Adventure.check_running_adventure(ctx))
     async def backpack_equip(self, ctx: Context, *, equip_item: ItemConverter):
         """Equip an item from your backpack"""
         try:
@@ -367,6 +371,7 @@ class Adventure(BaseCog):
                 await self.config.user(ctx.author).set(c._to_json())
 
     @_backpack.command(name="sellall")
+    @commands.check(lambda ctx: Adventure.check_running_adventure(ctx))
     async def backpack_sellall(self, ctx: Context, rarity: str = None):
         """Sell all items in your backpack"""
         if rarity and rarity.lower() not in ["normal", "rare", "epic", "legendary"]:
@@ -412,11 +417,12 @@ class Adventure(BaseCog):
             price=total_price,
             items=msg,
         )
-        for page in pagify(new_msg):
+        for page in pagify(new_msg, shorten_by=10):
             msg_list.append(box(page, lang="css"))
         await menu(ctx, msg_list, DEFAULT_CONTROLS)
 
     @_backpack.command(name="sell")
+    @commands.check(lambda ctx: Adventure.check_running_adventure(ctx))
     async def backpack_sell(self, ctx: Context, *, item: ItemConverter):
         """Sell an item from your backpack"""
 
@@ -456,7 +462,10 @@ class Adventure(BaseCog):
             except Exception:
                 log.exception("Error with the new character sheet")
                 return
-            item = c.backpack[item.name]
+            try:
+                item = c.backpack[item.name]
+            except KeyError:
+                return
             msg = ""
             if pred.result == 0:  # user reacted with one to sell.
                 # sell one of the item
@@ -533,6 +542,7 @@ class Adventure(BaseCog):
                     await ctx.send(page)
 
     @_backpack.command(name="trade")
+    @commands.check(lambda ctx: Adventure.check_running_adventure(ctx))
     async def backpack_trade(
         self, ctx: Context, buyer: discord.Member, asking: Optional[int] = 1000, *, item
     ):
@@ -780,6 +790,7 @@ class Adventure(BaseCog):
 
     @loadout.command(name="equip", aliases=["load"])
     @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
+    @commands.check(lambda ctx: Adventure.check_running_adventure(ctx))
     async def equip_loadout(self, ctx: Context, name: str):
         """Equip a saved loadout"""
         if not await self.allow_in_dm(ctx):
@@ -939,6 +950,67 @@ class Adventure(BaseCog):
         await self.config.guild(ctx.guild).cart_timeout.set(time_delta.seconds)
         await ctx.tick()
 
+    @adventureset.command(name="clear")
+    @checks.is_owner()
+    async def clear_user(self, ctx: Context, *, user: discord.User):
+        """
+            Lets you clear a users entire character sheet
+        """
+        await self.config.user(user).clear()
+        await ctx.send(_("{user}'s character sheet has been erased.").format(user=user))
+
+    @adventureset.command(name="remove")
+    @checks.is_owner()
+    async def remove_item(self, ctx: Context, user: discord.Member, *, item_str: str):
+        """
+            Lets you remove an item from a user
+        """
+        ORDER = [
+                "head",
+                "neck",
+                "chest",
+                "gloves",
+                "belt",
+                "legs",
+                "boots",
+                "left",
+                "right",
+                "two handed",
+                "ring",
+                "charm",
+            ]
+        async with self.get_lock(user):
+            try:
+                c = await Character._from_json(self.config, user)
+            except Exception:
+                log.exception("Error with the new character sheet")
+                return
+            for slot in ORDER:
+                if slot == "two handed":
+                    continue
+                equipped_item = getattr(c, slot)
+                if equipped_item and equipped_item.name.lower() == item_str.lower():
+                    item = equipped_item
+            if item:
+                try:
+                    await c._unequip_item(item)
+                except Exception:
+                    pass
+            else:
+                try:
+                    item = c.backpack[item_str]
+                except KeyError:
+                    return await ctx.send(_("{} does not have item named {}").format(user, item_str))
+            try:
+                del c.backpack[item.name]
+            except KeyError:
+                pass
+            await self.config.user(user).set(c._to_json())
+        # await self.config.user(user).clear()
+        await ctx.send(
+            _("{item} removed from {user}.").format(item=box(str(item), lang="css"), user=user)
+        )
+
     @adventureset.command()
     @checks.is_owner()
     async def globalcartname(self, ctx: Context, *, name):
@@ -1025,6 +1097,7 @@ class Adventure(BaseCog):
 
     @commands.command()
     @commands.cooldown(rate=1, per=4, type=commands.BucketType.guild)
+    @commands.check(lambda ctx: Adventure.check_running_adventure(ctx))
     async def convert(self, ctx: Context, box_rarity: str, amount: int = 1):
         """Convert normal, rare or epic chests.
 
@@ -1154,6 +1227,7 @@ class Adventure(BaseCog):
                 )
 
     @commands.command()
+    @commands.check(lambda ctx: Adventure.check_running_adventure(ctx))
     async def equip(self, ctx: Context, *, item: ItemConverter):
         """This equips an item from your backpack.
 
@@ -1166,6 +1240,7 @@ class Adventure(BaseCog):
 
     @commands.command()
     @commands.cooldown(rate=1, per=3600, type=commands.BucketType.user)
+    @commands.check(lambda ctx: Adventure.check_running_adventure(ctx))
     async def forge(self, ctx):
         """[Tinkerer Class Only]
 
@@ -1217,7 +1292,7 @@ class Adventure(BaseCog):
                     return await ctx.send(timeout_msg)
                 new_ctx = await self.bot.get_context(reply)
                 item = await ItemConverter().convert(new_ctx, reply.content)
-                if item.rarity == "forgeable":
+                if item.rarity == "forged":
                     ctx.command.reset_cooldown(ctx)
                     return await ctx.send(
                         _("{}, tinkered devices cannot be reforged.").format(
@@ -1249,7 +1324,7 @@ class Adventure(BaseCog):
                     return await ctx.send(timeout_msg)
                 new_ctx = await self.bot.get_context(reply)
                 item = await ItemConverter().convert(new_ctx, reply.content)
-                if item.rarity == "forgeable":
+                if item.rarity == "forged":
                     ctx.command.reset_cooldown(ctx)
                     return await ctx.send(
                         _("{}, tinkered devices cannot be reforged.").format(
@@ -1604,6 +1679,7 @@ class Adventure(BaseCog):
 
     @commands.command()
     @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
+    @commands.check(lambda ctx: Adventure.check_running_adventure(ctx))
     async def heroclass(self, ctx: Context, clz: str = None, action: str = None):
         """This allows you to select a class if you are Level 10 or above.
 
@@ -1843,8 +1919,20 @@ class Adventure(BaseCog):
                             )
                         )
 
+    @staticmethod
+    def check_running_adventure(ctx):
+        for guild_id, session in ctx.bot.get_cog("Adventure")._sessions.items():
+            user_ids: list = []
+            options = ["fight", "magic", "talk", "pray", "run"]
+            for i in options:
+                user_ids += [u.id for u in getattr(session, i)]
+            if ctx.author.id in user_ids:
+                return False
+        return True
+
     @commands.command()
     @commands.cooldown(rate=1, per=4, type=commands.BucketType.user)
+    @commands.check(lambda ctx: Adventure.check_running_adventure(ctx))
     async def loot(self, ctx: Context, box_type: str = None, amount: int = 1):
         """This opens one of your precious treasure chests.
 
@@ -1936,6 +2024,7 @@ class Adventure(BaseCog):
     @commands.command(name="negaverse", aliases=["nv"])
     @commands.cooldown(rate=1, per=10, type=commands.BucketType.user)
     @commands.guild_only()
+    @commands.check(lambda ctx: Adventure.check_running_adventure(ctx))
     async def _negaverse(self, ctx: Context, offering: int = None):
         """This will send you to fight a nega-member!
 
@@ -2114,6 +2203,7 @@ class Adventure(BaseCog):
 
     @commands.group(autohelp=False)
     @commands.cooldown(rate=1, per=4, type=commands.BucketType.user)
+    @commands.check(lambda ctx: Adventure.check_running_adventure(ctx))
     async def pet(self, ctx):
         """[Ranger Class Only]
 
@@ -2418,6 +2508,7 @@ class Adventure(BaseCog):
         )
 
     @commands.command()
+    @commands.check(lambda ctx: Adventure.check_running_adventure(ctx))
     async def skill(self, ctx: Context, spend: str = None, amount: int = 1):
         """This allows you to spend skillpoints.
 
@@ -2592,6 +2683,7 @@ class Adventure(BaseCog):
         return form_string + "\n"
 
     @commands.command()
+    @commands.check(lambda ctx: Adventure.check_running_adventure(ctx))
     async def unequip(self, ctx: Context, *, item: str):
         """This stashes a specified equipped item into your backpack.
 
@@ -2639,6 +2731,9 @@ class Adventure(BaseCog):
                         msg = _(
                             "{author} removed the {current_item} and put it into their backpack."
                         ).format(author=self.E(ctx.author.display_name), current_item=current_item)
+                        # We break if this works because unequip
+                        # will autmatically remove multiple items
+                        break
             if msg:
                 await ctx.send(box(msg, lang="css"))
                 await self.config.user(ctx.author).set(c._to_json())
@@ -2658,7 +2753,23 @@ class Adventure(BaseCog):
         You play by reacting with the offered emojis.
         """
         if ctx.guild.id in self._sessions:
-            return await ctx.send(_("There's already another adventure going on in this server."))
+            msg = await ctx.send(
+                _("There's already another adventure going on in this server. Would you like to cancel it?")
+            )
+            start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+            pred = ReactionPredicate.yes_or_no(msg, ctx.author)
+            try:
+                await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
+            except asyncio.TimeoutError:
+                await self._clear_react(msg)
+                return
+            if pred.result:
+                try:
+                    del self._sessions[ctx.guild.id]
+                except KeyError:
+                    pass
+            else:
+                return
         if challenge and not await ctx.bot.is_owner(ctx.author):
             # Only let the bot owner specify a specific challenge
             challenge = None
@@ -2667,6 +2778,8 @@ class Adventure(BaseCog):
             reward, participants = await self._simple(ctx, adventure_msg, challenge)
         except Exception:
             log.error("Something went wrong controlling the game", exc_info=True)
+            return
+        if not reward and not participants:
             return
         reward_copy = reward.copy()
         for userid, rewards in reward_copy.items():
@@ -2742,6 +2855,8 @@ class Adventure(BaseCog):
             f"**{self.E(ctx.author.display_name)}**{random.choice(self.RAISINS)}"
         )
         await self._choice(ctx, adventure_msg)
+        if ctx.guild.id not in self._sessions:
+            return None, None
         rewards = self._rewards
         participants = self._sessions[ctx.guild.id].participants
         return (rewards, participants)
@@ -2768,8 +2883,7 @@ class Adventure(BaseCog):
             attr=session.attribute, chall=session.challenge, threat=random.choice(self.THREATEE)
         )
 
-        timer = await self._adv_countdown(ctx, session.timer, _("Time remaining: "))
-        self.tasks.append(timer)
+
         embed = discord.Embed(colour=discord.Colour.blurple())
         use_embeds = (
             await self.config.guild(ctx.guild).embed()
@@ -2807,6 +2921,8 @@ class Adventure(BaseCog):
             timeout = 30
         session.message_id = adventure_msg.id
         start_adding_reactions(adventure_msg, self._adventure_actions, ctx.bot.loop)
+        timer = await self._adv_countdown(ctx, session.timer, _("Time remaining: "))
+        self.tasks[adventure_msg.id] = timer
         try:
             await asyncio.wait_for(timer, timeout=timeout + 5)
         except Exception:
@@ -2974,6 +3090,8 @@ class Adventure(BaseCog):
             self._current_traders[guild.id]["users"].remove(user)
 
     async def _result(self, ctx: commands.Context, message: discord.Message):
+        if ctx.guild.id not in self._sessions:
+            return
         calc_msg = await ctx.send(_("Calculating..."))
         attack = 0
         diplomacy = 0
@@ -3477,6 +3595,7 @@ class Adventure(BaseCog):
         session = self._sessions[guild_id]
         pdef = self.MONSTERS[challenge]["pdef"]
         mdef = self.MONSTERS[challenge]["mdef"]
+        fumble_count = 0
         # make sure we pass this check first
         if len(session.fight + session.magic) >= 1:
             msg = ""
@@ -3527,6 +3646,7 @@ class Adventure(BaseCog):
             if roll == 1:
                 msg += _("{} fumbled the attack.\n").format(bold(self.E(user.display_name)))
                 fumblelist.append(user)
+                fumble_count += 1
                 if c.heroclass["name"] == "Berserker" and c.heroclass["ability"]:
                     bonus_roll = random.randint(5, 15)
                     bonus_multi = random.choice([0.2, 0.3, 0.4, 0.5])
@@ -3576,6 +3696,7 @@ class Adventure(BaseCog):
                     bold(self.E(user.display_name))
                 )
                 fumblelist.append(user)
+                fumble_count += 1
                 if c.heroclass["name"] == "Wizard" and c.heroclass["ability"]:
                     bonus_roll = random.randint(5, 15)
                     bonus_multi = random.choice([0.2, 0.3, 0.4, 0.5])
@@ -3607,7 +3728,7 @@ class Adventure(BaseCog):
             else:
                 magic += int((roll + int_value) / mdef)
                 report += f"| {bold(self.E(user.display_name))}: 🎲({roll}) +✨{str(int_value)} | "
-        if len(report) == 14:
+        if fumble_count == (len(session.fight) + len(session.magic)):
             report = report + _("No one!")
         msg = msg + report + "\n"
         for user in fumblelist:
@@ -3720,6 +3841,7 @@ class Adventure(BaseCog):
         if len(session.talk) >= 1:
             report = _("Talking Party: ")
             msg = ""
+            fumble_count = 0
         else:
             return (fumblelist, critlist, diplomacy, "")
         for user in session.talk:
@@ -3741,6 +3863,7 @@ class Adventure(BaseCog):
                     bold(self.E(user.display_name))
                 )
                 fumblelist.append(user)
+                fumble_count += 1
                 if c.heroclass["name"] == "Bard" and c.heroclass["ability"]:
                     bonus = random.randint(5, 15)
                     diplomacy += roll - bonus + dipl_value
@@ -3772,7 +3895,7 @@ class Adventure(BaseCog):
             else:
                 diplomacy += roll + dipl_value
                 report += f"| {bold(self.E(user.display_name))} 🎲({roll}) +🗨{str(dipl_value)} | "
-        if len(report) == 15:
+        if fumble_count == len(session.talk):
             report = report + _("No one!")
         msg = msg + report + "\n"
         for user in fumblelist:
@@ -3915,6 +4038,20 @@ class Adventure(BaseCog):
         epoch = time.time()
         epoch += seconds
         return epoch
+
+    @listener()
+    async def on_raw_message_delete(self, payload):
+        if payload.guild_id not in self._sessions:
+            return
+        if self._sessions[payload.guild_id].message_id == payload.message_id:
+            try:
+                del self._sessions[payload.guild_id]
+            except KeyError:
+                return
+            try:
+                self.tasks[payload.message_id].cancel()
+            except Exception:
+                pass
 
     @listener()  # backwards compatibility 3.1 fix, thanks Sinbad!
     async def on_message(self, message):
@@ -4412,7 +4549,7 @@ class Adventure(BaseCog):
         if timeout <= 0:
             timeout = 0
         timer = await self._cart_countdown(ctx, timeout, _("The cart will leave in: "))
-        self.tasks.append(timer)
+        self.tasks[msg.id] = timer
         try:
             await asyncio.wait_for(timer, timeout + 5)
         except asyncio.TimeoutError:
@@ -4522,7 +4659,7 @@ class Adventure(BaseCog):
 
     # def cog_unload(self): #  another 3.1 change
     def cog_unload(self):
-        for task in self.tasks:
+        for msg_id, task in self.tasks.items():
             log.debug(f"removing task {task}")
             task.cancel()
 
