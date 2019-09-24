@@ -1292,7 +1292,7 @@ class Adventure(BaseCog):
                     return await ctx.send(timeout_msg)
                 new_ctx = await self.bot.get_context(reply)
                 item = await ItemConverter().convert(new_ctx, reply.content)
-                if item.rarity == "forgeable":
+                if item.rarity == "forged":
                     ctx.command.reset_cooldown(ctx)
                     return await ctx.send(
                         _("{}, tinkered devices cannot be reforged.").format(
@@ -1324,7 +1324,7 @@ class Adventure(BaseCog):
                     return await ctx.send(timeout_msg)
                 new_ctx = await self.bot.get_context(reply)
                 item = await ItemConverter().convert(new_ctx, reply.content)
-                if item.rarity == "forgeable":
+                if item.rarity == "forged":
                     ctx.command.reset_cooldown(ctx)
                     return await ctx.send(
                         _("{}, tinkered devices cannot be reforged.").format(
@@ -2731,7 +2731,7 @@ class Adventure(BaseCog):
                         msg = _(
                             "{author} removed the {current_item} and put it into their backpack."
                         ).format(author=self.E(ctx.author.display_name), current_item=current_item)
-                        # We break if this works because unequip 
+                        # We break if this works because unequip
                         # will autmatically remove multiple items
                         break
             if msg:
@@ -2883,7 +2883,7 @@ class Adventure(BaseCog):
             attr=session.attribute, chall=session.challenge, threat=random.choice(self.THREATEE)
         )
 
-        
+
         embed = discord.Embed(colour=discord.Colour.blurple())
         use_embeds = (
             await self.config.guild(ctx.guild).embed()
