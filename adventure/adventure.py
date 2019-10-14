@@ -225,9 +225,7 @@ class Adventure(BaseCog):
     @commands.command(hidden=True)
     @commands.is_owner()
     async def makecart(self, ctx):
-        """
-            Force cart to appear in a channel
-        """
+        """Force cart to appear in a channel."""
         await self._trader(ctx)
 
     @commands.group(name="backpack", autohelp=False)
@@ -329,7 +327,7 @@ class Adventure(BaseCog):
     @_backpack.command(name="equip")
     @commands.check(lambda ctx: Adventure.check_running_adventure(ctx))
     async def backpack_equip(self, ctx: Context, *, equip_item: ItemConverter):
-        """Equip an item from your backpack"""
+        """Equip an item from your backpack."""
         try:
             c = await Character._from_json(self.config, ctx.author)
         except Exception:
@@ -424,7 +422,7 @@ class Adventure(BaseCog):
     @_backpack.command(name="sell")
     @commands.check(lambda ctx: Adventure.check_running_adventure(ctx))
     async def backpack_sell(self, ctx: Context, *, item: ItemConverter):
-        """Sell an item from your backpack"""
+        """Sell an item from your backpack."""
 
         if item.rarity == "forged":
             return await ctx.send(
@@ -546,7 +544,7 @@ class Adventure(BaseCog):
     async def backpack_trade(
         self, ctx: Context, buyer: discord.Member, asking: Optional[int] = 1000, *, item
     ):
-        """Trade an item from your backpack to another user"""
+        """Trade an item from your backpack to another user."""
         try:
             c = await Character._from_json(self.config, ctx.author)
         except Exception:
@@ -679,12 +677,12 @@ class Adventure(BaseCog):
 
     @commands.group(aliases=["loadouts"])
     async def loadout(self, ctx):
-        """Setup various adventure settings"""
+        """Setup various adventure settings."""
         pass
 
     @loadout.command(name="save")
     async def save_loadout(self, ctx: Context, name: str):
-        """Save your current equipment as a loadout"""
+        """Save your current equipment as a loadout."""
         if not await self.allow_in_dm(ctx):
             return await ctx.send(_("This command is not available in DM's on this bot."))
         name = name.lower()
@@ -718,7 +716,7 @@ class Adventure(BaseCog):
 
     @loadout.command(name="delete", aliases=["del", "rem", "remove"])
     async def remove_loadout(self, ctx: Context, name: str):
-        """Delete a saved loadout"""
+        """Delete a saved loadout."""
         if not await self.allow_in_dm(ctx):
             return await ctx.send(_("This command is not available in DM's on this bot."))
         name = name.lower()
@@ -751,7 +749,7 @@ class Adventure(BaseCog):
 
     @loadout.command(name="show")
     async def show_loadout(self, ctx: Context, name: str = None):
-        """Show saved loadouts"""
+        """Show saved loadouts."""
         if not await self.allow_in_dm(ctx):
             return await ctx.send(_("This command is not available in DM's on this bot."))
         try:
@@ -792,7 +790,7 @@ class Adventure(BaseCog):
     @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
     @commands.check(lambda ctx: Adventure.check_running_adventure(ctx))
     async def equip_loadout(self, ctx: Context, name: str):
-        """Equip a saved loadout"""
+        """Equip a saved loadout."""
         if not await self.allow_in_dm(ctx):
             return await ctx.send(_("This command is not available in DM's on this bot."))
         name = name.lower()
@@ -895,33 +893,33 @@ class Adventure(BaseCog):
     @commands.group()
     @commands.guild_only()
     async def adventureset(self, ctx):
-        """Setup various adventure settings"""
+        """Setup various adventure settings."""
         pass
 
     @adventureset.command()
     @checks.admin_or_permissions(administrator=True)
     async def version(self, ctx):
-        """Display the version of adventure being used"""
+        """Display the version of adventure being used."""
         await ctx.send(box(_("Adventure version: {}").format(self.__version__)))
 
     @adventureset.command()
     @checks.admin_or_permissions(administrator=True)
     async def god(self, ctx: Context, *, name):
-        """[Admin] Set the server's name of the god"""
+        """[Admin] Set the server's name of the god."""
         await self.config.guild(ctx.guild).god_name.set(name)
         await ctx.tick()
 
     @adventureset.command()
     @checks.is_owner()
     async def globalgod(self, ctx: Context, *, name):
-        """[Owner] Set the default name of the god"""
+        """[Owner] Set the default name of the god."""
         await self.config.god_name.set(name)
         await ctx.tick()
 
     @adventureset.command(aliases=["embed"])
     @checks.admin_or_permissions(administrator=True)
     async def embeds(self, ctx):
-        """[Admin] Set whether or not to use embeds for the adventure game"""
+        """[Admin] Set whether or not to use embeds for the adventure game."""
         toggle = await self.config.guild(ctx.guild).embed()
         await self.config.guild(ctx.guild).embed.set(not toggle)
         await ctx.send(_("Embeds: {}").format(not toggle))
@@ -929,17 +927,17 @@ class Adventure(BaseCog):
     @adventureset.command()
     @checks.admin_or_permissions(administrator=True)
     async def cartname(self, ctx: Context, *, name):
-        """[Admin] Set the server's name of the cart"""
+        """[Admin] Set the server's name of the cart."""
         await self.config.guild(ctx.guild).cart_name.set(name)
         await ctx.tick()
 
     @adventureset.command()
     @checks.admin_or_permissions(administrator=True)
     async def carttime(self, ctx: Context, *, time: str):
-        """[Admin] Set the cooldown of the cart"""
+        """[Admin] Set the cooldown of the cart."""
         time_delta = parse_timedelta(time)
         if time_delta is None:
-            return await ctx.send(_("You must supply a ammount and time unit like `120 seconds`."))
+            return await ctx.send(_("You must supply a amount and time unit like `120 seconds`."))
         if time_delta.total_seconds() < 600:
             cartname = await self.config.guild(ctx.guild).cart_name()
             if not cartname:
@@ -953,18 +951,14 @@ class Adventure(BaseCog):
     @adventureset.command(name="clear")
     @checks.is_owner()
     async def clear_user(self, ctx: Context, *, user: discord.User):
-        """
-            Lets you clear a users entire character sheet
-        """
+        """Lets you clear a users entire character sheet."""
         await self.config.user(user).clear()
         await ctx.send(_("{user}'s character sheet has been erased.").format(user=user))
 
     @adventureset.command(name="remove")
     @checks.is_owner()
     async def remove_item(self, ctx: Context, user: discord.Member, *, item_str: str):
-        """
-            Lets you remove an item from a user
-        """
+        """Lets you remove an item from a user."""
         ORDER = [
                 "head",
                 "neck",
@@ -1014,14 +1008,14 @@ class Adventure(BaseCog):
     @adventureset.command()
     @checks.is_owner()
     async def globalcartname(self, ctx: Context, *, name):
-        """[Owner] Set the default name of the cart"""
+        """[Owner] Set the default name of the cart."""
         await self.config.cart_name.set(name)
         await ctx.tick()
 
     @adventureset.command()
     @checks.is_owner()
     async def theme(self, ctx: Context, *, theme):
-        """Change the theme for adventure"""
+        """Change the theme for adventure."""
         # log.debug(os.listdir(cog_data_path(self) / "default"))
         if theme == "default":
             await self.config.theme.set("default")
@@ -1631,7 +1625,7 @@ class Adventure(BaseCog):
 
         `[p]give loot normal @locastan 5`
         will give locastan 5 normal chests.
-        Loot types: normal, rare, epic, legendary
+        Loot types: normal, rare, epic, legendary.
         """
 
         if user is None:
@@ -1683,7 +1677,7 @@ class Adventure(BaseCog):
     async def heroclass(self, ctx: Context, clz: str = None, action: str = None):
         """This allows you to select a class if you are Level 10 or above.
 
-        For information on class use: `[p]heroclass "classname" info`
+        For information on class use: `[p]heroclass "classname" info`.
         """
         if not await self.allow_in_dm(ctx):
             return await ctx.send(_("This command is not available in DM's on this bot."))
@@ -2294,9 +2288,7 @@ class Adventure(BaseCog):
 
     @pet.command(name="forage")
     async def _forage(self, ctx):
-        """
-            Use your pet to forage for items!
-        """
+        """Use your pet to forage for items!"""
         try:
             c = await Character._from_json(self.config, ctx.author)
         except Exception:
@@ -2335,9 +2327,7 @@ class Adventure(BaseCog):
 
     @pet.command(name="free")
     async def _free(self, ctx):
-        """
-            Free your pet :cry:
-        """
+        """Free your pet :cry:"""
         try:
             c = await Character._from_json(self.config, ctx.author)
         except Exception:
@@ -4125,7 +4115,7 @@ class Adventure(BaseCog):
         return Item._from_json({itemname: chance[itemname]})
 
     async def _open_chests(self, ctx: Context, user: discord.Member, chest_type: str, amount: int):
-        """This allows you you to open multiple chests at once and put them in your inventory"""
+        """This allows you you to open multiple chests at once and put them in your inventory."""
         async with self.get_lock(user):
             try:
                 c = await Character._from_json(self.config, ctx.author)
