@@ -30,7 +30,7 @@ Start an adventure do `[p]adventure` and anyone can choose 🗡 to attack the mo
 To start an adventure type `[p]adventure` and everyone can join in.
 Classes can be chosen at level 10 and you can choose between Tinkerer, Berserker, Cleric, Ranger and Bard using `[p]heroclass`. 
 
-Tinkerers can forge two different items into a device bound to their very soul.Use the forge command.
+Tinkerers can forge two different items into a device bound to their very soul. Use the forge command.
 Berserkers have the option to rage and add big bonuses to attacks, but fumbles hurt. Use the rage command when attacking in an adventure.
 Clerics can bless the entire group when praying. Use the bless command when fighting in an adventure.
 Rangers can gain a special pet, which can find items and give reward bonuses. Use the pet command to see pet options.
@@ -42,7 +42,7 @@ Sometimes a cart will stroll past offering new items for players to buy, this is
 
 To view your stats and equipment do `[p]stats` and `[p]backpack`.
 
-You can use earned credits to enter the negaverse and fight a nega version of someone on this server to earn more experience points and level up faster using `[p]negaverse <number_of_credits>`
+You can use earned credits to enter the negaverse and fight a nega version of someone on this server to earn more experience points and level up faster using `[p]negaverse <number_of_credits>`.
 
 ```css
 [epic items look like this]
