@@ -390,16 +390,11 @@ class Adventure(BaseCog):
             count = 0
             for item in items:
                 if not rarity or item.rarity == rarity:
-                    item_price = 0
                     old_owned = item.owned
-                    for x in range(0, item.owned):
-                        item.owned -= 1
-                        item_price += await self._sell(c, item)
-                        if item.owned <= 0:
-                            del c.backpack[item.name]
-                        if not count % 10:
-                            await asyncio.sleep(0.1)
-                        count += 1
+                    item.owned = 0
+                    item_price = await self._sell(c, item, amount=old_owned)
+                    del c.backpack[item.name]
+                    count += old_owned
                     msg += _("{old_item} sold for {price}.\n").format(
                         old_item=str(old_owned) + " " + str(item), price=item_price
                     )
@@ -485,17 +480,10 @@ class Adventure(BaseCog):
                 except BalanceTooHigh:
                     pass
             if pred.result == 1:  # user wants to sell all owned.
-                price = 0
                 old_owned = item.owned
-                count = 0
-                for x in range(0, item.owned):
-                    item.owned -= 1
-                    price += await self._sell(c, item)
-                    if item.owned <= 0:
-                        del c.backpack[item.name]
-                    if not count % 10:
-                        await asyncio.sleep(0.1)
-                    count += 1
+                item.owned = 0
+                price = await self._sell(c, item, amount=old_owned)
+                del c.backpack[item.name]
                 msg += _(
                     "{author} sold all their {old_item} for {price} {currency_name}.\n"
                 ).format(
@@ -511,15 +499,9 @@ class Adventure(BaseCog):
             if pred.result == 2:  # user wants to sell all but one.
                 if item.owned == 1:
                     return await ctx.send(_("You already only own one of those items."))
-                price = 0
                 old_owned = item.owned
-                count = 0
-                for x in range(1, item.owned):
-                    item.owned -= 1
-                    price += await self._sell(c, item)
-                if not count % 10:
-                    await asyncio.sleep(0.1)
-                count += 1
+                item.owned = 1
+                price = await self._sell(c, item, amount=old_owned - 1)
                 if price != 0:
                     msg += _(
                         "{author} sold all but one of their {old_item} for {price} {currency_name}.\n"
@@ -4444,24 +4426,26 @@ class Adventure(BaseCog):
         return phrase
 
     @staticmethod
-    async def _sell(c: Character, item: Item):
+    async def _sell(c: Character, item: Item, *, amount: int=1):
         if item.rarity == "legendary":
-            base = (2000, 5000)
+            base = [2000, 5000]
         elif item.rarity == "epic":
-            base = (500, 1000)
+            base = [500, 1000]
         elif item.rarity == "rare":
-            base = (100, 500)
+            base = [100, 500]
         else:
-            base = (10, 200)
-        price = random.randint(base[0], base[1]) * max(
-            [item.att, item.cha, item.int, item.dex, item.luck], default=1
-        )
-        if c.luck > 0:
-            price = price + round(price * (c.luck / 10))
-        if c.luck < 0:
-            price = price - round(price * (abs(c.luck) / 10))
+            base = [10, 200]
+        for i, bound in enumerate(base):
+            bound *= amount
+            bound *= max(
+                [item.att, item.cha, item.int, item.dex, item.luck], default=1
+            )
+            if c.luck:
+                bound += round(bound * (c.luck / 10))
+            base[i] = bound
+        price = random.randint(*base)
         if price < 0:
-            price = 0
+            return 0
         return price
 
     async def _trader(self, ctx):
