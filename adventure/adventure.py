@@ -374,7 +374,8 @@ class Adventure(BaseCog):
     @commands.check(lambda ctx: Adventure.check_running_adventure(ctx))
     async def backpack_sellall(self, ctx: Context, rarity: str = None):
         """Sell all items in your backpack"""
-        if rarity and rarity.lower() not in ["normal", "rare", "epic", "legendary"]:
+        rarities = ["normal", "rare", "epic", "legendary"]
+        if rarity and rarity.lower() not in rarities:
             return await ctx.send(
                 _("I've never heard of `{}` rarity items before.").format(rarity)
             )
@@ -386,24 +387,24 @@ class Adventure(BaseCog):
                 log.exception("Error with the new character sheet")
                 return
             total_price = 0
-            items = [i for n, i in c.backpack.items() if i.rarity != "forged"]
-            count = 0
-            for item in items:
-                if not rarity or item.rarity == rarity:
-                    old_owned = item.owned
-                    item.owned = 0
-                    item_price = await self._sell(c, item, amount=old_owned)
-                    del c.backpack[item.name]
-                    count += old_owned
-                    msg += _("{old_item} sold for {price}.\n").format(
-                        old_item=str(old_owned) + " " + str(item), price=item_price
-                    )
-                    total_price += item_price
+            if rarity:
+                rarities = [rarity.lower()]
+            items = (i for n, i in c.backpack.items() if i.rarity in rarities)
+            for i, item in enumerate(items):
+                old_owned = item.owned
+                item.owned = 0
+                item_price = self._sell(c, item, amount=old_owned)
+                del c.backpack[item.name]
+                msg += _("{old_item} sold for {price}.\n").format(
+                    old_item=str(old_owned) + " " + str(item), price=item_price
+                )
+                total_price += item_price
+                if not i % 10:
                     await asyncio.sleep(0.1)
-                    try:
-                        await bank.deposit_credits(ctx.author, item_price)
-                    except BalanceTooHigh:
-                        pass
+                try:
+                    await bank.deposit_credits(ctx.author, item_price)
+                except BalanceTooHigh:
+                    pass
             await self.config.user(ctx.author).set(c._to_json())
         msg_list = []
         new_msg = _("{author} sold all their{rarity} items for {price}.\n\n{items}").format(
@@ -466,7 +467,7 @@ class Adventure(BaseCog):
                 # sell one of the item
                 price = 0
                 item.owned -= 1
-                price += await self._sell(c, item)
+                price += self._sell(c, item)
                 msg += _("{author} sold one {item} for {price} {currency_name}.\n").format(
                     author=self.E(ctx.author.display_name),
                     item=box(item, lang="css"),
@@ -482,7 +483,7 @@ class Adventure(BaseCog):
             if pred.result == 1:  # user wants to sell all owned.
                 old_owned = item.owned
                 item.owned = 0
-                price = await self._sell(c, item, amount=old_owned)
+                price = self._sell(c, item, amount=old_owned)
                 del c.backpack[item.name]
                 msg += _(
                     "{author} sold all their {old_item} for {price} {currency_name}.\n"
@@ -501,7 +502,7 @@ class Adventure(BaseCog):
                     return await ctx.send(_("You already only own one of those items."))
                 old_owned = item.owned
                 item.owned = 1
-                price = await self._sell(c, item, amount=old_owned - 1)
+                price = self._sell(c, item, amount=old_owned - 1)
                 if price != 0:
                     msg += _(
                         "{author} sold all but one of their {old_item} for {price} {currency_name}.\n"
@@ -4255,7 +4256,7 @@ class Adventure(BaseCog):
                 return
         await self._clear_react(open_msg)
         if self._treasure_controls[react.emoji] == "sell":
-            price = await self._sell(c, item)
+            price = self._sell(c, item)
             try:
                 await bank.deposit_credits(ctx.author, price)
             except BalanceTooHigh:
@@ -4426,7 +4427,7 @@ class Adventure(BaseCog):
         return phrase
 
     @staticmethod
-    async def _sell(c: Character, item: Item, *, amount: int=1):
+    def _sell(c: Character, item: Item, *, amount: int=1):
         if item.rarity == "legendary":
             base = [2000, 5000]
         elif item.rarity == "epic":
