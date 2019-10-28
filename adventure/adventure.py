@@ -389,7 +389,7 @@ class Adventure(BaseCog):
             total_price = 0
             if rarity:
                 rarities = [rarity.lower()]
-            items = (i for n, i in c.backpack.items() if i.rarity in rarities)
+            items = [i for n, i in c.backpack.items() if i.rarity in rarities]
             for i, item in enumerate(items):
                 old_owned = item.owned
                 item.owned = 0
