@@ -139,7 +139,8 @@ class Item:
         if self.rarity == "legendary":
             return f"{LEGENDARY_OPEN}{self.name}{LEGENDARY_CLOSE}"
         if self.rarity == "forged":
-            return f"{TINKER_OPEN}{self.name}{TINKER_CLOSE}"
+            name = self.name.replace("'", "’")
+            return f"{TINKER_OPEN}{name}{TINKER_CLOSE}"
             # Thanks Sinbad!
 
     @staticmethod
