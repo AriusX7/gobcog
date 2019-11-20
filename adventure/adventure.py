@@ -940,8 +940,9 @@ class Adventure(BaseCog):
 
     @adventureset.command(name="remove")
     @checks.is_owner()
-    async def remove_item(self, ctx: Context, user: discord.Member, *, item_str: str):
-        """Lets you remove an item from a user."""
+    async def remove_item(self, ctx: Context, user: discord.Member, *, full_item_name: str):
+        """Lets you remove an item from a user.
+        Use the full name of the item without including the rarity characters like . or []  or {}."""
         ORDER = [
                 "head",
                 "neck",
@@ -957,6 +958,7 @@ class Adventure(BaseCog):
                 "charm",
             ]
         async with self.get_lock(user):
+            item = None
             try:
                 c = await Character._from_json(self.config, user)
             except Exception:
@@ -966,7 +968,7 @@ class Adventure(BaseCog):
                 if slot == "two handed":
                     continue
                 equipped_item = getattr(c, slot)
-                if equipped_item and equipped_item.name.lower() == item_str.lower():
+                if equipped_item and equipped_item.name.lower() == full_item_name.lower():
                     item = equipped_item
             if item:
                 try:
@@ -975,9 +977,9 @@ class Adventure(BaseCog):
                     pass
             else:
                 try:
-                    item = c.backpack[item_str]
+                    item = c.backpack[full_item_name]
                 except KeyError:
-                    return await ctx.send(_("{} does not have item named {}").format(user, item_str))
+                    return await ctx.send(_("{} does not have an item named `{}`.").format(user, full_item_name))
             try:
                 del c.backpack[item.name]
             except KeyError:
