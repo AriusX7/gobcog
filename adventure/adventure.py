@@ -2,6 +2,7 @@ import asyncio
 import discord
 from discord.ext.commands.errors import BadArgument
 import json
+import math
 import random
 import time
 import logging
@@ -4443,11 +4444,19 @@ class Adventure(BaseCog):
                 [item.att, item.cha, item.int, item.dex, item.luck], default=1
             )
             if c.luck:
-                bound += round(bound * (c.luck / 10))
-            base[i] = bound
-        if base[0] >= base[1]:
+                bound += round(bound * c.luck / 10)
+            base[i] = round(bound)
+        brange = base[1] - base[0]
+        if brange <= 0:
             return 0
-        price = random.randint(*base)
+        if amount < 1:
+            return 0
+        elif amount == 1:
+            price = random.randint(base[0] * amount, base[1] * amount)
+        else:
+            mu = brange / 2
+            sigma = math.sqrt(amount * ((brange) ** 2 - 1) / 12)
+            price = round(amount * (random.gauss(mu, sigma) % brange + base[0]))
         if price < 0:
             return 0
         return price
