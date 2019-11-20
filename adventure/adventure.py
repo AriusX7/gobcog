@@ -4445,6 +4445,8 @@ class Adventure(BaseCog):
             if c.luck:
                 bound += round(bound * (c.luck / 10))
             base[i] = bound
+        if base[0] >= base[1]:
+            return 0
         price = random.randint(*base)
         if price < 0:
             return 0
