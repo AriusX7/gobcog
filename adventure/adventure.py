@@ -1,5 +1,6 @@
 import asyncio
 import discord
+from discord.ext.commands.errors import BadArgument
 import json
 import random
 import time
@@ -1224,7 +1225,7 @@ class Adventure(BaseCog):
         """[Tinkerer Class Only]
 
         This allows a Tinkerer to forge two items into a device.
-        (2h cooldown)
+        (1h cooldown)
         """
         if not await self.allow_in_dm(ctx):
             return await ctx.send(_("This command is not available in DM's on this bot."))
@@ -1270,7 +1271,11 @@ class Adventure(BaseCog):
                     )
                     return await ctx.send(timeout_msg)
                 new_ctx = await self.bot.get_context(reply)
-                item = await ItemConverter().convert(new_ctx, reply.content)
+                try:
+                    item = await ItemConverter().convert(new_ctx, reply.content)
+                except BadArgument as e:
+                    ctx.command.reset_cooldown(ctx)
+                    return await ctx.send(e)
                 if item.rarity == "forged":
                     ctx.command.reset_cooldown(ctx)
                     return await ctx.send(
@@ -1302,7 +1307,11 @@ class Adventure(BaseCog):
                     )
                     return await ctx.send(timeout_msg)
                 new_ctx = await self.bot.get_context(reply)
-                item = await ItemConverter().convert(new_ctx, reply.content)
+                try:
+                    item = await ItemConverter().convert(new_ctx, reply.content)
+                except BadArgument as e:
+                    ctx.command.reset_cooldown(ctx)
+                    return await ctx.send(e)
                 if item.rarity == "forged":
                     ctx.command.reset_cooldown(ctx)
                     return await ctx.send(
