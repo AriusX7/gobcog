@@ -81,6 +81,7 @@ class Adventure(BaseCog):
         self._trader_countdown = {}
         self._current_traders = {}
         self._sessions = {}
+        self._react_messaged = []
         self.tasks = {}
         self.locks = {}
 
@@ -128,6 +129,7 @@ class Adventure(BaseCog):
             "god_name": _("Herbert"),
             "cart_name": _("Hawl's brother"),
             "theme": "default",
+            "restrict": False,
         }
 
         self.RAISINS: list = None
@@ -882,6 +884,16 @@ class Adventure(BaseCog):
         pass
 
     @adventureset.command()
+    @checks.is_owner()
+    async def restrict(self, ctx):
+        """[Owner] Set whether or not adventurers are restricted to one adventure at a time."""
+        toggle = await self.config.restrict()
+        await self.config.restrict.set(not toggle)
+        await ctx.send(
+            _("Adventurers restricted to one adventure at a time: {}").format(not toggle)
+        )
+
+    @adventureset.command()
     @checks.admin_or_permissions(administrator=True)
     async def version(self, ctx):
         """Display the version of adventure being used."""
@@ -946,19 +958,19 @@ class Adventure(BaseCog):
         """Lets you remove an item from a user.
         Use the full name of the item without including the rarity characters like . or []  or {}."""
         ORDER = [
-                "head",
-                "neck",
-                "chest",
-                "gloves",
-                "belt",
-                "legs",
-                "boots",
-                "left",
-                "right",
-                "two handed",
-                "ring",
-                "charm",
-            ]
+            "head",
+            "neck",
+            "chest",
+            "gloves",
+            "belt",
+            "legs",
+            "boots",
+            "left",
+            "right",
+            "two handed",
+            "ring",
+            "charm",
+        ]
         async with self.get_lock(user):
             item = None
             try:
@@ -981,7 +993,9 @@ class Adventure(BaseCog):
                 try:
                     item = c.backpack[full_item_name]
                 except KeyError:
-                    return await ctx.send(_("{} does not have an item named `{}`.").format(user, full_item_name))
+                    return await ctx.send(
+                        _("{} does not have an item named `{}`.").format(user, full_item_name)
+                    )
             try:
                 del c.backpack[item.name]
             except KeyError:
@@ -2739,7 +2753,9 @@ class Adventure(BaseCog):
         """
         if ctx.guild.id in self._sessions:
             msg = await ctx.send(
-                _("There's already another adventure going on in this server. Would you like to cancel it?")
+                _(
+                    "There's already another adventure going on in this server. Would you like to cancel it?"
+                )
             )
             start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
             pred = ReactionPredicate.yes_or_no(msg, ctx.author)
@@ -2758,6 +2774,7 @@ class Adventure(BaseCog):
         if challenge and not await ctx.bot.is_owner(ctx.author):
             # Only let the bot owner specify a specific challenge
             challenge = None
+
         adventure_msg = _("You feel adventurous, {}?").format(self.E(ctx.author.display_name))
         try:
             reward, participants = await self._simple(ctx, adventure_msg, challenge)
@@ -2867,7 +2884,6 @@ class Adventure(BaseCog):
         ).format(
             attr=session.attribute, chall=session.challenge, threat=random.choice(self.THREATEE)
         )
-
 
         embed = discord.Embed(colour=discord.Colour.blurple())
         use_embeds = (
@@ -2990,8 +3006,36 @@ class Adventure(BaseCog):
                 except Exception:
                     # print(e)
                     pass
+        restricted = await self.config.restrict()
         if user not in getattr(session, action):
-            getattr(session, action).append(user)
+            if restricted:
+                all_users = []
+                for guild_id, guild_session in self._sessions.items():
+                    guild_users_in_game = (
+                        guild_session.fight
+                        + guild_session.magic
+                        + guild_session.talk
+                        + guild_session.pray
+                        + guild_session.run
+                    )
+                    all_users = all_users + guild_users_in_game
+
+                if user in all_users:
+                    user_id = f"{user.id}-{user.guild.id}"
+                    # iterating through reactions here and removing them seems to be expensive
+                    # so they can just keep their react on the adventures they can't join
+                    if user_id not in self._react_messaged:
+                        await reaction.message.channel.send(
+                            f"{bold(self.E(user.display_name))}, you are already in an existing adventure. Wait for it to finish before joining another one."
+                        )
+                        self._react_messaged.append(user_id)
+                        return
+                    else:
+                        return
+                else:
+                    getattr(session, action).append(user)
+            else:
+                getattr(session, action).append(user)
 
     async def _handle_cart(self, reaction, user):
         guild = user.guild
@@ -3562,6 +3606,11 @@ class Adventure(BaseCog):
         session.participants = set(
             fight_list + magic_list + talk_list + pray_list + run_list + fumblelist
         )
+        for participant in session.participants:
+            try:
+                self._react_messaged.remove(f"{participant.id}-{participant.guild.id}")
+            except ValueError:
+                pass
 
     async def handle_run(self, guild_id, attack, diplomacy, magic):
         runners = []
