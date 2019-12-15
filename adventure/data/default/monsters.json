@@ -177,7 +177,7 @@
     "Emerald Wyrm": {"hp": 265, "pdef": 0.8, "mdef": 1, "dipl": 290, "image": "https://cdn.pixabay.com/photo/2016/08/05/00/10/dragon-1571287_960_720.png", "boss": true, "miniboss": {}, "color":""},
     "Nether Dragon": {"hp": 265, "pdef": 0.5, "mdef": 1.1, "dipl": 245, "image": "https://i.imgur.com/Y3fFqUX.jpg", "boss": true, "miniboss": {}, "color":""},
     "Obsidian Drake": {"hp": 270, "pdef": 1, "mdef": 0.9, "dipl": 260, "image": "https://cdn.pixabay.com/photo/2017/12/06/08/39/dragon-3001238_960_720.png", "boss": true, "miniboss": {}, "color":""},
-    "Golden Wyrm": {"hp": 280, "pdef": 1.25, "mdef": 1.25, "dipl": 280, "image": "https://i.imgur.com/zOd2s9R.jpg", "boss": true, "miniboss": {}, "color":""},
+    "Golden Wyrm": {"hp": 280, "pdef": 1.25, "mdef": 1.25, "dipl": 280, "image": "http://i156.photobucket.com/albums/t37/elmarjem/Dragonlance_detail.jpg", "boss": true, "miniboss": {}, "color":""},
     "Ruby Dragon": {"hp": 280, "pdef": 1, "mdef": 1.1, "dipl": 300, "image": "https://cdn.pixabay.com/photo/2016/12/30/11/17/dragon-1940366_960_720.png", "boss": true, "miniboss": {}, "color":""},
     "Red Dragon": {"hp": 280, "pdef": 0.8, "mdef": 1, "dipl": 320, "image": "https://i.imgur.com/KN0FcNT.jpg", "boss": true, "miniboss": {}, "color":""},
     "Emerald Drake": {"hp": 290, "pdef": 0.9, "mdef": 1.1, "dipl": 300, "image": "https://i.imgur.com/cZZ6RJh.png", "boss": true, "miniboss": {}, "color":""},
