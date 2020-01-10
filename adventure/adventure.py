@@ -29,21 +29,13 @@ from redbot.core.i18n import Translator, cog_i18n
 from .charsheet import Character, Item, GameSession, Stats, parse_timedelta, ItemConverter
 
 
-BaseCog = getattr(commands, "Cog", object)
-
 _ = Translator("Adventure", __file__)
 
 log = logging.getLogger("red.adventure")
-listener = getattr(commands.Cog, "listener", None)
-
-if listener is None:
-
-    def listener(name=None):
-        return lambda x: x
 
 
 @cog_i18n(_)
-class Adventure(BaseCog):
+class Adventure(commands.Cog):
     """Adventure, derived from the Goblins Adventure cog by locastan"""
 
     __version__ = "2.5.0"
@@ -2933,37 +2925,15 @@ class Adventure(BaseCog):
 
         return await self._result(ctx, adventure_msg)
 
-    async def local_perms(self, user):
+    async def global_and_local_perms(self, user):
         """Check the user is/isn't locally whitelisted/blacklisted.
-            https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
+            https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.2.0/redbot/core/global_checks.py
         """
         if await self.bot.is_owner(user):
             return True
-        guild_settings = self.bot.db.guild(user.guild)
-        local_blacklist = await guild_settings.blacklist()
-        local_whitelist = await guild_settings.whitelist()
+        return await self.bot.allowed_by_whitelist_blacklist(user)
 
-        _ids = [r.id for r in user.roles if not r.is_default()]
-        _ids.append(user.id)
-        if local_whitelist:
-            return any(i in local_whitelist for i in _ids)
-
-        return not any(i in local_blacklist for i in _ids)
-
-    async def global_perms(self, user):
-        """Check the user is/isn't globally whitelisted/blacklisted.
-            https://github.com/Cog-Creators/Red-DiscordBot/blob/V3/release/3.0.0/redbot/core/global_checks.py
-        """
-        if await self.bot.is_owner(user):
-            return True
-
-        whitelist = await self.bot.db.whitelist()
-        if whitelist:
-            return user.id in whitelist
-
-        return user.id not in await self.bot.db.blacklist()
-
-    @listener()  # 3.1 backwards compatibility fix Thanks Sinbad!
+    @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
         """This will be a cog level reaction_add listener for game logic"""
         if user.bot:
@@ -2972,7 +2942,7 @@ class Adventure(BaseCog):
             guild = user.guild
         except AttributeError:
             return
-        if not await self.local_perms(user) or not await self.global_perms(user):
+        if not await self.global_and_local_perms(user):
             return
         log.debug("reactions working")
         emojis = ReactionPredicate.NUMBER_EMOJIS[:5] + self._adventure_actions
@@ -4073,7 +4043,7 @@ class Adventure(BaseCog):
         epoch += seconds
         return epoch
 
-    @listener()
+    @commands.Cog.listener()
     async def on_raw_message_delete(self, payload):
         if payload.guild_id not in self._sessions:
             return
@@ -4087,7 +4057,7 @@ class Adventure(BaseCog):
             except Exception:
                 pass
 
-    @listener()  # backwards compatibility 3.1 fix, thanks Sinbad!
+    @commands.Cog.listener()
     async def on_message(self, message):
         if not message.guild:
             return
