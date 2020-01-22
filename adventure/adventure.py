@@ -278,7 +278,7 @@ class Adventure(BaseCog):
         }
         for name, file in files.items():
             if not file.exists():
-                files[name] = bundled_data_path(self) / f"default/{file.name}"
+                files[name] = bundled_data_path(self) / "default" / f"{file.name}"
         with files["pets"].open("r") as f:
             self.PETS = json.load(f)
         with files["attr"].open("r") as f:
@@ -460,7 +460,7 @@ class Adventure(BaseCog):
             return await smart_embed(
                 ctx, _("You tried to selling your items, but there is no merchants in sight.")
             )
-        rarities = ["normal", "rare", "epic", "legendary", "forged"]
+        rarities = ["normal", "rare", "epic", "legendary", "set", "forged"]
         if rarity and rarity.lower() not in rarities:
             return await smart_embed(
                 ctx, _("I've never heard of `{rarity}` rarity items before.").format(rarity=rarity)
