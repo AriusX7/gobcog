@@ -206,6 +206,7 @@ class Adventure(BaseCog):
             "cooldown": 0,
             "cartroom": None,
             "cart_timeout": 10800,
+            "cooldown_timer_manual": 120
         }
         default_global = {
             "god_name": _("Herbert"),
@@ -1164,6 +1165,24 @@ class Adventure(BaseCog):
         await self.config.restrict.set(not toggle)
         await smart_embed(
             ctx, _("Adventurers restricted to one adventure at a time: {}").format(not toggle)
+        )
+
+    @adventureset.command(name="advcooldown", hidden=True)
+    @checks.guildowner()
+    @commands.guild_only()
+    async def advcooldown(self, ctx: Context, *, time_in_seconds: int):
+        """Changes the adventure cooldown.
+
+        Default is 120 seconds.
+        """
+        if time_in_seconds < 30:
+            return await smart_embed(
+            ctx, _("Cooldown cannot be set to less than 30 seconds")
+        )
+
+        await self.config.guild(ctx.guild).cooldown_timer_manual.set(time_in_seconds)
+        await smart_embed(
+            ctx, _("Adventure cooldown set to {cooldown} seconds").format(cooldown=time_in_seconds)
         )
 
     @adventureset.command()
@@ -3298,12 +3317,13 @@ class Adventure(BaseCog):
                     req=500, name=currency_name
                 ),
             )
-        cooldown = await self.config.guild(ctx.guild).cooldown()
-        cooldown_time = 420
+        guild_settings = await self.config.guild(ctx.guild).all()
+        cooldown = guild_settings["cooldown"]
 
-        if cooldown + cooldown_time <= time.time():
-            await self.config.guild(ctx.guild).cooldown.set(time.time())
-        else:
+        cooldown_time = guild_settings["cooldown_timer_manual"]
+        cooldown_time = cooldown_time
+
+        if cooldown + cooldown_time > time.time():
             cooldown_time = cooldown + cooldown_time - time.time()
             return await smart_embed(
                 ctx,
@@ -3317,6 +3337,7 @@ class Adventure(BaseCog):
         adventure_msg = _("You feel adventurous, {}?").format(self.escape(ctx.author.display_name))
         try:
             reward, participants = await self._simple(ctx, adventure_msg, challenge)
+            await self.config.guild(ctx.guild).cooldown.set(time.time())
         except Exception:
             await self.config.guild(ctx.guild).cooldown.set(0)
             log.error("Something went wrong controlling the game", exc_info=True)
@@ -3358,7 +3379,7 @@ class Adventure(BaseCog):
             return
         possible_monsters = []
         for e, (m, stats) in enumerate(self.MONSTER_NOW.items(), 1):
-            if e not in range(10) and (stats["hp"] + stats["dipl"]) > (c.total_stats * 15):
+            if e not in range(10) and (stats["hp"] + stats["dipl"]) > (c.total_stats * max(min(c.rebiths, 0), 1)):
                 continue
             if not stats["boss"] and not stats["miniboss"]:
                 count = 0
@@ -3390,6 +3411,8 @@ class Adventure(BaseCog):
             self.monster_stats = 1 + max((c.rebirths // 25) - 1, 0)
         elif c.rebirths >= 15:
             monsters = {**self.AS_MONSTERS}
+        elif c.rebirths >= 10:
+            monsters = {**self.MONSTERS, **self.AS_MONSTERS}
         else:
             self.monster_stats = 1
             monsters = self.MONSTERS
