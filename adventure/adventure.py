@@ -3379,7 +3379,7 @@ class Adventure(BaseCog):
             return
         possible_monsters = []
         for e, (m, stats) in enumerate(self.MONSTER_NOW.items(), 1):
-            if e not in range(10) and (stats["hp"] + stats["dipl"]) > (c.total_stats * max(min(c.rebiths, 0), 1)):
+            if e not in range(10) and (stats["hp"] + stats["dipl"]) > (c.total_stats * min(max(c.rebiths, 1), 15)):
                 continue
             if not stats["boss"] and not stats["miniboss"]:
                 count = 0
