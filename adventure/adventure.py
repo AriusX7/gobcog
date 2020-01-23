@@ -332,7 +332,7 @@ class Adventure(BaseCog):
         if not sessions:
             return False
         participants_ids = set(
-            [p.id for _loop, session in self._sessions.items() for p in session.participants]
+            [p.id for _loop, session in self._sessions.items() for p in [*session.fight, *session.magic, *session.pray, *session.talk, *session.run]]
         )
         return bool(author.id in participants_ids)
 
