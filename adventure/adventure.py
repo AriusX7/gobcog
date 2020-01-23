@@ -2557,7 +2557,7 @@ class Adventure(BaseCog):
             await nega_msg.edit(
                 content=_(
                     "{content}\n{author} "
-                    "{dice}{roll}) bravely defeated {negachar} {dice}({versus}). "
+                    "({dice}{roll}) bravely defeated {negachar} {dice}({versus}). "
                     "You gain {xp_gain} xp."
                 ).format(
                     dice=self.emojis.dice,
@@ -2576,7 +2576,7 @@ class Adventure(BaseCog):
             await nega_msg.edit(
                 content=_(
                     "{content}\n{author} "
-                    "{dice}({roll}) almost killed {negachar} {dice}({versus})."
+                    "({dice}({roll}) almost killed {negachar} {dice}({versus})."
                 ).format(
                     dice=self.emojis.dice,
                     content=nega_msg.content,
