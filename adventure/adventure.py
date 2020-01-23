@@ -2596,7 +2596,7 @@ class Adventure(BaseCog):
                 loss = _("all of their")
             loss_msg = _(
                 ", losing {loss} {currency_name} as {negachar} looted their backpack"
-            ).format(loss=humanize_number(loss), currency_name=currency_name, negachar=negachar)
+            ).format(loss=humanize_number(loss) if not isinstance(loss, str) else loss, currency_name=currency_name, negachar=negachar)
             await nega_msg.edit(
                 content=_(
                     "{author} {dice}({roll}) was killed by {negachar} {dice}({versus}){loss_msg}."
@@ -3101,10 +3101,17 @@ class Adventure(BaseCog):
                 )
             return
 
-        if c.skill["pool"] < amount:
+        if c.skill["pool"] <= 0:
             return await smart_embed(
                 ctx,
                 _("{}, you do not have unspent skillpoints.").format(
+                    self.escape(ctx.author.display_name)
+                ),
+            )
+        elif c.skill["pool"] < amount:
+            return await smart_embed(
+                ctx,
+                _("{}, you do not have enough unspent skillpoints.").format(
                     self.escape(ctx.author.display_name)
                 ),
             )
@@ -3987,14 +3994,17 @@ class Adventure(BaseCog):
             loss_list = []
             result_msg += session.miniboss["defeat"]
             if len(repair_list) > 0:
+                temp_repair = []
                 for user, loss in repair_list:
-                    loss_list.append(
-                        _("{user} used {loss} {currency_name}").format(
-                            user=bold(self.escape(user.display_name)),
-                            loss=humanize_number(loss),
-                            currency_name=currency_name,
+                    if user not in temp_repair:
+                        loss_list.append(
+                            _("{user} used {loss} {currency_name}").format(
+                                user=bold(self.escape(user.display_name)),
+                                loss=humanize_number(loss),
+                                currency_name=currency_name,
+                            )
                         )
-                    )
+                        temp_repair.append(user)
                 result_msg += _(
                     "\n{loss_list} to repay a passing cleric that unfroze the group."
                 ).format(loss_list=humanize_list(loss_list))
@@ -4032,10 +4042,13 @@ class Adventure(BaseCog):
                         await bank.set_balance(user, 0)
             loss_list = []
             if len(repair_list) > 0:
+                temp_repair = []
                 for user, loss in repair_list:
-                    loss_list.append(
-                        f"{bold(self.escape(user.display_name))} used {humanize_number(loss)} {currency_name}"
-                    )
+                    if user not in temp_repair:
+                        loss_list.append(
+                            f"{bold(self.escape(user.display_name))} used {humanize_number(loss)} {currency_name}"
+                        )
+                        temp_repair.append(user)
             miniboss = session.challenge
             special = session.miniboss["special"]
             result_msg += _(
@@ -4100,10 +4113,13 @@ class Adventure(BaseCog):
                             await bank.set_balance(user, 0)
                 loss_list = []
                 if len(repair_list) > 0:
+                    temp_repair = []
                     for user, loss in repair_list:
-                        loss_list.append(
-                            f"{bold(self.escape(user.display_name))} used {humanize_number(loss)} {currency_name}"
-                        )
+                        if user not in temp_repair:
+                            loss_list.append(
+                                f"{bold(self.escape(user.display_name))} used {humanize_number(loss)} {currency_name}"
+                            )
+                            temp_repair.append(user)
                 repair_text = (
                     ""
                     if not loss_list
@@ -4301,14 +4317,17 @@ class Adventure(BaseCog):
                                 await bank.set_balance(user, 0)
                     loss_list = []
                     if len(repair_list) > 0:
+                        temp_repair = []
                         for user, loss in repair_list:
-                            loss_list.append(
-                                _("{user} used {loss} {currency_name}").format(
-                                    user=bold(self.escape(user.display_name)),
-                                    loss=humanize_number(loss),
-                                    currency_name=currency_name,
+                            if user not in temp_repair:
+                                loss_list.append(
+                                    _("{user} used {loss} {currency_name}").format(
+                                        user=bold(self.escape(user.display_name)),
+                                        loss=humanize_number(loss),
+                                        currency_name=currency_name,
+                                    )
                                 )
-                            )
+                                temp_repair.append(user)
                     repair_text = (
                         ""
                         if not loss_list
