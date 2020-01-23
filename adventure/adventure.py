@@ -2557,7 +2557,7 @@ class Adventure(BaseCog):
             await nega_msg.edit(
                 content=_(
                     "{content}\n{author} "
-                    "({dice}{roll}) bravely defeated {negachar} {dice}({versus}). "
+                    "{dice}({roll}) bravely defeated {negachar} {dice}({versus}). "
                     "You gain {xp_gain} xp."
                 ).format(
                     dice=self.emojis.dice,
@@ -2576,7 +2576,7 @@ class Adventure(BaseCog):
             await nega_msg.edit(
                 content=_(
                     "{content}\n{author} "
-                    "({dice}({roll}) almost killed {negachar} {dice}({versus})."
+                    "{dice}({roll}) almost killed {negachar} {dice}({versus})."
                 ).format(
                     dice=self.emojis.dice,
                     content=nega_msg.content,
@@ -2827,7 +2827,6 @@ class Adventure(BaseCog):
 
     @commands.command()
     @commands.guild_only()
-    @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
     async def bless(self, ctx: Context):
         """[Cleric Class Only]
 
@@ -2881,7 +2880,6 @@ class Adventure(BaseCog):
 
     @commands.command()
     @commands.guild_only()
-    @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
     async def rage(self, ctx: Context):
         """[Berserker Class Only]
 
@@ -2933,7 +2931,6 @@ class Adventure(BaseCog):
 
     @commands.command()
     @commands.guild_only()
-    @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
     async def focus(self, ctx: Context):
         """[Wizard Class Only]
 
@@ -2985,7 +2982,6 @@ class Adventure(BaseCog):
 
     @commands.command()
     @commands.guild_only()
-    @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
     async def music(self, ctx: Context):
         """[Bard Class Only]
 
