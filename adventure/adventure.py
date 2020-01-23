@@ -4435,7 +4435,7 @@ class Adventure(BaseCog):
             except Exception:
                 log.exception("Error with the new character sheet")
                 continue
-            crit_mod = (max(c.dex, c.luck) // 10) + (c.total_att // 20)
+            crit_mod = max(c.dex, c.luck) + (c.total_att // 20) # Thanks GoaFan77
             mod = 0
             if crit_mod != 0:
                 mod = round(crit_mod / 10)
