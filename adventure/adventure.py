@@ -3556,7 +3556,7 @@ class Adventure(BaseCog):
             timeout = 60 * 2
         session.message_id = adventure_msg.id
         start_adding_reactions(adventure_msg, self._adventure_actions, ctx.bot.loop)
-        timer = await self._adv_countdown(ctx, session.timer, "Time remaining: ")
+        timer = await self._adv_countdown(ctx, session.timer, "Time remaining")
         self.tasks[adventure_msg.id] = timer
         try:
             await asyncio.wait_for(timer, timeout=timeout + 5)
