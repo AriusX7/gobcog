@@ -3379,7 +3379,7 @@ class Adventure(BaseCog):
             return
         possible_monsters = []
         for e, (m, stats) in enumerate(self.MONSTER_NOW.items(), 1):
-            if e not in range(10) and (stats["hp"] + stats["dipl"]) > (c.total_stats * min(max(c.rebiths, 1), 15)):
+            if e not in range(10) and (stats["hp"] + stats["dipl"]) > (c.total_stats * min(max(c.rebirths, 1), 15)):
                 continue
             if not stats["boss"] and not stats["miniboss"]:
                 count = 0
@@ -4316,15 +4316,17 @@ class Adventure(BaseCog):
                     )
                 loss_list = []
                 if len(repair_list) > 0:
-                    repair_list = set(repair_list)
+                    temp_repair = []
                     for user, loss in repair_list:
-                        loss_list.append(
-                            _("{user} used {loss} {currency_name}").format(
-                                user=bold(self.escape(user.display_name)),
-                                loss=humanize_number(loss),
-                                currency_name=currency_name,
+                        if user not in temp_repair:
+                            loss_list.append(
+                                _("{user} used {loss} {currency_name}").format(
+                                    user=bold(self.escape(user.display_name)),
+                                    loss=humanize_number(loss),
+                                    currency_name=currency_name,
+                                )
                             )
-                        )
+                            temp_repair.append(user)
                 repair_text = (
                     ""
                     if not loss_list
