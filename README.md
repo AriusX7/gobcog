@@ -2,6 +2,7 @@ Hello! You found the adventure page!
 
 This cog was originally made by locastan and can be found at the fork link above.
 
+If you are an existing adventure user, make sure to read the [latest changes!](https://github.com/aikaterna/gobcog/blob/master/Change%20logs%20for%203.0.0.md)
 
 This version is significantly different internally and features:
 
