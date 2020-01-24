@@ -4,24 +4,6 @@ This cog was originally made by locastan and can be found at the fork link above
 
 If you are an existing adventure user, make sure to read the [latest changes!](https://github.com/aikaterna/gobcog/blob/master/Change%20logs%20for%203.0.0.md)
 
-This version is significantly different internally and features:
-
-* Using Config for data management and more atomic user attribute saving
-* Expanded mob/monster list for a stat and monster combo of over 2,800 possibilities
-* Added 300% more gear possibilities
-* Doubled the amount of item slots
-* The game can be played on multiple servers at once
-
-
-Things I would like to improve in the future, or will very gladly welcome PRs on:
-
-* End of game HP display (show total groups’ hit vs mob points, for both str and cha)
-* Make it so that the backpack can hold more than 1x of each item (double items overwrite)
-* Trade unopened loot boxes between players
-* Add alternate stats like dexterity/agility that would affect things like critical chance (and revamping the entire system to accept and use other stats like that)
-* Add player races (gives permanent bonus that scales with level for 1-5 additional points in a stat)
-* Revamp calculations for player 1-20 rolls during adventure to mitigate stat bloat at the higher end of the game (currently managed through a very wide range of mobs with varying str/hp values)
-
 If you have something you would like to request for this cog, PLEASE OPEN AN ISSUE HERE AND DESCRIBE IT. I will not be taking requests for this via DMs or Discord messages. This cog is also on hold for improvements authored by me until I have more time for it, but nothing wrong with writing something yourself and PRing it!
 
 # Introduction to Adventure!
