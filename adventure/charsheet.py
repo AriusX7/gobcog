@@ -4,7 +4,7 @@ import logging
 import re
 from copy import copy
 from datetime import date, timedelta
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Mapping, Optional, Set
 
 import discord
 from discord.ext.commands import check
@@ -349,6 +349,8 @@ class GameSession:
         self.miniboss: dict = kwargs.pop("miniboss")
         self.timer: int = kwargs.pop("timer")
         self.monster: dict = kwargs.pop("monster")
+        self.monsters: List[Mapping] = kwargs.pop("monsters", [])
+        self.monster_stats: int = kwargs.pop("monster_stats", 1)
         self.message_id: int = 0
         self.reacted = False
         self.participants: Set[discord.Member] = set()
@@ -396,7 +398,16 @@ class Character(Item):
         self.int = self.get_stat_value("int")
         self.dex = self.get_stat_value("dex")
         self.luck = self.get_stat_value("luck")
-
+        if self.lvl >= self.maxlevel and self.rebirths < 1:
+            self.att = min(self.att, 5)
+            self.cha = min(self.cha, 5)
+            self.int = min(self.int, 5)
+            self.dex = min(self.dex, 5)
+            self.luck = min(self.luck, 5)
+            self.skill["att"] = 1
+            self.skill["int"] = 1
+            self.skill["cha"] = 1
+            self.skill["pool"] = 0
         self.total_att = self.att + self.skill["att"]
         self.total_int = self.int + self.skill["int"]
         self.total_cha = self.cha + self.skill["cha"]
