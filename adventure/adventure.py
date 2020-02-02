@@ -2205,10 +2205,9 @@ class Adventure(BaseCog):
                     await class_msg.edit(content=broke)
                     ctx.command.reset_cooldown(ctx)
                     return await self._clear_react(class_msg)
-                try:
-                    await bank.withdraw_credits(ctx.author, spend)
-                except ValueError:
+                if not await bank.can_spend(ctx.author, spend):
                     return await class_msg.edit(content=broke)
+
                 async with self.get_lock(ctx.author):
                     try:
                         c = await Character.from_json(self.config, ctx.author)
@@ -2294,7 +2293,6 @@ class Adventure(BaseCog):
                                 return await class_msg.edit(
                                     content=class_msg.content + box(now_class_msg, lang="css")
                                 )
-
                             else:
                                 ctx.command.reset_cooldown(ctx)
                                 return
@@ -2304,7 +2302,11 @@ class Adventure(BaseCog):
                             c.heroclass = classes[clz]
                             await self.config.user(ctx.author).set(c.to_json())
                             await self._clear_react(class_msg)
-                            return await class_msg.edit(content=box(now_class_msg, lang="css"))
+                            await class_msg.edit(content=box(now_class_msg, lang="css"))
+                        try:
+                            await bank.withdraw_credits(ctx.author, spend)
+                        except ValueError:
+                            return await class_msg.edit(content=broke)
                     else:
                         ctx.command.reset_cooldown(ctx)
                         await smart_embed(
@@ -5334,7 +5336,7 @@ class Adventure(BaseCog):
         wedfriday = datetime.today().weekday() in [2, 4]
         daymult = 3 if weekend else 2 if wedfriday else 1
         xp = max(1, round(amount)) * daymult
-        cp = max(1, round(amount)) // 10
+        cp = max(1, round(amount)) * daymult
         newxp = 0
         newcp = 0
         rewards_list = []
