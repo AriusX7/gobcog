@@ -1,0 +1,58 @@
+{
+  "Adventure": {
+    "att": 3,
+    "cha": 3,
+    "dex": 3,
+    "int": 3,
+    "luck": 3
+  },
+  "Clarity": {
+    "cha": 2,
+    "dex": 2,
+    "int": 3,
+    "luck": 1
+  },
+  "Eternity": {
+    "att": 2,
+    "int": 4,
+    "luck": 2
+  },
+  "Extinction": {
+    "att": 3,
+    "cha": -2,
+    "int": 3
+  },
+  "Fools": {
+    "cha": 2
+  },
+  "Fury": {
+    "att": 4,
+    "int": 2
+  },
+  "Kings": {
+    "att": 2,
+    "int": 2,
+    "luck": 3
+  },
+  "Memories": {
+    "int": 3
+  },
+  "Stealth": {
+    "dex": 4,
+    "luck": 2
+  },
+  "Suffering": {
+    "att": 2,
+    "cha": 1,
+    "int": 2,
+    "dex": 2
+  },
+  "Resilience": {
+    "att": 3,
+    "cha": 1,
+    "int": 1
+  },
+  "West": {
+    "the": true
+  }
+}

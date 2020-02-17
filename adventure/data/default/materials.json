@@ -1,0 +1,40 @@
+{
+  "normal": {
+    "Cloth": 0,
+    "Linen": 0,
+    "Silk": 0,
+    "Fur": 1,
+    "Dwarven": 1,
+    "Hide": 1
+  },
+  "rare": {
+    "Bronze": 2,
+    "Iron": 3,
+    "Bone": 2,
+    "Gold": 3,
+    "Silver": 2,
+    "Elven": 3,
+    "Quicksilver": 4
+  },
+  "epic": {
+    "Duranium": 5,
+    "Mithril": 4,
+    "Obsidian": 5,
+    "Titanium": 4,
+    "Adamantite": 6,
+    "Ebony": 7
+  },
+  "legendary": {
+    "Dragonscale": 12,
+    "Dalekanium": 11,
+    "Tritanium": 11,
+    "Runite": 10,
+    "Vibranium": 12,
+    "Draconium": 14,
+    "Dragonplate": 13,
+    "Cobalt": 12,
+    "Obsidium": 11,
+    "Nanite": 15,
+    "Unknown": 20
+  }
+}

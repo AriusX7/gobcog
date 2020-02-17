@@ -1,0 +1,286 @@
+{
+  "belt": {
+    "Band": {
+      "dex": 1,
+      "int": 1
+    },
+    "Belt": {
+      "att": 1,
+      "dex": 1
+    },
+    "Cord": {
+      "dex": 2
+    },
+    "Strap": {
+      "att": 2,
+      "int": 2
+    },
+    "Waistband": {
+      "att": 1,
+      "int": 1
+    }
+  },
+  "boots": {
+    "Boots": {
+      "att": 1,
+      "dex": -1,
+      "int": 1
+    },
+    "Clogs": {},
+    "Sabatons": {
+      "att": 2,
+      "cha": 2,
+      "dex": -1,
+      "int": 2
+    },
+    "Slip-Ons": {
+      "dex": 1
+    },
+    "Stompers": {
+      "att": 2
+    }
+  },
+  "charm": {
+    "Amulet": {
+      "att": 1,
+      "cha": 1,
+      "int": 2,
+      "luck": 1
+    },
+    "Charm": {
+      "att": 1,
+      "cha": 3,
+      "int": 1,
+      "luck": 1
+    },
+    "Medallion": {
+      "att": 2,
+      "cha": 1,
+      "int": 2
+    },
+    "Shard": {
+      "att": 3,
+      "dex": 1,
+      "int": 3,
+      "luck": 2
+    }
+  },
+  "chest": {
+    "Armor": {
+      "att": 1,
+      "cha": 1
+    },
+    "Battleplate": {
+      "att": 3,
+      "cha": 1,
+      "dex": -2,
+      "int": 2
+    },
+    "Chestplate": {
+      "att": 2,
+      "cha": 2,
+      "dex": -1,
+      "int": 2,
+      "luck": 1
+    },
+    "Robes": {
+      "att": 0,
+      "cha": 0,
+      "dex": 2,
+      "int": 2,
+      "luck": 2
+    },
+    "Vest": {
+      "att": 1,
+      "cha": 1,
+      "dex": 3,
+      "int": 1,
+      "luck": 1
+    }
+  },
+  "gloves": {
+    "Fists": {
+      "att": 2,
+      "cha": -1,
+      "dex": 2,
+      "int": -2
+    },
+    "Gauntlets": {
+      "att": 2,
+      "cha": 1,
+      "dex": -1,
+      "int": 2
+    },
+    "Gloves": {
+      "dex": 1
+    },
+    "Grips": {
+      "att": 1
+    }
+  },
+  "head": {
+    "Crown": {
+      "att": 1,
+      "cha": 3,
+      "dex": 2,
+      "int": 3,
+      "luck": 2
+    },
+    "Faceguard": {
+      "att": 1,
+      "dex": 2,
+      "luck": 1
+    },
+    "Greathelm": {
+      "att": 2,
+      "cha": 0,
+      "dex": -1,
+      "int": 2,
+      "luck": 0
+    },
+    "Jaws": {
+      "att": 2
+    },
+    "Mask": {
+      "att": 1,
+      "int": 1
+    }
+  },
+  "left": {
+    "Defender": {
+      "att": 3,
+      "cha": 1,
+      "dex": -2,
+      "int": 1
+    },
+    "Deflector": {
+      "att": 2,
+      "int": 2
+    },
+    "Shield": {
+      "att": 1,
+      "cha": 1,
+      "int": 1
+    },
+    "Spellbook": {
+      "cha": 2,
+      "dex": 2,
+      "int": 3,
+      "luck": 2
+    },
+    "Tome": {
+      "dex": -2,
+      "int": 2,
+      "luck": 2
+    }
+  },
+  "legs": {
+    "Chaps": {
+      "att": 1,
+      "cha": 1,
+      "dex": 1,
+      "int": 1
+    },
+    "Guards": {
+      "att": 2,
+      "int": 2
+    },
+    "Leggings": {
+      "dex": 1,
+      "luck": 1
+    },
+    "Legplates": {
+      "att": 2,
+      "cha": 1,
+      "int": 2
+    },
+    "Skins": {
+      "att": 1,
+      "dex": 2,
+      "int": 1
+    }
+  },
+  "neck": {
+    "Chain": {
+      "att": 2,
+      "dex": 1,
+      "int": 2,
+      "luck": 1
+    },
+    "Collar": {
+      "att": 1,
+      "int": 1
+    },
+    "Necklace": {
+      "att": 3,
+      "cha": 2,
+      "dex": 2,
+      "int": 3,
+      "luck": 2
+    }
+  },
+  "right": {
+    "Axe": {
+      "att": 1,
+      "cha": -1
+    },
+    "Dagger": {
+      "att": 2,
+      "dex": 2,
+      "luck": 1
+    },
+    "Katana": {
+      "att": 2,
+      "cha": 1
+    },
+    "Quarterstaff": {
+      "dex": 2,
+      "int": 2,
+      "luck": 1
+    },
+    "Sword": {
+      "att": 2
+    }
+  },
+  "ring": {
+    "Ring": {
+      "att": 2,
+      "cha": 1,
+      "dex": 1,
+      "int": 2,
+      "luck": 1
+    },
+    "Ringlet": {
+      "att": 1,
+      "cha": 1,
+      "int": 1
+    }
+  },
+  "two handed": {
+    "Battlestaff": {
+      "cha": 3,
+      "int": 5,
+      "luck": 2
+    },
+    "Crossbow": {
+      "att": 4,
+      "cha": 2,
+      "dex": 3,
+      "luck": 2
+    },
+    "Greatsword": {
+      "att": 4,
+      "cha": 2
+    },
+    "Staff": {
+      "cha": 1,
+      "dex": 1,
+      "int": 3,
+      "luck": 1
+    },
+    "Warhammer": {
+      "att": 5,
+      "dex": -2
+    }
+  }
+}
