@@ -2589,16 +2589,16 @@ class Adventure(BaseCog):
                                 ctx.command.reset_cooldown(ctx)
                                 return
                             if pred.result:  # user reacted with Yes.
+                                tinker_wep = []
+                                for item in c.get_current_equipment():
+                                    if item.rarity == "forged":
+                                        c = await c.unequip_item(item)
+                                for name, item in c.backpack.items():
+                                    if item.rarity == "forged":
+                                        tinker_wep.append(item)
+                                for item in tinker_wep:
+                                    del c.backpack[item.name]
                                 if c.heroclass["name"] == "Tinkerer":
-                                    tinker_wep = []
-                                    for item in c.get_current_equipment():
-                                        if item.rarity == "forged":
-                                            c = await c.unequip_item(item)
-                                    for name, item in c.backpack.items():
-                                        if item.rarity == "forged":
-                                            tinker_wep.append(item)
-                                    for item in tinker_wep:
-                                        del c.backpack[item.name]
                                     await self.config.user(ctx.author).set(c.to_json())
                                     if tinker_wep:
                                         await class_msg.edit(
@@ -2634,7 +2634,7 @@ class Adventure(BaseCog):
                         if c.skill["pool"] < 0:
                             c.skill["pool"] = 0
                         c.heroclass = classes[clz]
-                        if c.heroclass["name"] == "Wizard":
+                        if c.heroclass["name"] in ["Wizard", "Cleric"]:
                             c.heroclass["cooldown"] = (
                                 max(300, (1200 - ((c.luck + c.total_int) * 2))) + time.time()
                             )
@@ -2648,10 +2648,6 @@ class Adventure(BaseCog):
                         elif c.heroclass["name"] == "Berserker":
                             c.heroclass["cooldown"] = (
                                 max(300, (1200 - ((c.luck + c.total_att) * 2))) + time.time()
-                            )
-                        elif c.heroclass["name"] == "Cleric":
-                            c.heroclass["cooldown"] = (
-                                max(300, (1200 - ((c.luck + c.total_int) * 2))) + time.time()
                             )
                         elif c.heroclass["name"] == "Bard":
                             c.heroclass["cooldown"] = (
