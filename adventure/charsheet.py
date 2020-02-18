@@ -1188,12 +1188,3 @@ def get_true_name(rarity, name):
         return f"{SET_OPEN}{name}{LEGENDARY_CLOSE}"
     if rarity == "forged":
         return f"{TINKER_OPEN}{name}{TINKER_CLOSE}"
-
-
-def parse_timedelta(argument: str) -> Optional[timedelta]:
-    matches = TIME_RE.match(argument)
-    if matches:
-        params = {k: int(v) for k, v in matches.groupdict().items() if v is not None}
-        if params:
-            return timedelta(**params)
-    return None
