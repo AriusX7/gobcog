@@ -281,6 +281,7 @@ class Adventure(BaseCog):
             "att": 0,
             "cha": 0,
             "int": 0,
+            "last_skill_reset": 0,
             "treasure": [0, 0, 0, 0, 0],
             "items": {
                 "head": {},
@@ -3492,9 +3493,13 @@ class Adventure(BaseCog):
                 log.exception("Error with the new character sheet")
                 return
             if spend == "reset":
+                last_reset = await self.config.user(ctx.author).last_skill_reset()
+                if last_reset + 3600 > time.time():
+                    return await smart_embed(
+                        ctx, _("You reset your skills withing the last hour, try again later.")
+                    )
                 bal = c.bal
                 currency_name = await bank.get_currency_name(ctx.guild)
-
                 offering = min(int(bal / 5 + (c.total_int // 3)), 1000000000)
                 nv_msg = await ctx.send(
                     _(
@@ -3521,6 +3526,7 @@ class Adventure(BaseCog):
                     c.skill["cha"] = 0
                     c.skill["int"] = 0
                     await self.config.user(ctx.author).set(c.to_json())
+                    await self.config.user(ctx.author).last_skill_reset.set(int(time.time()))
                     await bank.withdraw_credits(ctx.author, offering)
                     await smart_embed(
                         ctx,

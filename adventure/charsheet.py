@@ -452,6 +452,7 @@ class Character(Item):
             "ring": {},
             "charm": {},
         }
+        self.last_skill_reset: int = kwargs.pop("last_skill_reset", 0)
 
     def get_stat_value(self, stat: str):
         """Calculates the stats dynamically for each slot of equipment."""
@@ -913,6 +914,7 @@ class Character(Item):
         }
         for k, v in equipment.items():
             hero_data[k] = v
+        hero_data["last_skill_reset"] = data.get("last_skill_reset", 0)
         return cls(**hero_data)
 
     def get_set_item_count(self):
@@ -975,6 +977,7 @@ class Character(Item):
             "skill": self.skill,
             "rebirths": self.rebirths,
             "set_items": self.set_items,
+            "last_skill_reset": self.last_skill_reset,
         }
 
     async def rebirth(self, dev_val: int = None) -> dict:
