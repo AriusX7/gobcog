@@ -2792,7 +2792,7 @@ class Adventure(BaseCog):
                             f"{owned}{settext}"
                         )
                     msgs = []
-                    for page in pagify(msg):
+                    for page in pagify(msg, page_length=1900):
                         msgs.append(box(page, lang="css"))
                 else:
                     msgs = []
@@ -5262,13 +5262,13 @@ class Adventure(BaseCog):
         magic_list = list(set(session.magic))
         if session.miniboss:
             failed = True
-            item, slot = session.miniboss["requirements"]
-            if item == "members" and isinstance(slot, int):
+            req_item, slot = session.miniboss["requirements"]
+            if req_item == "members" and isinstance(slot, int):
                 if (len(fight_list) + len(magic_list) + len(talk_list) + len(pray_list)) > int(
                     slot
                 ):
                     failed = False
-            elif item == "emoji" and session.reacted:
+            elif req_item == "emoji" and session.reacted:
                 failed = False
             else:
                 for user in (
@@ -5283,13 +5283,14 @@ class Adventure(BaseCog):
                         failed = False
                         break
                     with contextlib.suppress(KeyError):
-                        current_item = getattr(c, slot)
-                        item_name = str(current_item)
-                        if current_item.rarity != "forged" and (
-                            item in item_name or "shiny" in item_name.lower()
-                        ):
-                            failed = False
-                            break
+                        current_equipment = c.get_current_equipment()
+                        for item in current_equipment:
+                            item_name = str(item)
+                            if item.rarity != "forged" and (
+                                req_item in item_name or "shiny" in item_name.lower()
+                            ):
+                                failed = False
+                                break
         else:
             failed = False
         return failed
