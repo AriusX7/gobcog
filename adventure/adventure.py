@@ -271,7 +271,7 @@ class Adventure(BaseCog):
         self._sessions = {}
         self._react_messaged = []
         self.tasks = {}
-        self.locks = {}
+        self.locks: MutableMapping[int, asyncio.Lock] = {}
 
         self.config = Config.get_conf(self, 2_710_801_001, force_registration=True)
 
@@ -856,6 +856,7 @@ class Adventure(BaseCog):
     @commands.cooldown(rate=3, per=60, type=commands.BucketType.user)
     async def backpack_sell(self, ctx: Context, *, item: ItemConverter):
         """Sell an item from your backpack."""
+
         if self.in_adventure(ctx):
             return await smart_embed(
                 ctx, _("You tried to selling your items, but there is no merchants in sight.")
@@ -881,11 +882,15 @@ class Adventure(BaseCog):
                     lang="css",
                 )
             )
+
+        lock = self.get_lock(ctx.author)
+        await lock.acquire()
         try:
             c = await Character.from_json(self.config, ctx.author)
         except Exception:
             ctx.command.reset_cooldown(ctx)
             log.exception("Error with the new character sheet")
+            lock.release()
             return
         price_shown = self._sell(c, item)
         messages = [
@@ -895,109 +900,78 @@ class Adventure(BaseCog):
                 price=humanize_number(price_shown),
             )
         ]
+        try:
+            item = c.backpack[item.name]
+        except KeyError:
+            return
+        async def _backpack_sell_menu(
+            ctx: commands.Context,
+            pages: list,
+            controls: dict,
+            message: discord.Message,
+            page: int,
+            timeout: float,
+            emoji: str,
+        ):
+            if message:
+                with contextlib.suppress(discord.HTTPException):
+                    await message.delete()
+                await self._backpack_sell_button_action(ctx, emoji, page, item, price_shown, c)
+                return None
 
-        async with self.get_lock(ctx.author):
-            try:
-                item = c.backpack[item.name]
-            except KeyError:
-                return
+        back_pack_sell_controls = {
+            "\N{DIGIT ONE}\N{COMBINING ENCLOSING KEYCAP}": _backpack_sell_menu,
+            "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS}": _backpack_sell_menu,
+            "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS WITH CIRCLED ONE OVERLAY}": _backpack_sell_menu,
+            "\N{CROSS MARK}": _backpack_sell_menu,
+        }
 
-            async def _backpack_sell_menu(
-                ctx: commands.Context,
-                pages: list,
-                controls: dict,
-                message: discord.Message,
-                page: int,
-                timeout: float,
-                emoji: str,
-            ):
-                if message:
-                    with contextlib.suppress(discord.HTTPException):
-                        await message.delete()
-                    await self._backpack_sell_button_action(ctx, emoji, page, item, price_shown, c)
-                    return None
-
-            back_pack_sell_controls = {
-                "\N{DIGIT ONE}\N{COMBINING ENCLOSING KEYCAP}": _backpack_sell_menu,
-                "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS}": _backpack_sell_menu,
-                "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS WITH CIRCLED ONE OVERLAY}": _backpack_sell_menu,
-                "\N{CROSS MARK}": _backpack_sell_menu,
-            }
-
-            await menu(ctx, messages, back_pack_sell_controls, timeout=60)
+        await menu(ctx, messages, back_pack_sell_controls, timeout=60)
 
     async def _backpack_sell_button_action(self, ctx, emoji, page, item, price_shown, character):
         currency_name = await bank.get_currency_name(ctx.guild)
         msg = ""
-        if (
-            emoji == "\N{DIGIT ONE}\N{COMBINING ENCLOSING KEYCAP}"
-        ):  # user reacted with one to sell.
-            ctx.command.reset_cooldown(ctx)
-            # sell one of the item
-            price = 0
-            item.owned -= 1
-            price += price_shown
-            msg += _("**{author}** sold one {item} for {price} {currency_name}.\n").format(
-                author=self.escape(ctx.author.display_name),
-                item=box(item, lang="css"),
-                price=humanize_number(price),
-                currency_name=currency_name,
-            )
-            if item.owned <= 0:
-                del character.backpack[item.name]
-            price = max(price, 0)
-            if price > 0:
-                with contextlib.suppress(BalanceTooHigh):
-                    await bank.deposit_credits(ctx.author, price)
-        elif (
-            emoji == "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS}"
-        ):  # user wants to sell all owned.
-            ctx.command.reset_cooldown(ctx)
-            price = 0
-            old_owned = item.owned
-            count = 0
-            for x in range(0, item.owned):
+        try:
+            if (
+                emoji == "\N{DIGIT ONE}\N{COMBINING ENCLOSING KEYCAP}"
+            ):  # user reacted with one to sell.
+                ctx.command.reset_cooldown(ctx)
+                # sell one of the item
+                price = 0
                 item.owned -= 1
                 price += price_shown
+                msg += _("**{author}** sold one {item} for {price} {currency_name}.\n").format(
+                    author=self.escape(ctx.author.display_name),
+                    item=box(item, lang="css"),
+                    price=humanize_number(price),
+                    currency_name=currency_name,
+                )
                 if item.owned <= 0:
                     del character.backpack[item.name]
-                if not count % 10:
-                    await asyncio.sleep(0.1)
-                count += 1
-            msg += _(
-                "**{author}** sold all their {old_item} for {price} {currency_name}.\n"
-            ).format(
-                author=self.escape(ctx.author.display_name),
-                old_item=box(str(item) + " - " + str(old_owned), lang="css"),
-                price=humanize_number(price),
-                currency_name=currency_name,
-            )
-            price = max(price, 0)
-            if price > 0:
-                with contextlib.suppress(BalanceTooHigh):
-                    await bank.deposit_credits(ctx.author, price)
-        elif (
-            emoji
-            == "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS WITH CIRCLED ONE OVERLAY}"
-        ):  # user wants to sell all but one.
-            if item.owned == 1:
+                price = max(price, 0)
+                if price > 0:
+                    with contextlib.suppress(BalanceTooHigh):
+                        await bank.deposit_credits(ctx.author, price)
+            elif (
+                emoji == "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS}"
+            ):  # user wants to sell all owned.
                 ctx.command.reset_cooldown(ctx)
-                return await smart_embed(ctx, _("You already only own one of those items."))
-            price = 0
-            old_owned = item.owned
-            count = 0
-            for x in range(1, item.owned):
-                item.owned -= 1
-                price += price_shown
-            if not count % 10:
-                await asyncio.sleep(0.1)
-            count += 1
-            if price != 0:
+                price = 0
+                old_owned = item.owned
+                count = 0
+                for x in range(0, item.owned):
+                    item.owned -= 1
+                    price += price_shown
+                    if item.owned <= 0:
+                        del character.backpack[item.name]
+                    if not count % 10:
+                        await asyncio.sleep(0.1)
+                    count += 1
                 msg += _(
-                    "**{author}** sold all but one of their {old_item} for {price} {currency_name}.\n"
+                    "**{author}** sold all their {old_item} for {price} {currency_name}.\n"
                 ).format(
                     author=self.escape(ctx.author.display_name),
-                    old_item=box(str(item) + " - " + str(old_owned - 1), lang="css"),
+                    old_item=box(str(item) + " - " + str(old_owned), lang="css"),
                     price=humanize_number(price),
                     currency_name=currency_name,
                 )
@@ -1005,8 +979,41 @@ class Adventure(BaseCog):
                 if price > 0:
                     with contextlib.suppress(BalanceTooHigh):
                         await bank.deposit_credits(ctx.author, price)
-        else:  # user doesn't want to sell those items.
-            msg = _("Not selling those items.")
+            elif (
+                emoji
+                == "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS WITH CIRCLED ONE OVERLAY}"
+            ):  # user wants to sell all but one.
+                if item.owned == 1:
+                    ctx.command.reset_cooldown(ctx)
+                    return await smart_embed(ctx, _("You already only own one of those items."))
+                price = 0
+                old_owned = item.owned
+                count = 0
+                for x in range(1, item.owned):
+                    item.owned -= 1
+                    price += price_shown
+                if not count % 10:
+                    await asyncio.sleep(0.1)
+                count += 1
+                if price != 0:
+                    msg += _(
+                        "**{author}** sold all but one of their {old_item} for {price} {currency_name}.\n"
+                    ).format(
+                        author=self.escape(ctx.author.display_name),
+                        old_item=box(str(item) + " - " + str(old_owned - 1), lang="css"),
+                        price=humanize_number(price),
+                        currency_name=currency_name,
+                    )
+                    price = max(price, 0)
+                    if price > 0:
+                        with contextlib.suppress(BalanceTooHigh):
+                            await bank.deposit_credits(ctx.author, price)
+            else:  # user doesn't want to sell those items.
+                msg = _("Not selling those items.")
+        finally:
+            lock = self.get_lock(ctx.author)
+            with contextlib.suppress(Exception):
+                lock.release()
 
         if msg:
             await self.config.user(ctx.author).set(character.to_json())
@@ -2702,6 +2709,7 @@ class Adventure(BaseCog):
             )
         if not await self.allow_in_dm(ctx):
             return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
+        msgs = []
         async with self.get_lock(ctx.author):
             try:
                 c = await Character.from_json(self.config, ctx.author)
@@ -2796,8 +2804,8 @@ class Adventure(BaseCog):
                     await self._open_chest(
                         ctx, ctx.author, box_type, character=c
                     )  # returns item and msg
-                if msgs:
-                    await menu(ctx, msgs, DEFAULT_CONTROLS)
+        if msgs:
+            await menu(ctx, msgs, DEFAULT_CONTROLS)
 
     @commands.command(name="negaverse", aliases=["nv"])
     @commands.cooldown(rate=1, per=3600, type=commands.BucketType.user)
@@ -5579,17 +5587,17 @@ class Adventure(BaseCog):
             )
         if len(item.slot) > 1:
             slot = _("two handed")
-            att = old_item.att * 2
-            cha = old_item.cha * 2
-            intel = old_item.int * 2
-            luck = old_item.luck * 2
-            dex = old_item.dex * 2
+            att = item.att * 2
+            cha = item.cha * 2
+            intel = item.int * 2
+            luck = item.luck * 2
+            dex = item.dex * 2
         else:
-            att = old_item.att
-            cha = old_item.cha
-            intel = old_item.int
-            luck = old_item.luck
-            dex = old_item.dex
+            att = item.att
+            cha = item.cha
+            intel = item.int
+            luck = item.luck
+            dex = item.dex
         if hasattr(user, "display_name"):
             chest_msg2 = (
                 _("{user} found {item} [{slot}] | Lvl req {lv}.").format(
