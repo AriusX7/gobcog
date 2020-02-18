@@ -722,12 +722,12 @@ class Adventure(BaseCog):
         """
         if not await self.allow_in_dm(ctx):
             return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
-        try:
-            c = await Character.from_json(self.config, ctx.author)
-        except Exception:
-            log.exception("Error with the new character sheet")
-            return
         if not ctx.invoked_subcommand:
+            try:
+                c = await Character.from_json(self.config, ctx.author)
+            except Exception:
+                log.exception("Error with the new character sheet")
+                return
             backpack_contents = _("[{author}'s backpack] \n\n{backpack}\n").format(
                 author=self.escape(ctx.author.display_name), backpack=c.get_backpack()
             )
@@ -746,52 +746,49 @@ class Adventure(BaseCog):
                     "You tried to equipping an item but the monster ahead did not allow you to do so"
                 ),
             )
-        try:
-            c = await Character.from_json(self.config, ctx.author)
-        except Exception:
-            log.exception("Error with the new character sheet")
-            return
-        equiplevel = equip_level(c, equip_item)
-        if self.is_dev(ctx.author):  # FIXME:
-            equiplevel = 0
+        async with self.get_lock(ctx.author):
+            try:
+                c = await Character.from_json(self.config, ctx.author)
+            except Exception:
+                log.exception("Error with the new character sheet")
+                return
+            equiplevel = equip_level(c, equip_item)
+            if self.is_dev(ctx.author):  # FIXME:
+                equiplevel = 0
 
-        if not can_equip(c, equip_item):
-            return await smart_embed(
-                ctx,
-                _("You need to be level `{level}` to equip this item").format(level=equiplevel),
-            )
-        equip = c.backpack[equip_item.name]
-        if equip:
-            slot = equip.slot[0]
-            if len(equip.slot) > 1:
-                slot = "two handed"
-            if not getattr(c, equip.slot[0]):
-                equip_msg = box(
-                    _("{author} equipped {item} ({slot} slot).").format(
-                        author=self.escape(ctx.author.display_name), item=str(equip), slot=slot
+            if not can_equip(c, equip_item):
+                return await smart_embed(
+                    ctx,
+                    _("You need to be level `{level}` to equip this item").format(
+                        level=equiplevel
                     ),
-                    lang="css",
                 )
-            else:
-                equip_msg = box(
-                    _(
-                        "{author} equipped {item} "
-                        "({slot} slot) and put {put} into their backpack."
-                    ).format(
-                        author=self.escape(ctx.author.display_name),
-                        item=str(equip),
-                        slot=slot,
-                        put=getattr(c, equip.slot[0]),
-                    ),
-                    lang="css",
-                )
-            await ctx.send(equip_msg)
-            async with self.get_lock(c.user):
-                try:
-                    c = await Character.from_json(self.config, ctx.author)
-                except Exception:
-                    log.exception("Error with the new character sheet")
-                    return
+            equip = c.backpack[equip_item.name]
+            if equip:
+                slot = equip.slot[0]
+                if len(equip.slot) > 1:
+                    slot = "two handed"
+                if not getattr(c, equip.slot[0]):
+                    equip_msg = box(
+                        _("{author} equipped {item} ({slot} slot).").format(
+                            author=self.escape(ctx.author.display_name), item=str(equip), slot=slot
+                        ),
+                        lang="css",
+                    )
+                else:
+                    equip_msg = box(
+                        _(
+                            "{author} equipped {item} "
+                            "({slot} slot) and put {put} into their backpack."
+                        ).format(
+                            author=self.escape(ctx.author.display_name),
+                            item=str(equip),
+                            slot=slot,
+                            put=getattr(c, equip.slot[0]),
+                        ),
+                        lang="css",
+                    )
+                await ctx.send(equip_msg)
                 c = await c.equip_item(equip, True, self.is_dev(ctx.author))  # FIXME:
                 await self.config.user(ctx.author).set(c.to_json())
 
@@ -899,11 +896,6 @@ class Adventure(BaseCog):
         ]
 
         async with self.get_lock(ctx.author):
-            try:
-                c = await Character.from_json(self.config, ctx.author)
-            except Exception:
-                log.exception("Error with the new character sheet")
-                return
             try:
                 item = c.backpack[item.name]
             except KeyError:
@@ -1115,18 +1107,18 @@ class Adventure(BaseCog):
                 ),
                 lang="css",
             )
-            trade_msg = await ctx.send(f"{buyer.mention}\n{trade_talk}")
-            start_adding_reactions(trade_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-            pred = ReactionPredicate.yes_or_no(trade_msg, buyer)
-            try:
-                await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
-            except asyncio.TimeoutError:
-                await self._clear_react(trade_msg)
-                return
-            if pred.result:  # buyer reacted with Yes.
+            async with self.get_lock(ctx.author):
+                trade_msg = await ctx.send(f"{buyer.mention}\n{trade_talk}")
+                start_adding_reactions(trade_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+                pred = ReactionPredicate.yes_or_no(trade_msg, buyer)
                 try:
-                    if await bank.can_spend(buyer, asking):
-                        async with self.get_lock(c.user):
+                    await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
+                except asyncio.TimeoutError:
+                    await self._clear_react(trade_msg)
+                    return
+                if pred.result:  # buyer reacted with Yes.
+                    with contextlib.suppress(discord.errors.NotFound):
+                        if await bank.can_spend(buyer, asking):
                             try:
                                 buy_user = await Character.from_json(self.config, buyer)
                             except Exception:
@@ -1150,50 +1142,50 @@ class Adventure(BaseCog):
                             c.backpack[item.name].owned -= 1
                             if c.backpack[item.name].owned <= 0:
                                 del c.backpack[item.name]
-                            await self.config.user(ctx.author).set(c.to_json())
-                        async with self.get_lock(buyer):
-                            try:
-                                buy_user = await Character.from_json(self.config, buyer)
-                            except Exception:
-                                log.exception("Error with the new character sheet")
-                                return
-                            if item.name in buy_user.backpack:
-                                buy_user.backpack[item.name].owned += 1
-                            else:
-                                item.owned = 1
-                                buy_user.backpack[item.name] = item
+                            async with self.get_lock(buyer):
+                                try:
+                                    buy_user = await Character.from_json(self.config, buyer)
+                                except Exception:
+                                    log.exception("Error with the new character sheet")
+                                    return
+                                if item.name in buy_user.backpack:
+                                    buy_user.backpack[item.name].owned += 1
+                                else:
+                                    item.owned = 1
+                                    buy_user.backpack[item.name] = item
+                                await self.config.user(ctx.author).set(c.to_json())
                                 await self.config.user(buyer).set(buy_user.to_json())
-                        await trade_msg.edit(
-                            content=(
-                                box(
-                                    _(
-                                        "\n{author} traded {item} to "
-                                        "{buyer} for {asking} {currency_name}."
-                                    ).format(
-                                        author=self.escape(ctx.author.display_name),
-                                        item=item,
-                                        buyer=self.escape(buyer.display_name),
-                                        asking=asking,
-                                        currency_name=currency_name,
-                                    ),
-                                    lang="css",
+
+                            await trade_msg.edit(
+                                content=(
+                                    box(
+                                        _(
+                                            "\n{author} traded {item} to "
+                                            "{buyer} for {asking} {currency_name}."
+                                        ).format(
+                                            author=self.escape(ctx.author.display_name),
+                                            item=item,
+                                            buyer=self.escape(buyer.display_name),
+                                            asking=asking,
+                                            currency_name=currency_name,
+                                        ),
+                                        lang="css",
+                                    )
                                 )
                             )
-                        )
-                        await self._clear_react(trade_msg)
-                    else:
-                        await trade_msg.edit(
-                            content=_(
-                                "**{buyer}**, you do not have enough {currency_name}."
-                            ).format(
-                                buyer=self.escape(buyer.display_name), currency_name=currency_name
+                            await self._clear_react(trade_msg)
+                        else:
+                            await trade_msg.edit(
+                                content=_(
+                                    "**{buyer}**, you do not have enough {currency_name}."
+                                ).format(
+                                    buyer=self.escape(buyer.display_name),
+                                    currency_name=currency_name,
+                                )
                             )
-                        )
-                except discord.errors.NotFound:
-                    pass
-            else:
-                with contextlib.suppress(discord.HTTPException):
-                    await trade_msg.delete()
+                else:
+                    with contextlib.suppress(discord.HTTPException):
+                        await trade_msg.delete()
 
     @commands.group(aliases=["loadouts"])
     async def loadout(self, ctx: Context):
@@ -1205,21 +1197,21 @@ class Adventure(BaseCog):
         if not await self.allow_in_dm(ctx):
             return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
         name = name.lower()
-        try:
-            c = await Character.from_json(self.config, ctx.author)
-        except Exception:
-            log.exception("Error with the new character sheet")
-            return
-        if name in c.loadouts:
-            await smart_embed(
-                ctx,
-                _("{author}, you already have a loadout named {name}.").format(
-                    author=self.escape(ctx.author.display_name), name=name
-                ),
-            )
-            return
-        else:
-            async with self.get_lock(c.user):
+        async with self.get_lock(ctx.user):
+            try:
+                c = await Character.from_json(self.config, ctx.author)
+            except Exception:
+                log.exception("Error with the new character sheet")
+                return
+            if name in c.loadouts:
+                await smart_embed(
+                    ctx,
+                    _("{author}, you already have a loadout named {name}.").format(
+                        author=self.escape(ctx.author.display_name), name=name
+                    ),
+                )
+                return
+            else:
                 try:
                     c = await Character.from_json(self.config, ctx.author)
                 except Exception:
@@ -1228,12 +1220,12 @@ class Adventure(BaseCog):
                 loadout = await Character.save_loadout(c)
                 c.loadouts[name] = loadout
                 await self.config.user(ctx.author).set(c.to_json())
-            await smart_embed(
-                ctx,
-                _("**{author}**, your current equipment has been saved to {name}.").format(
-                    author=self.escape(ctx.author.display_name), name=name
-                ),
-            )
+                await smart_embed(
+                    ctx,
+                    _("**{author}**, your current equipment has been saved to {name}.").format(
+                        author=self.escape(ctx.author.display_name), name=name
+                    ),
+                )
 
     @commands.guild_only()
     @commands.command()
@@ -1245,57 +1237,55 @@ class Adventure(BaseCog):
             )
         if not await self.allow_in_dm(ctx):
             return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
-
-        try:
-            c = await Character.from_json(self.config, ctx.author)
-        except Exception:
-            log.exception("Error with the new character sheet")
-            return
-
-        if c.lvl < c.maxlevel:
-            return await smart_embed(
-                ctx, _("You need to be Level `{c.maxlevel}` to rebirth").format(c=c)
-            )
-        rebirthcost = 1000 * c.rebirths
-        has_fund = await has_funds(ctx.author, rebirthcost)
-        if not has_fund:
-            currency_name = await bank.get_currency_name(ctx.guild)
-            return await smart_embed(
+        async with self.get_lock(ctx.author):
+            try:
+                c = await Character.from_json(self.config, ctx.author)
+            except Exception:
+                log.exception("Error with the new character sheet")
+                return
+            if c.lvl < c.maxlevel:
+                return await smart_embed(
+                    ctx, _("You need to be Level `{c.maxlevel}` to rebirth").format(c=c)
+                )
+            rebirthcost = 1000 * c.rebirths
+            has_fund = await has_funds(ctx.author, rebirthcost)
+            if not has_fund:
+                currency_name = await bank.get_currency_name(ctx.guild)
+                return await smart_embed(
+                    ctx,
+                    _("You need more {currency_name} to be able to rebirth").format(
+                        currency_name=currency_name
+                    ),
+                )
+            open_msg = await smart_embed(
                 ctx,
-                _("You need more {currency_name} to be able to rebirth").format(
-                    currency_name=currency_name
+                _(
+                    "Note this will take all your money and items "
+                    "(except Legendary for 3 rebirths and Set items) "
+                    "and set you back to level 1 (keeping your current class), "
+                    "in turn it will give you stats bonuses and higher chance at better items as "
+                    "well as the ability to convert chests after the second rebirth"
                 ),
             )
-        open_msg = await smart_embed(
-            ctx,
-            _(
-                "Note this will take all your money and items "
-                "(except Legendary for 3 rebirths and Set items) "
-                "and set you back to level 1 (keeping your current class), "
-                "in turn it will give you stats bonuses and higher chance at better items as "
-                "well as the ability to convert chests after the second rebirth"
-            ),
-        )
-        start_adding_reactions(open_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-        pred = ReactionPredicate.yes_or_no(open_msg, ctx.author)
-        try:
-            await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
-        except asyncio.TimeoutError:
-            await self._clear_react(open_msg)
-            return await smart_embed(ctx, "I can't wait forever")
-        else:
-            if not pred.result:
-                await open_msg.edit(
-                    content=box(
-                        _("{c} decided not to rebirth.").format(
-                            c=self.escape(ctx.author.display_name)
-                        ),
-                        lang="css",
+            start_adding_reactions(open_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+            pred = ReactionPredicate.yes_or_no(open_msg, ctx.author)
+            try:
+                await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
+            except asyncio.TimeoutError:
+                await self._clear_react(open_msg)
+                return await smart_embed(ctx, "I can't wait forever")
+            else:
+                if not pred.result:
+                    await open_msg.edit(
+                        content=box(
+                            _("{c} decided not to rebirth.").format(
+                                c=self.escape(ctx.author.display_name)
+                            ),
+                            lang="css",
+                        )
                     )
-                )
-                return await self._clear_react(open_msg)
+                    return await self._clear_react(open_msg)
 
-            async with self.get_lock(ctx.author):
                 try:
                     c = await Character.from_json(self.config, ctx.author)
                 except Exception:
@@ -1390,35 +1380,30 @@ class Adventure(BaseCog):
         """Delete a saved loadout."""
         if not await self.allow_in_dm(ctx):
             return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
-        name = name.lower()
-        try:
-            c = await Character.from_json(self.config, ctx.author)
-        except Exception:
-            log.exception("Error with the new character sheet")
-            return
-        if name not in c.loadouts:
-            await smart_embed(
-                ctx,
-                _("**{author}**, you don't have a loadout named {name}.").format(
-                    author=self.escape(ctx.author.display_name), name=name
-                ),
-            )
-            return
-        else:
-            async with self.get_lock(c.user):
-                try:
-                    c = await Character.from_json(self.config, ctx.author)
-                except Exception:
-                    log.exception("Error with the new character sheet")
-                    return
+        async with self.get_lock(ctx.author):
+            name = name.lower()
+            try:
+                c = await Character.from_json(self.config, ctx.author)
+            except Exception:
+                log.exception("Error with the new character sheet")
+                return
+            if name not in c.loadouts:
+                await smart_embed(
+                    ctx,
+                    _("**{author}**, you don't have a loadout named {name}.").format(
+                        author=self.escape(ctx.author.display_name), name=name
+                    ),
+                )
+                return
+            else:
                 del c.loadouts[name]
                 await self.config.user(ctx.author).set(c.to_json())
-            await smart_embed(
-                ctx,
-                _("**{author}**, loadout {name} has been deleted.").format(
-                    author=self.escape(ctx.author.display_name), name=name
-                ),
-            )
+                await smart_embed(
+                    ctx,
+                    _("**{author}**, loadout {name} has been deleted.").format(
+                        author=self.escape(ctx.author.display_name), name=name
+                    ),
+                )
 
     @loadout.command(name="show")
     async def show_loadout(self, ctx: Context, name: str = None):
@@ -1475,27 +1460,22 @@ class Adventure(BaseCog):
         if not await self.allow_in_dm(ctx):
             return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
         name = name.lower()
-        try:
-            c = await Character.from_json(self.config, ctx.author)
-        except Exception:
-            log.exception("Error with the new character sheet")
-            return
-        if name not in c.loadouts:
-            ctx.command.reset_cooldown(ctx)
-            await smart_embed(
-                ctx,
-                _("**{author}**, you don't have a loadout named {name}.").format(
-                    author=self.escape(ctx.author.display_name), name=name
-                ),
-            )
-            return
-        else:
-            async with self.get_lock(c.user):
-                try:
-                    c = await Character.from_json(self.config, ctx.author)
-                except Exception:
-                    log.exception("Error with the new character sheet")
-                    return
+        async with self.get_lock(ctx.author):
+            try:
+                c = await Character.from_json(self.config, ctx.author)
+            except Exception:
+                log.exception("Error with the new character sheet")
+                return
+            if name not in c.loadouts:
+                ctx.command.reset_cooldown(ctx)
+                await smart_embed(
+                    ctx,
+                    _("**{author}**, you don't have a loadout named {name}.").format(
+                        author=self.escape(ctx.author.display_name), name=name
+                    ),
+                )
+                return
+            else:
                 c = await c.equip_loadout(name)
                 current_stats = box(
                     _(
@@ -2508,66 +2488,65 @@ class Adventure(BaseCog):
                     ctx, _("{} may be a class somewhere, but not on my watch.").format(clz)
                 )
             elif clz in classes and action is None:
-                bal = await bank.get_balance(ctx.author)
-                currency_name = await bank.get_currency_name(ctx.guild)
-                if str(currency_name).startswith("<"):
-                    currency_name = "credits"
-                spend = round(bal * 0.2)
-                try:
-                    c = await Character.from_json(self.config, ctx.author)
-                except Exception:
-                    log.exception("Error with the new character sheet")
-                    return
-                if c.heroclass["name"] == clz:
-                    return await smart_embed(ctx, _("You already are a {}.").format(clz))
-                class_msg = await ctx.send(
-                    box(
-                        _(
-                            "This will cost {spend} {currency_name}. "
-                            "Do you want to continue, {author}?"
-                        ).format(
-                            spend=humanize_number(spend),
-                            currency_name=currency_name,
-                            author=self.escape(ctx.author.display_name),
-                        ),
-                        lang="css",
-                    )
-                )
-                broke = box(
-                    _("You don't have enough {currency_name} to train to be a {clz}.").format(
-                        currency_name=currency_name, clz=clz.title()
-                    ),
-                    lang="css",
-                )
-                start_adding_reactions(class_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-                pred = ReactionPredicate.yes_or_no(class_msg, ctx.author)
-                try:
-                    await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
-                except asyncio.TimeoutError:
-                    await self._clear_react(class_msg)
-                    ctx.command.reset_cooldown(ctx)
-                    return
-
-                if not pred.result:
-                    await class_msg.edit(
-                        content=box(
-                            _("{author} decided to continue being a {h_class}.").format(
+                async with self.get_lock(ctx.author):
+                    bal = await bank.get_balance(ctx.author)
+                    currency_name = await bank.get_currency_name(ctx.guild)
+                    if str(currency_name).startswith("<"):
+                        currency_name = "credits"
+                    spend = round(bal * 0.2)
+                    try:
+                        c = await Character.from_json(self.config, ctx.author)
+                    except Exception:
+                        log.exception("Error with the new character sheet")
+                        return
+                    if c.heroclass["name"] == clz:
+                        return await smart_embed(ctx, _("You already are a {}.").format(clz))
+                    class_msg = await ctx.send(
+                        box(
+                            _(
+                                "This will cost {spend} {currency_name}. "
+                                "Do you want to continue, {author}?"
+                            ).format(
+                                spend=humanize_number(spend),
+                                currency_name=currency_name,
                                 author=self.escape(ctx.author.display_name),
-                                h_class=c.heroclass["name"],
                             ),
                             lang="css",
                         )
                     )
-                    ctx.command.reset_cooldown(ctx)
-                    return await self._clear_react(class_msg)
-                if bal < spend:
-                    await class_msg.edit(content=broke)
-                    ctx.command.reset_cooldown(ctx)
-                    return await self._clear_react(class_msg)
-                if not await bank.can_spend(ctx.author, spend):
-                    return await class_msg.edit(content=broke)
+                    broke = box(
+                        _("You don't have enough {currency_name} to train to be a {clz}.").format(
+                            currency_name=currency_name, clz=clz.title()
+                        ),
+                        lang="css",
+                    )
+                    start_adding_reactions(class_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+                    pred = ReactionPredicate.yes_or_no(class_msg, ctx.author)
+                    try:
+                        await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
+                    except asyncio.TimeoutError:
+                        await self._clear_react(class_msg)
+                        ctx.command.reset_cooldown(ctx)
+                        return
 
-                async with self.get_lock(ctx.author):
+                    if not pred.result:
+                        await class_msg.edit(
+                            content=box(
+                                _("{author} decided to continue being a {h_class}.").format(
+                                    author=self.escape(ctx.author.display_name),
+                                    h_class=c.heroclass["name"],
+                                ),
+                                lang="css",
+                            )
+                        )
+                        ctx.command.reset_cooldown(ctx)
+                        return await self._clear_react(class_msg)
+                    if bal < spend:
+                        await class_msg.edit(content=broke)
+                        ctx.command.reset_cooldown(ctx)
+                        return await self._clear_react(class_msg)
+                    if not await bank.can_spend(ctx.author, spend):
+                        return await class_msg.edit(content=broke)
                     try:
                         c = await Character.from_json(self.config, ctx.author)
                     except Exception:
@@ -2726,103 +2705,102 @@ class Adventure(BaseCog):
             )
         if not await self.allow_in_dm(ctx):
             return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
-        try:
-            c = await Character.from_json(self.config, ctx.author)
-        except Exception:
-            log.exception("Error with the new character sheet")
-            return
-        if not box_type:
-            return await ctx.send(
-                box(
-                    _(
-                        "{author} owns {normal} normal, "
-                        "{rare} rare, {epic} epic, {leg} legendary and {set} set chests."
-                    ).format(
-                        author=self.escape(ctx.author.display_name),
-                        normal=str(c.treasure[0]),
-                        rare=str(c.treasure[1]),
-                        epic=str(c.treasure[2]),
-                        leg=str(c.treasure[3]),
-                        set=str(c.treasure[4]),
-                    ),
-                    lang="css",
+        async with self.get_lock(ctx.author):
+            try:
+                c = await Character.from_json(self.config, ctx.author)
+            except Exception:
+                log.exception("Error with the new character sheet")
+                return
+            if not box_type:
+                return await ctx.send(
+                    box(
+                        _(
+                            "{author} owns {normal} normal, "
+                            "{rare} rare, {epic} epic, {leg} legendary and {set} set chests."
+                        ).format(
+                            author=self.escape(ctx.author.display_name),
+                            normal=str(c.treasure[0]),
+                            rare=str(c.treasure[1]),
+                            epic=str(c.treasure[2]),
+                            leg=str(c.treasure[3]),
+                            set=str(c.treasure[4]),
+                        ),
+                        lang="css",
+                    )
                 )
-            )
-        if box_type == "normal":
-            redux = [1, 0, 0, 0, 0]
-        elif box_type == "rare":
-            redux = [0, 1, 0, 0, 0]
-        elif box_type == "epic":
-            redux = [0, 0, 1, 0, 0]
-        elif box_type == "legendary":
-            redux = [0, 0, 0, 1, 0]
-        elif box_type == "set":
-            redux = [0, 0, 0, 0, 1]
-        else:
-            return await smart_embed(
-                ctx,
-                _("There is talk of a {} treasure chest but nobody ever saw one.").format(
-                    box_type
-                ),
-            )
-        treasure = c.treasure[redux.index(1)]
-        if treasure < 1 or treasure < number:
-            await smart_embed(
-                ctx,
-                _("**{author}**, you do not have enough {box} treasure chest to open.").format(
-                    author=self.escape(ctx.author.display_name), box=box_type
-                ),
-            )
-        else:
-            if number > 1:
-                async with self.get_lock(ctx.author):
+            if box_type == "normal":
+                redux = [1, 0, 0, 0, 0]
+            elif box_type == "rare":
+                redux = [0, 1, 0, 0, 0]
+            elif box_type == "epic":
+                redux = [0, 0, 1, 0, 0]
+            elif box_type == "legendary":
+                redux = [0, 0, 0, 1, 0]
+            elif box_type == "set":
+                redux = [0, 0, 0, 0, 1]
+            else:
+                return await smart_embed(
+                    ctx,
+                    _("There is talk of a {} treasure chest but nobody ever saw one.").format(
+                        box_type
+                    ),
+                )
+            treasure = c.treasure[redux.index(1)]
+            if treasure < 1 or treasure < number:
+                await smart_embed(
+                    ctx,
+                    _("**{author}**, you do not have enough {box} treasure chest to open.").format(
+                        author=self.escape(ctx.author.display_name), box=box_type
+                    ),
+                )
+            else:
+                if number > 1:
                     # atomically save reduced loot count then lock again when saving inside
                     # open chests
                     c.treasure[redux.index(1)] -= number
                     await self.config.user(ctx.author).set(c.to_json())
-                items = await self._open_chests(ctx, ctx.author, box_type, number, character=c)
-                msg = _(
-                    "{}, you've opened the following items:\n"
-                    "( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | LOOTED | SET (SET PIECES)"
-                ).format(self.escape(ctx.author.display_name))
-                rjust = max([len(str(i)) for i in items.values()])
-                for item in items.values():
-                    await asyncio.sleep(0)
-                    settext = ""
-                    att_space = " " if len(str(item.att)) == 1 else ""
-                    cha_space = " " if len(str(item.cha)) == 1 else ""
-                    int_space = " " if len(str(item.int)) == 1 else ""
-                    dex_space = " " if len(str(item.dex)) == 1 else ""
-                    luck_space = " " if len(str(item.luck)) == 1 else ""
-                    owned = f" | {item.owned}"
-                    if item.set:
-                        settext += f" | Set `{item.set}` ({item.parts}pcs)"
-                    msg += (
-                        f"\n{str(item):<{rjust}} - "
-                        f"({att_space}{item.att} |"
-                        f"{cha_space}{item.cha} |"
-                        f"{int_space}{item.int} |"
-                        f"{dex_space}{item.dex} |"
-                        f"{luck_space}{item.luck} )"
-                        f" | Lv {equip_level(c, item):<3}"
-                        f"{owned}{settext}"
-                    )
-                msgs = []
-                for page in pagify(msg):
-                    msgs.append(box(page, lang="css"))
-            else:
-                msgs = []
-                async with self.get_lock(ctx.author):
+                    items = await self._open_chests(ctx, ctx.author, box_type, number, character=c)
+                    msg = _(
+                        "{}, you've opened the following items:\n"
+                        "( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | LOOTED | SET (SET PIECES)"
+                    ).format(self.escape(ctx.author.display_name))
+                    rjust = max([len(str(i)) for i in items.values()])
+                    for item in items.values():
+                        await asyncio.sleep(0)
+                        settext = ""
+                        att_space = " " if len(str(item.att)) == 1 else ""
+                        cha_space = " " if len(str(item.cha)) == 1 else ""
+                        int_space = " " if len(str(item.int)) == 1 else ""
+                        dex_space = " " if len(str(item.dex)) == 1 else ""
+                        luck_space = " " if len(str(item.luck)) == 1 else ""
+                        owned = f" | {item.owned}"
+                        if item.set:
+                            settext += f" | Set `{item.set}` ({item.parts}pcs)"
+                        msg += (
+                            f"\n{str(item):<{rjust}} - "
+                            f"({att_space}{item.att} |"
+                            f"{cha_space}{item.cha} |"
+                            f"{int_space}{item.int} |"
+                            f"{dex_space}{item.dex} |"
+                            f"{luck_space}{item.luck} )"
+                            f" | Lv {equip_level(c, item):<3}"
+                            f"{owned}{settext}"
+                        )
+                    msgs = []
+                    for page in pagify(msg):
+                        msgs.append(box(page, lang="css"))
+                else:
+                    msgs = []
                     # atomically save reduced loot count then lock again when saving inside
                     # open chests
                     c.treasure[redux.index(1)] -= number
                     await self.config.user(ctx.author).set(c.to_json())
 
-                await self._open_chest(
-                    ctx, ctx.author, box_type, character=c
-                )  # returns item and msg
-            if msgs:
-                await menu(ctx, msgs, DEFAULT_CONTROLS)
+                    await self._open_chest(
+                        ctx, ctx.author, box_type, character=c
+                    )  # returns item and msg
+                if msgs:
+                    await menu(ctx, msgs, DEFAULT_CONTROLS)
 
     @commands.command(name="negaverse", aliases=["nv"])
     @commands.cooldown(rate=1, per=3600, type=commands.BucketType.user)
@@ -2858,186 +2836,185 @@ class Adventure(BaseCog):
             return await smart_embed(ctx, _("The gods refuse your pitiful offering."))
         if offering > bal:
             offering = bal
-
-        nv_msg = await ctx.send(
-            _(
-                "**{author}**, this will cost you at least {offer} {currency_name}.\n"
-                "You currently have {bal}. Do you want to proceed?"
-            ).format(
-                author=self.escape(ctx.author.display_name),
-                offer=humanize_number(offering),
-                currency_name=currency_name,
-                bal=humanize_number(bal),
-            )
-        )
-        start_adding_reactions(nv_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-        pred = ReactionPredicate.yes_or_no(nv_msg, ctx.author)
-        try:
-            await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
-        except asyncio.TimeoutError:
-            ctx.command.reset_cooldown(ctx)
-            await self._clear_react(nv_msg)
-            return
-        if not pred.result:
-            with contextlib.suppress(discord.HTTPException):
-                ctx.command.reset_cooldown(ctx)
-                await nv_msg.edit(
-                    content=_("**{}** decides against visiting the negaverse... for now.").format(
-                        self.escape(ctx.author.display_name)
-                    )
+        async with self.get_lock(ctx.author):
+            nv_msg = await ctx.send(
+                _(
+                    "**{author}**, this will cost you at least {offer} {currency_name}.\n"
+                    "You currently have {bal}. Do you want to proceed?"
+                ).format(
+                    author=self.escape(ctx.author.display_name),
+                    offer=humanize_number(offering),
+                    currency_name=currency_name,
+                    bal=humanize_number(bal),
                 )
-                return await self._clear_react(nv_msg)
+            )
+            start_adding_reactions(nv_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+            pred = ReactionPredicate.yes_or_no(nv_msg, ctx.author)
+            try:
+                await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
+            except asyncio.TimeoutError:
+                ctx.command.reset_cooldown(ctx)
+                await self._clear_react(nv_msg)
+                return
+            if not pred.result:
+                with contextlib.suppress(discord.HTTPException):
+                    ctx.command.reset_cooldown(ctx)
+                    await nv_msg.edit(
+                        content=_(
+                            "**{}** decides against visiting the negaverse... for now."
+                        ).format(self.escape(ctx.author.display_name))
+                    )
+                    return await self._clear_react(nv_msg)
 
-        percentage_offered = (offering / bal) * 100
-        min_roll = int(percentage_offered / 10)
-        entry_roll = random.randint(max(1, min_roll), 20)
-        if entry_roll == 1:
-            tax_mod = random.randint(4, 8)
-            tax = round(bal / tax_mod)
-            if tax > offering:
-                loss = tax
+            percentage_offered = (offering / bal) * 100
+            min_roll = int(percentage_offered / 10)
+            entry_roll = random.randint(max(1, min_roll), 20)
+            if entry_roll == 1:
+                tax_mod = random.randint(4, 8)
+                tax = round(bal / tax_mod)
+                if tax > offering:
+                    loss = tax
+                else:
+                    loss = offering
+                await bank.withdraw_credits(ctx.author, loss)
+                entry_msg = _(
+                    "A swirling void slowly grows and you watch in horror as it rushes to "
+                    "wash over you, leaving you cold... and your coin pouch significantly lighter. "
+                    "The portal to the negaverse remains closed."
+                )
+                return await nv_msg.edit(content=entry_msg)
             else:
-                loss = offering
-            await bank.withdraw_credits(ctx.author, loss)
-            entry_msg = _(
-                "A swirling void slowly grows and you watch in horror as it rushes to "
-                "wash over you, leaving you cold... and your coin pouch significantly lighter. "
-                "The portal to the negaverse remains closed."
-            )
-            return await nv_msg.edit(content=entry_msg)
-        else:
-            entry_msg = _(
-                "Shadowy hands reach out to take your offering from you and a swirling "
-                "black void slowly grows and engulfs you, transporting you to the negaverse."
-            )
-            await nv_msg.edit(content=entry_msg)
-            await self._clear_react(nv_msg)
-            await bank.withdraw_credits(ctx.author, offering)
+                entry_msg = _(
+                    "Shadowy hands reach out to take your offering from you and a swirling "
+                    "black void slowly grows and engulfs you, transporting you to the negaverse."
+                )
+                await nv_msg.edit(content=entry_msg)
+                await self._clear_react(nv_msg)
+                await bank.withdraw_credits(ctx.author, offering)
 
-        negachar = _("Nega-{c}").format(
-            c=self.escape(random.choice(ctx.message.guild.members).display_name)
-        )
-
-        nega_msg = await ctx.send(
-            _("**{author}** enters the negaverse and meets **{negachar}**.").format(
-                author=self.escape(ctx.author.display_name), negachar=negachar
+            negachar = _("Nega-{c}").format(
+                c=self.escape(random.choice(ctx.message.guild.members).display_name)
             )
-        )
-        roll = random.randint(max(1, min_roll * 2), 50)
-        versus = random.randint(10, 60)
-        xp_mod = random.randint(1, 10)
-        weekend = datetime.today().weekday() in [5, 6]
-        wedfriday = datetime.today().weekday() in [2, 4]
-        daymult = 2 if weekend else 1.5 if wedfriday else 1
-        xp_won = int((offering / xp_mod) * daymult)
-        async with self.get_lock(ctx.message.author):
+
+            nega_msg = await ctx.send(
+                _("**{author}** enters the negaverse and meets **{negachar}**.").format(
+                    author=self.escape(ctx.author.display_name), negachar=negachar
+                )
+            )
+            roll = random.randint(max(1, min_roll * 2), 50)
+            versus = random.randint(10, 60)
+            xp_mod = random.randint(1, 10)
+            weekend = datetime.today().weekday() in [5, 6]
+            wedfriday = datetime.today().weekday() in [2, 4]
+            daymult = 2 if weekend else 1.5 if wedfriday else 1
+            xp_won = int((offering / xp_mod) * daymult)
             try:
                 c = await Character.from_json(self.config, ctx.message.author)
             except Exception:
                 log.exception("Error with the new character sheet")
                 return
-        xp_to_max = int((c.maxlevel + 1) ** 3)
-        ten_percent = xp_to_max * 0.1
-        xp_won = ten_percent if xp_won > ten_percent else xp_won
-        xp_won = int(xp_won * (min(max(random.randint(0, c.rebirths), 1), 50) / 100 + 1))
-        if roll < 10:
-            loss = round(bal // 3)
-            try:
-                await bank.withdraw_credits(ctx.author, loss)
-                loss_msg = ""
-                loss = humanize_number(loss)
-            except ValueError:
-                await bank.set_balance(ctx.author, 0)
-                loss = _("all of their")
-            loss_msg = _(
-                ", losing {loss} {currency_name} as **{negachar}** rifled through their belongings"
-            ).format(loss=loss, currency_name=currency_name, negachar=negachar)
-            await nega_msg.edit(
-                content=_(
-                    "{content}\n**{author}** fumbled and died to **{negachar}'s** savagery{loss_msg}."
-                ).format(
-                    content=nega_msg.content,
-                    author=self.escape(ctx.author.display_name),
-                    negachar=negachar,
-                    loss_msg=loss_msg,
+            xp_to_max = int((c.maxlevel + 1) ** 3)
+            ten_percent = xp_to_max * 0.1
+            xp_won = ten_percent if xp_won > ten_percent else xp_won
+            xp_won = int(xp_won * (min(max(random.randint(0, c.rebirths), 1), 50) / 100 + 1))
+            if roll < 10:
+                loss = round(bal // 3)
+                try:
+                    await bank.withdraw_credits(ctx.author, loss)
+                    loss_msg = ""
+                    loss = humanize_number(loss)
+                except ValueError:
+                    await bank.set_balance(ctx.author, 0)
+                    loss = _("all of their")
+                loss_msg = _(
+                    ", losing {loss} {currency_name} as **{negachar}** rifled through their belongings"
+                ).format(loss=loss, currency_name=currency_name, negachar=negachar)
+                await nega_msg.edit(
+                    content=_(
+                        "{content}\n**{author}** fumbled and died to **{negachar}'s** savagery{loss_msg}."
+                    ).format(
+                        content=nega_msg.content,
+                        author=self.escape(ctx.author.display_name),
+                        negachar=negachar,
+                        loss_msg=loss_msg,
+                    )
                 )
-            )
-            ctx.command.reset_cooldown(ctx)
-        elif roll == 50 and versus < 50:
-            await nega_msg.edit(
-                content=_(
-                    "{content}\n**{author}** decapitated **{negachar}**. You gain {xp_gain} xp and take "
-                    "{offering} {currency_name} back from the shadowy corpse."
+                ctx.command.reset_cooldown(ctx)
+            elif roll == 50 and versus < 50:
+                await nega_msg.edit(
+                    content=_(
+                        "{content}\n**{author}** decapitated **{negachar}**. You gain {xp_gain} xp and take "
+                        "{offering} {currency_name} back from the shadowy corpse."
+                    ).format(
+                        content=nega_msg.content,
+                        author=self.escape(ctx.author.display_name),
+                        negachar=negachar,
+                        xp_gain=humanize_number(xp_won),
+                        offering=humanize_number(offering),
+                        currency_name=currency_name,
+                    )
+                )
+                await self._add_rewards(ctx, ctx.message.author, xp_won, offering, False)
+            elif roll > versus:
+                await nega_msg.edit(
+                    content=_(
+                        "{content}\n**{author}** "
+                        "{dice}({roll}) bravely defeated **{negachar}** {dice}({versus}). "
+                        "You gain {xp_gain} xp."
+                    ).format(
+                        dice=self.emojis.dice,
+                        content=nega_msg.content,
+                        author=self.escape(ctx.author.display_name),
+                        roll=roll,
+                        negachar=negachar,
+                        versus=versus,
+                        xp_gain=humanize_number(xp_won),
+                    )
+                )
+                await self._add_rewards(ctx, ctx.message.author, xp_won, 0, False)
+            elif roll == versus:
+                ctx.command.reset_cooldown(ctx)
+                await nega_msg.edit(
+                    content=_(
+                        "{content}\n**{author}** "
+                        "{dice}({roll}) almost killed **{negachar}** {dice}({versus})."
+                    ).format(
+                        dice=self.emojis.dice,
+                        content=nega_msg.content,
+                        author=self.escape(ctx.author.display_name),
+                        roll=roll,
+                        negachar=negachar,
+                        versus=versus,
+                    )
+                )
+            else:
+                loss = round(bal / (random.randint(10, 25)))
+                try:
+                    await bank.withdraw_credits(ctx.author, loss)
+                    loss_msg = ""
+                except ValueError:
+                    await bank.set_balance(ctx.author, 0)
+                    loss = _("all of their")
+                loss_msg = _(
+                    ", losing {loss} {currency_name} as **{negachar}** looted their backpack"
                 ).format(
-                    content=nega_msg.content,
-                    author=self.escape(ctx.author.display_name),
-                    negachar=negachar,
-                    xp_gain=humanize_number(xp_won),
-                    offering=humanize_number(offering),
+                    loss=humanize_number(loss) if not isinstance(loss, str) else loss,
                     currency_name=currency_name,
-                )
-            )
-            await self._add_rewards(ctx, ctx.message.author, xp_won, offering, False)
-        elif roll > versus:
-            await nega_msg.edit(
-                content=_(
-                    "{content}\n**{author}** "
-                    "{dice}({roll}) bravely defeated **{negachar}** {dice}({versus}). "
-                    "You gain {xp_gain} xp."
-                ).format(
-                    dice=self.emojis.dice,
-                    content=nega_msg.content,
-                    author=self.escape(ctx.author.display_name),
-                    roll=roll,
                     negachar=negachar,
-                    versus=versus,
-                    xp_gain=humanize_number(xp_won),
                 )
-            )
-            await self._add_rewards(ctx, ctx.message.author, xp_won, 0, False)
-        elif roll == versus:
-            ctx.command.reset_cooldown(ctx)
-            await nega_msg.edit(
-                content=_(
-                    "{content}\n**{author}** "
-                    "{dice}({roll}) almost killed **{negachar}** {dice}({versus})."
-                ).format(
-                    dice=self.emojis.dice,
-                    content=nega_msg.content,
-                    author=self.escape(ctx.author.display_name),
-                    roll=roll,
-                    negachar=negachar,
-                    versus=versus,
+                await nega_msg.edit(
+                    content=_(
+                        "**{author}** {dice}({roll}) was killed by **{negachar}** {dice}({versus}){loss_msg}."
+                    ).format(
+                        dice=self.emojis.dice,
+                        author=self.escape(ctx.author.display_name),
+                        roll=roll,
+                        negachar=negachar,
+                        versus=versus,
+                        loss_msg=loss_msg,
+                    )
                 )
-            )
-        else:
-            loss = round(bal / (random.randint(10, 25)))
-            try:
-                await bank.withdraw_credits(ctx.author, loss)
-                loss_msg = ""
-            except ValueError:
-                await bank.set_balance(ctx.author, 0)
-                loss = _("all of their")
-            loss_msg = _(
-                ", losing {loss} {currency_name} as **{negachar}** looted their backpack"
-            ).format(
-                loss=humanize_number(loss) if not isinstance(loss, str) else loss,
-                currency_name=currency_name,
-                negachar=negachar,
-            )
-            await nega_msg.edit(
-                content=_(
-                    "**{author}** {dice}({roll}) was killed by **{negachar}** {dice}({versus}){loss_msg}."
-                ).format(
-                    dice=self.emojis.dice,
-                    author=self.escape(ctx.author.display_name),
-                    roll=roll,
-                    negachar=negachar,
-                    versus=versus,
-                    loss_msg=loss_msg,
-                )
-            )
-            ctx.command.reset_cooldown(ctx)
+                ctx.command.reset_cooldown(ctx)
 
     @commands.group(autohelp=False)
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
@@ -3046,38 +3023,15 @@ class Adventure(BaseCog):
 
         This allows a Ranger to tame or set free a pet or send it foraging. (2h cooldown)
         """
-        if self.in_adventure(ctx):
-            return await smart_embed(
-                ctx, _("You're too distracted with the monster you are facing.")
-            )
-
-        if not await self.allow_in_dm(ctx):
-            return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
-        try:
-            c = await Character.from_json(self.config, ctx.author)
-        except Exception:
-            log.exception("Error with the new character sheet")
-            return
-        if c.heroclass["name"] != "Ranger":
-            return await ctx.send(
-                box(
-                    _("{}, you need to be a Ranger to do this.").format(
-                        self.escape(ctx.author.display_name)
-                    ),
-                    lang="css",
-                )
-            )
         if ctx.invoked_subcommand is None:
-            if c.heroclass["pet"]:
-                ctx.command.reset_cooldown(ctx)
-                return await ctx.send(
-                    box(
-                        _(
-                            "{author}, you already have a pet. "
-                            "Try foraging ({prefix}pet forage)."
-                        ).format(author=self.escape(ctx.author.display_name), prefix=ctx.prefix),
-                        lang="css",
-                    )
+            if self.in_adventure(ctx):
+                return await smart_embed(
+                    ctx, _("You're too distracted with the monster you are facing.")
+                )
+
+            if not await self.allow_in_dm(ctx):
+                return await smart_embed(
+                    ctx, _("This command is not available in DM's on this bot.")
                 )
             async with self.get_lock(ctx.author):
                 try:
@@ -3085,107 +3039,135 @@ class Adventure(BaseCog):
                 except Exception:
                     log.exception("Error with the new character sheet")
                     return
-                cooldown_time = max(600, (3600 - (c.luck * 2 + c.total_int * 2)))
-                if "catch_cooldown" not in c.heroclass:
-                    c.heroclass["catch_cooldown"] = cooldown_time + 1
-                if c.heroclass["catch_cooldown"] + cooldown_time > time.time():
-                    cooldown_time = (c.heroclass["catch_cooldown"]) + cooldown_time - time.time()
-                    return await smart_embed(
-                        ctx,
-                        _(
-                            "You caught a pet recently, you will be able to go hunting in {}."
-                        ).format(
-                            humanize_timedelta(seconds=int(cooldown_time))
-                            if int(cooldown_time) >= 1
-                            else _("1 second")
-                        ),
+                if c.heroclass["name"] != "Ranger":
+                    return await ctx.send(
+                        box(
+                            _("{}, you need to be a Ranger to do this.").format(
+                                self.escape(ctx.author.display_name)
+                            ),
+                            lang="css",
+                        )
                     )
-                extra_dipl = 0
-                pet_choices = list(self.PETS.keys())
-                pet = random.choice(pet_choices)
+                if c.heroclass["pet"]:
+                    ctx.command.reset_cooldown(ctx)
+                    return await ctx.send(
+                        box(
+                            _(
+                                "{author}, you already have a pet. "
+                                "Try foraging ({prefix}pet forage)."
+                            ).format(
+                                author=self.escape(ctx.author.display_name), prefix=ctx.prefix
+                            ),
+                            lang="css",
+                        )
+                    )
+                    cooldown_time = max(600, (3600 - (c.luck * 2 + c.total_int * 2)))
+                    if "catch_cooldown" not in c.heroclass:
+                        c.heroclass["catch_cooldown"] = cooldown_time + 1
+                    if c.heroclass["catch_cooldown"] + cooldown_time > time.time():
+                        cooldown_time = (
+                            (c.heroclass["catch_cooldown"]) + cooldown_time - time.time()
+                        )
+                        return await smart_embed(
+                            ctx,
+                            _(
+                                "You caught a pet recently, you will be able to go hunting in {}."
+                            ).format(
+                                humanize_timedelta(seconds=int(cooldown_time))
+                                if int(cooldown_time) >= 1
+                                else _("1 second")
+                            ),
+                        )
+                    extra_dipl = 0
+                    pet_choices = list(self.PETS.keys())
+                    pet = random.choice(pet_choices)
 
-                roll = random.randint(1, 20)
-                dipl_value = roll + c.total_cha + (c.total_int // 3) + (c.luck // 2)
-                dipl_value += extra_dipl
-                pet_reqs = self.PETS[pet].get("bonuses", {}).get("req", {})
-                pet_msg4 = ""
-                if pet_reqs.get("set", False):
-                    if pet_reqs.get("set", None) in c.sets:
-                        if "Ainz Ooal Gown" == pet_reqs.get("set", None):
-                            dipl_value = 100000
-                            pet = "Guardians of Nazarick"
-                    else:
-                        dipl_value = -100000
-                        pet_msg4 = _(
-                            "\nPerhaps you're missing some requirements to tame {pet}"
-                        ).format(pet=pet)
+                    roll = random.randint(1, 20)
+                    dipl_value = roll + c.total_cha + (c.total_int // 3) + (c.luck // 2)
+                    dipl_value += extra_dipl
+                    pet_reqs = self.PETS[pet].get("bonuses", {}).get("req", {})
+                    pet_msg4 = ""
+                    if pet_reqs.get("set", False):
+                        if pet_reqs.get("set", None) in c.sets:
+                            if "Ainz Ooal Gown" == pet_reqs.get("set", None):
+                                dipl_value = 100000
+                                pet = "Guardians of Nazarick"
+                        else:
+                            dipl_value = -100000
+                            pet_msg4 = _(
+                                "\nPerhaps you're missing some requirements to tame {pet}"
+                            ).format(pet=pet)
 
-                pet_msg = box(
-                    _("{c} is trying to tame a pet.").format(
-                        c=self.escape(ctx.author.display_name)
-                    ),
-                    lang="css",
-                )
-                user_msg = await ctx.send(pet_msg)
-                await asyncio.sleep(2)
-                pet_msg2 = box(
-                    _(
-                        "{author} started tracking a wild {pet_name} with a roll of {dice}({roll})."
-                    ).format(
-                        dice=self.emojis.dice,
-                        author=self.escape(ctx.author.display_name),
-                        pet_name=self.PETS[pet]["name"],
-                        roll=roll,
-                    ),
-                    lang="css",
-                )
-                await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}")
-                await asyncio.sleep(2)
-                bonus = ""
-                if roll == 1:
-                    bonus = _("But they stepped on a twig and scared it away.")
-                elif roll == 20:
-                    bonus = _("They happen to have its favorite food.")
-                    dipl_value += 10
-                if dipl_value > self.PETS[pet]["cha"] and roll > 1:
-                    roll = random.randint(0, 2 if roll == 20 else 4)
-                    if roll == 0:
-                        pet_msg3 = box(
-                            _("{bonus}\nThey successfully tamed the {pet}.").format(
-                                bonus=bonus, pet=self.PETS[pet]["name"]
-                            ),
-                            lang="css",
-                        )
-                        await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}")
-                        c.heroclass["pet"] = self.PETS[pet]
-                        c.heroclass["catch_cooldown"] = time.time()
-                        await self.config.user(ctx.author).set(c.to_json())
-                    elif roll == 1:
-                        bonus = _("But they stepped on a twig and scared it away.")
-                        pet_msg3 = box(
-                            _("{bonus}\nThe {pet} escaped.").format(
-                                bonus=bonus, pet=self.PETS[pet]["name"]
-                            ),
-                            lang="css",
-                        )
-                        await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}{pet_msg4}")
-                    else:
-                        bonus = ""
-                        pet_msg3 = box(
-                            _("{bonus}\nThe {pet} escaped.").format(
-                                bonus=bonus, pet=self.PETS[pet]["name"]
-                            ),
-                            lang="css",
-                        )
-                        await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}{pet_msg4}")
-                else:
-                    pet_msg3 = box(
-                        _("{bonus}\nThe {pet} escaped.").format(
-                            bonus=bonus, pet=self.PETS[pet]["name"]
+                    pet_msg = box(
+                        _("{c} is trying to tame a pet.").format(
+                            c=self.escape(ctx.author.display_name)
                         ),
                         lang="css",
                     )
-                    await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}{pet_msg4}")
+                    user_msg = await ctx.send(pet_msg)
+                    await asyncio.sleep(2)
+                    pet_msg2 = box(
+                        _(
+                            "{author} started tracking a wild {pet_name} with a roll of {dice}({roll})."
+                        ).format(
+                            dice=self.emojis.dice,
+                            author=self.escape(ctx.author.display_name),
+                            pet_name=self.PETS[pet]["name"],
+                            roll=roll,
+                        ),
+                        lang="css",
+                    )
+                    await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}")
+                    await asyncio.sleep(2)
+                    bonus = ""
+                    if roll == 1:
+                        bonus = _("But they stepped on a twig and scared it away.")
+                    elif roll == 20:
+                        bonus = _("They happen to have its favorite food.")
+                        dipl_value += 10
+                    if dipl_value > self.PETS[pet]["cha"] and roll > 1:
+                        roll = random.randint(0, 2 if roll == 20 else 4)
+                        if roll == 0:
+                            pet_msg3 = box(
+                                _("{bonus}\nThey successfully tamed the {pet}.").format(
+                                    bonus=bonus, pet=self.PETS[pet]["name"]
+                                ),
+                                lang="css",
+                            )
+                            await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}")
+                            c.heroclass["pet"] = self.PETS[pet]
+                            c.heroclass["catch_cooldown"] = time.time()
+                            await self.config.user(ctx.author).set(c.to_json())
+                        elif roll == 1:
+                            bonus = _("But they stepped on a twig and scared it away.")
+                            pet_msg3 = box(
+                                _("{bonus}\nThe {pet} escaped.").format(
+                                    bonus=bonus, pet=self.PETS[pet]["name"]
+                                ),
+                                lang="css",
+                            )
+                            await user_msg.edit(
+                                content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}{pet_msg4}"
+                            )
+                        else:
+                            bonus = ""
+                            pet_msg3 = box(
+                                _("{bonus}\nThe {pet} escaped.").format(
+                                    bonus=bonus, pet=self.PETS[pet]["name"]
+                                ),
+                                lang="css",
+                            )
+                            await user_msg.edit(
+                                content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}{pet_msg4}"
+                            )
+                    else:
+                        pet_msg3 = box(
+                            _("{bonus}\nThe {pet} escaped.").format(
+                                bonus=bonus, pet=self.PETS[pet]["name"]
+                            ),
+                            lang="css",
+                        )
+                        await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}{pet_msg4}")
 
     @pet.command(name="forage")
     async def _forage(self, ctx: Context):
@@ -3194,45 +3176,40 @@ class Adventure(BaseCog):
             return await smart_embed(
                 ctx, _("You're too distracted with the monster you are facing.")
             )
-        try:
-            c = await Character.from_json(self.config, ctx.author)
-        except Exception:
-            log.exception("Error with the new character sheet")
-            return
-        if c.heroclass["name"] != "Ranger":
-            return
-        if not c.heroclass["pet"]:
-            return await ctx.send(
-                box(
-                    _("{}, you need to have a pet to do this.").format(
-                        self.escape(ctx.author.display_name)
-                    ),
-                    lang="css",
+        async with self.get_lock(ctx.author):
+            try:
+                c = await Character.from_json(self.config, ctx.author)
+            except Exception:
+                log.exception("Error with the new character sheet")
+                return
+            if c.heroclass["name"] != "Ranger":
+                return
+            if not c.heroclass["pet"]:
+                return await ctx.send(
+                    box(
+                        _("{}, you need to have a pet to do this.").format(
+                            self.escape(ctx.author.display_name)
+                        ),
+                        lang="css",
+                    )
                 )
-            )
-        cooldown_time = max(1800, (7200 - (c.luck * 2 + c.total_int * 2)))
-        if "cooldown" not in c.heroclass:
-            c.heroclass["cooldown"] = cooldown_time + 1
-        if c.heroclass["cooldown"] + cooldown_time <= time.time():
-            await self._open_chest(ctx, c.heroclass["pet"]["name"], "pet", character=c)
-            async with self.get_lock(ctx.author):
-                try:
-                    c = await Character.from_json(self.config, ctx.author)
-                except Exception:
-                    log.exception("Error with the new character sheet")
-                    return
+            cooldown_time = max(1800, (7200 - (c.luck * 2 + c.total_int * 2)))
+            if "cooldown" not in c.heroclass:
+                c.heroclass["cooldown"] = cooldown_time + 1
+            if c.heroclass["cooldown"] + cooldown_time <= time.time():
+                await self._open_chest(ctx, c.heroclass["pet"]["name"], "pet", character=c)
                 c.heroclass["cooldown"] = time.time()
                 await self.config.user(ctx.author).set(c.to_json())
-        else:
-            cooldown_time = (c.heroclass["cooldown"] + 7200) - time.time()
-            return await smart_embed(
-                ctx,
-                _("This command is on cooldown. Try again in {}.").format(
-                    humanize_timedelta(seconds=int(cooldown_time))
-                    if int(cooldown_time) >= 1
-                    else _("1 second")
-                ),
-            )
+            else:
+                cooldown_time = (c.heroclass["cooldown"] + 7200) - time.time()
+                return await smart_embed(
+                    ctx,
+                    _("This command is on cooldown. Try again in {}.").format(
+                        humanize_timedelta(seconds=int(cooldown_time))
+                        if int(cooldown_time) >= 1
+                        else _("1 second")
+                    ),
+                )
 
     @pet.command(name="free")
     async def _free(self, ctx: Context):
@@ -3241,34 +3218,34 @@ class Adventure(BaseCog):
             return await smart_embed(
                 ctx, _("You're too distracted with the monster you are facing.")
             )
-        try:
-            c = await Character.from_json(self.config, ctx.author)
-        except Exception:
-            log.exception("Error with the new character sheet")
-            return
-        if c.heroclass["name"] != "Ranger":
-            return await ctx.send(
-                box(
-                    _("{}, you need to be a Ranger to do this.").format(
-                        self.escape(ctx.author.display_name)
-                    ),
-                    lang="css",
+        async with self.get_lock(ctx.author):
+            try:
+                c = await Character.from_json(self.config, ctx.author)
+            except Exception:
+                log.exception("Error with the new character sheet")
+                return
+            if c.heroclass["name"] != "Ranger":
+                return await ctx.send(
+                    box(
+                        _("{}, you need to be a Ranger to do this.").format(
+                            self.escape(ctx.author.display_name)
+                        ),
+                        lang="css",
+                    )
                 )
-            )
-        if c.heroclass["pet"]:
-            async with self.get_lock(ctx.author):
+            if c.heroclass["pet"]:
                 c.heroclass["pet"] = {}
                 await self.config.user(ctx.author).set(c.to_json())
-            return await ctx.send(
-                box(
-                    _("{} released their pet into the wild.").format(
-                        self.escape(ctx.author.display_name)
-                    ),
-                    lang="css",
+                return await ctx.send(
+                    box(
+                        _("{} released their pet into the wild.").format(
+                            self.escape(ctx.author.display_name)
+                        ),
+                        lang="css",
+                    )
                 )
-            )
-        else:
-            return await ctx.send(box(_("You don't have a pet."), lang="css"))
+            else:
+                return await ctx.send(box(_("You don't have a pet."), lang="css"))
 
     @commands.command()
     @commands.guild_only()
@@ -3278,55 +3255,54 @@ class Adventure(BaseCog):
         This allows a praying Cleric to add substantial bonuses for heroes fighting the battle. (10
         minute cooldown)
         """
-
-        try:
-            c = await Character.from_json(self.config, ctx.author)
-        except Exception:
-            log.exception("Error with the new character sheet")
-            return
-        if c.heroclass["name"] != "Cleric":
-            ctx.command.reset_cooldown(ctx)
-            return await smart_embed(
-                ctx,
-                _("**{}**, you need to be a Cleric to do this.").format(
-                    self.escape(ctx.author.display_name)
-                ),
-            )
-        else:
-            if c.heroclass["ability"]:
+        async with self.get_lock(ctx.author):
+            try:
+                c = await Character.from_json(self.config, ctx.author)
+            except Exception:
+                log.exception("Error with the new character sheet")
+                return
+            if c.heroclass["name"] != "Cleric":
+                ctx.command.reset_cooldown(ctx)
                 return await smart_embed(
                     ctx,
-                    _("**{}**, ability already in use.").format(
+                    _("**{}**, you need to be a Cleric to do this.").format(
                         self.escape(ctx.author.display_name)
                     ),
                 )
-            cooldown_time = max(300, (1200 - ((c.luck + c.total_int) * 2)))
-            if "cooldown" not in c.heroclass:
-                c.heroclass["cooldown"] = cooldown_time + 1
-            if c.heroclass["cooldown"] + cooldown_time <= time.time():
-                c.heroclass["ability"] = True
-                c.heroclass["cooldown"] = time.time()
-                async with self.get_lock(c.user):
+            else:
+                if c.heroclass["ability"]:
+                    return await smart_embed(
+                        ctx,
+                        _("**{}**, ability already in use.").format(
+                            self.escape(ctx.author.display_name)
+                        ),
+                    )
+                cooldown_time = max(300, (1200 - ((c.luck + c.total_int) * 2)))
+                if "cooldown" not in c.heroclass:
+                    c.heroclass["cooldown"] = cooldown_time + 1
+                if c.heroclass["cooldown"] + cooldown_time <= time.time():
+                    c.heroclass["ability"] = True
+                    c.heroclass["cooldown"] = time.time()
                     await self.config.user(ctx.author).set(c.to_json())
 
-                await smart_embed(
-                    ctx,
-                    _("{bless}📜 **{c}** is starting an inspiring sermon. {bless}📜").format(
-                        c=self.escape(ctx.author.display_name), bless=self.emojis.skills.bless,
-                    ),
-                )
-            else:
-                cooldown_time = (c.heroclass["cooldown"]) + cooldown_time - time.time()
-                return await smart_embed(
-                    ctx,
-                    _(
-                        "Your hero is currently recovering from the last time they used this skill. Try again in {}"
-                    ).format(
-                        humanize_timedelta(seconds=int(cooldown_time))
-                        if int(cooldown_time) >= 1
-                        else _("1 second")
-                    ),
-                )
+                    await smart_embed(
+                        ctx,
+                        _("{bless}📜 **{c}** is starting an inspiring sermon. {bless}📜").format(
+                            c=self.escape(ctx.author.display_name), bless=self.emojis.skills.bless,
+                        ),
+                    )
+                else:
+                    cooldown_time = (c.heroclass["cooldown"]) + cooldown_time - time.time()
+                    return await smart_embed(
+                        ctx,
+                        _(
+                            "Your hero is currently recovering from the last time they used this skill. Try again in {}"
+                        ).format(
+                            humanize_timedelta(seconds=int(cooldown_time))
+                            if int(cooldown_time) >= 1
+                            else _("1 second")
+                        ),
+                    )
 
     @commands.command()
     @commands.guild_only()
@@ -3335,54 +3311,56 @@ class Adventure(BaseCog):
 
         This allows a Berserker to add substantial attack bonuses for one battle. (10 minute cooldown)
         """
-
-        try:
-            c = await Character.from_json(self.config, ctx.author)
-        except Exception:
-            log.exception("Error with the new character sheet")
-            return
-        if c.heroclass["name"] != "Berserker":
-            ctx.command.reset_cooldown(ctx)
-            return await smart_embed(
-                ctx,
-                _("**{}**, you need to be a Berserker to do this.").format(
-                    self.escape(ctx.author.display_name)
-                ),
-            )
-        else:
-            if c.heroclass["ability"] is True:
+        async with self.get_lock(ctx.author):
+            try:
+                c = await Character.from_json(self.config, ctx.author)
+            except Exception:
+                log.exception("Error with the new character sheet")
+                return
+            if c.heroclass["name"] != "Berserker":
+                ctx.command.reset_cooldown(ctx)
                 return await smart_embed(
                     ctx,
-                    _("**{}**, ability already in use.").format(
+                    _("**{}**, you need to be a Berserker to do this.").format(
                         self.escape(ctx.author.display_name)
                     ),
                 )
-            cooldown_time = max(300, (1200 - ((c.luck + c.total_att) * 2)))
-            if "cooldown" not in c.heroclass:
-                c.heroclass["cooldown"] = cooldown_time + 1
-            if c.heroclass["cooldown"] + cooldown_time <= time.time():
-                c.heroclass["ability"] = True
-                c.heroclass["cooldown"] = time.time()
-                async with self.get_lock(c.user):
-                    await self.config.user(ctx.author).set(c.to_json())
-                await smart_embed(
-                    ctx,
-                    _("🗯️{skill} **{c}** is starting to froth at the mouth... {skill}🗯️").format(
-                        c=self.escape(ctx.author.display_name), skill=self.emojis.skills.berserker,
-                    ),
-                )
             else:
-                cooldown_time = (c.heroclass["cooldown"]) + cooldown_time - time.time()
-                return await smart_embed(
-                    ctx,
-                    _(
-                        "Your hero is currently recovering from the last time they used this skill. Try again in {}"
-                    ).format(
-                        humanize_timedelta(seconds=int(cooldown_time))
-                        if int(cooldown_time) >= 1
-                        else _("1 second")
-                    ),
-                )
+                if c.heroclass["ability"] is True:
+                    return await smart_embed(
+                        ctx,
+                        _("**{}**, ability already in use.").format(
+                            self.escape(ctx.author.display_name)
+                        ),
+                    )
+                cooldown_time = max(300, (1200 - ((c.luck + c.total_att) * 2)))
+                if "cooldown" not in c.heroclass:
+                    c.heroclass["cooldown"] = cooldown_time + 1
+                if c.heroclass["cooldown"] + cooldown_time <= time.time():
+                    c.heroclass["ability"] = True
+                    c.heroclass["cooldown"] = time.time()
+                    await self.config.user(ctx.author).set(c.to_json())
+                    await smart_embed(
+                        ctx,
+                        _(
+                            "🗯️{skill} **{c}** is starting to froth at the mouth... {skill}🗯️"
+                        ).format(
+                            c=self.escape(ctx.author.display_name),
+                            skill=self.emojis.skills.berserker,
+                        ),
+                    )
+                else:
+                    cooldown_time = (c.heroclass["cooldown"]) + cooldown_time - time.time()
+                    return await smart_embed(
+                        ctx,
+                        _(
+                            "Your hero is currently recovering from the last time they used this skill. Try again in {}"
+                        ).format(
+                            humanize_timedelta(seconds=int(cooldown_time))
+                            if int(cooldown_time) >= 1
+                            else _("1 second")
+                        ),
+                    )
 
     @commands.command()
     @commands.guild_only()
@@ -3391,54 +3369,55 @@ class Adventure(BaseCog):
 
         This allows a Wizard to add substantial magic bonuses for one battle. (10 minute cooldown)
         """
-
-        try:
-            c = await Character.from_json(self.config, ctx.author)
-        except Exception:
-            log.exception("Error with the new character sheet")
-            return
-        if c.heroclass["name"] != "Wizard":
-            ctx.command.reset_cooldown(ctx)
-            return await smart_embed(
-                ctx,
-                _("**{}**, you need to be a Wizard to do this.").format(
-                    self.escape(ctx.author.display_name)
-                ),
-            )
-        else:
-            if c.heroclass["ability"] is True:
+        async with self.get_lock(ctx.author):
+            try:
+                c = await Character.from_json(self.config, ctx.author)
+            except Exception:
+                log.exception("Error with the new character sheet")
+                return
+            if c.heroclass["name"] != "Wizard":
+                ctx.command.reset_cooldown(ctx)
                 return await smart_embed(
                     ctx,
-                    _("**{}**, ability already in use.").format(
+                    _("**{}**, you need to be a Wizard to do this.").format(
                         self.escape(ctx.author.display_name)
                     ),
                 )
-            cooldown_time = max(300, (1200 - ((c.luck + c.total_int) * 2)))
-            if "cooldown" not in c.heroclass:
-                c.heroclass["cooldown"] = cooldown_time + 1
-            if c.heroclass["cooldown"] + cooldown_time <= time.time():
-                c.heroclass["ability"] = True
-                c.heroclass["cooldown"] = time.time()
-                async with self.get_lock(c.user):
-                    await self.config.user(ctx.author).set(c.to_json())
-                await smart_embed(
-                    ctx,
-                    _("{skill} **{c}** is focusing all of their energy...{skill}").format(
-                        c=self.escape(ctx.author.display_name), skill=self.emojis.skills.wizzard,
-                    ),
-                )
             else:
-                cooldown_time = (c.heroclass["cooldown"]) + cooldown_time - time.time()
-                return await smart_embed(
-                    ctx,
-                    _(
-                        "Your hero is currently recovering from the last time they used this skill. Try again in {}"
-                    ).format(
-                        humanize_timedelta(seconds=int(cooldown_time))
-                        if int(cooldown_time) >= 1
-                        else _("1 second")
-                    ),
-                )
+                if c.heroclass["ability"] is True:
+                    return await smart_embed(
+                        ctx,
+                        _("**{}**, ability already in use.").format(
+                            self.escape(ctx.author.display_name)
+                        ),
+                    )
+                cooldown_time = max(300, (1200 - ((c.luck + c.total_int) * 2)))
+                if "cooldown" not in c.heroclass:
+                    c.heroclass["cooldown"] = cooldown_time + 1
+                if c.heroclass["cooldown"] + cooldown_time <= time.time():
+                    c.heroclass["ability"] = True
+                    c.heroclass["cooldown"] = time.time()
+
+                    await self.config.user(ctx.author).set(c.to_json())
+                    await smart_embed(
+                        ctx,
+                        _("{skill} **{c}** is focusing all of their energy...{skill}").format(
+                            c=self.escape(ctx.author.display_name),
+                            skill=self.emojis.skills.wizzard,
+                        ),
+                    )
+                else:
+                    cooldown_time = (c.heroclass["cooldown"]) + cooldown_time - time.time()
+                    return await smart_embed(
+                        ctx,
+                        _(
+                            "Your hero is currently recovering from the last time they used this skill. Try again in {}"
+                        ).format(
+                            humanize_timedelta(seconds=int(cooldown_time))
+                            if int(cooldown_time) >= 1
+                            else _("1 second")
+                        ),
+                    )
 
     @commands.command()
     @commands.guild_only()
@@ -3448,33 +3427,34 @@ class Adventure(BaseCog):
         This allows a Bard to add substantial diplomacy bonuses for one battle. (10 minute
         cooldown)
         """
-
-        try:
-            c = await Character.from_json(self.config, ctx.author)
-        except Exception:
-            log.exception("Error with the new character sheet")
-            return
-        if c.heroclass["name"] != "Bard":
-            ctx.command.reset_cooldown(ctx)
-            return await smart_embed(
-                ctx,
-                _("{}, you need to be a Bard to do this.").format(
-                    self.escape(ctx.author.display_name)
-                ),
-            )
-        else:
-            if c.heroclass["ability"]:
+        async with self.get_lock(ctx.author):
+            try:
+                c = await Character.from_json(self.config, ctx.author)
+            except Exception:
+                log.exception("Error with the new character sheet")
+                return
+            if c.heroclass["name"] != "Bard":
+                ctx.command.reset_cooldown(ctx)
                 return await smart_embed(
                     ctx,
-                    _("{}, ability already in use.").format(self.escape(ctx.author.display_name)),
+                    _("{}, you need to be a Bard to do this.").format(
+                        self.escape(ctx.author.display_name)
+                    ),
                 )
-            cooldown_time = max(300, (1200 - ((c.luck + c.total_cha) * 2)))
-            if "cooldown" not in c.heroclass:
-                c.heroclass["cooldown"] = cooldown_time + 1
-            if c.heroclass["cooldown"] + cooldown_time <= time.time():
-                c.heroclass["ability"] = True
-                c.heroclass["cooldown"] = time.time()
-                async with self.get_lock(c.user):
+            else:
+                if c.heroclass["ability"]:
+                    return await smart_embed(
+                        ctx,
+                        _("{}, ability already in use.").format(
+                            self.escape(ctx.author.display_name)
+                        ),
+                    )
+                cooldown_time = max(300, (1200 - ((c.luck + c.total_cha) * 2)))
+                if "cooldown" not in c.heroclass:
+                    c.heroclass["cooldown"] = cooldown_time + 1
+                if c.heroclass["cooldown"] + cooldown_time <= time.time():
+                    c.heroclass["ability"] = True
+                    c.heroclass["cooldown"] = time.time()
                     await self.config.user(ctx.author).set(c.to_json())
                     await smart_embed(
                         ctx,
@@ -3482,14 +3462,14 @@ class Adventure(BaseCog):
                             c=self.escape(ctx.author.display_name), skill=self.emojis.skills.bard,
                         ),
                     )
-            else:
-                cooldown_time = (c.heroclass["cooldown"]) + cooldown_time - time.time()
-                return await smart_embed(
-                    ctx,
-                    _(
-                        "Your hero is currently recovering from the last time they used this skill. Try again in {}"
-                    ).format(humanize_timedelta(seconds=int(cooldown_time))),
-                )
+                else:
+                    cooldown_time = (c.heroclass["cooldown"]) + cooldown_time - time.time()
+                    return await smart_embed(
+                        ctx,
+                        _(
+                            "Your hero is currently recovering from the last time they used this skill. Try again in {}"
+                        ).format(humanize_timedelta(seconds=int(cooldown_time))),
+                    )
 
     @commands.command()
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -3505,107 +3485,106 @@ class Adventure(BaseCog):
             return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
         if amount < 1:
             return await smart_embed(ctx, _("Nice try :smirk:"))
-        try:
-            c = await Character.from_json(self.config, ctx.author)
-        except Exception:
-            log.exception("Error with the new character sheet")
-            return
-        if spend == "reset":
-            bal = c.bal
-            currency_name = await bank.get_currency_name(ctx.guild)
-
-            offering = min(int(bal / 5 + (c.total_int // 3)), 1000000000)
-            nv_msg = await ctx.send(
-                _(
-                    "{author}, this will cost you at least {offering} {currency_name}.\n"
-                    "You currently have {bal}. Do you want to proceed?"
-                ).format(
-                    author=self.escape(ctx.author.display_name),
-                    offering=humanize_number(offering),
-                    currency_name=currency_name,
-                    bal=humanize_number(bal),
-                )
-            )
-            start_adding_reactions(nv_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-            pred = ReactionPredicate.yes_or_no(nv_msg, ctx.author)
+        async with self.get_lock(ctx.author):
             try:
-                await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
-            except asyncio.TimeoutError:
-                await self._clear_react(nv_msg)
+                c = await Character.from_json(self.config, ctx.author)
+            except Exception:
+                log.exception("Error with the new character sheet")
+                return
+            if spend == "reset":
+                bal = c.bal
+                currency_name = await bank.get_currency_name(ctx.guild)
+
+                offering = min(int(bal / 5 + (c.total_int // 3)), 1000000000)
+                nv_msg = await ctx.send(
+                    _(
+                        "{author}, this will cost you at least {offering} {currency_name}.\n"
+                        "You currently have {bal}. Do you want to proceed?"
+                    ).format(
+                        author=self.escape(ctx.author.display_name),
+                        offering=humanize_number(offering),
+                        currency_name=currency_name,
+                        bal=humanize_number(bal),
+                    )
+                )
+                start_adding_reactions(nv_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+                pred = ReactionPredicate.yes_or_no(nv_msg, ctx.author)
+                try:
+                    await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
+                except asyncio.TimeoutError:
+                    await self._clear_react(nv_msg)
+                    return
+
+                if pred.result:
+                    c.skill["pool"] += c.skill["att"] + c.skill["cha"] + c.skill["int"]
+                    c.skill["att"] = 0
+                    c.skill["cha"] = 0
+                    c.skill["int"] = 0
+                    await self.config.user(ctx.author).set(c.to_json())
+                    await bank.withdraw_credits(ctx.author, offering)
+                    await smart_embed(
+                        ctx,
+                        _("{}, your skill points have been reset.").format(
+                            self.escape(ctx.author.display_name)
+                        ),
+                    )
+                else:
+                    await smart_embed(
+                        ctx,
+                        _("Don't play games with me, {}.").format(
+                            self.escape(ctx.author.display_name)
+                        ),
+                    )
                 return
 
-            if pred.result:
-                c.skill["pool"] += c.skill["att"] + c.skill["cha"] + c.skill["int"]
-                c.skill["att"] = 0
-                c.skill["cha"] = 0
-                c.skill["int"] = 0
-                async with self.get_lock(c.user):
-                    await self.config.user(ctx.author).set(c.to_json())
-                await bank.withdraw_credits(ctx.author, offering)
+            if c.skill["pool"] <= 0:
+                return await smart_embed(
+                    ctx,
+                    _("{}, you do not have unspent skillpoints.").format(
+                        self.escape(ctx.author.display_name)
+                    ),
+                )
+            elif c.skill["pool"] < amount:
+                return await smart_embed(
+                    ctx,
+                    _("{}, you do not have enough unspent skillpoints.").format(
+                        self.escape(ctx.author.display_name)
+                    ),
+                )
+            if spend is None:
                 await smart_embed(
                     ctx,
-                    _("{}, your skill points have been reset.").format(
-                        self.escape(ctx.author.display_name)
+                    _(
+                        "**{author}**, you currently have **{skillpoints}** unspent skillpoints.\n"
+                        "If you want to put them towards a permanent attack, charisma or intelligence bonus, use "
+                        "`{prefix}skill attack`, `{prefix}skill charisma` or  `{prefix}skill intelligence`"
+                    ).format(
+                        author=self.escape(ctx.author.display_name),
+                        skillpoints=str(c.skill["pool"]),
+                        prefix=ctx.prefix,
                     ),
                 )
             else:
+                if spend not in ["attack", "charisma", "intelligence"]:
+                    return await smart_embed(
+                        ctx, _("Don't try to fool me! There is no such thing as {}.").format(spend)
+                    )
+                elif spend == "attack":
+                    c.skill["pool"] -= amount
+                    c.skill["att"] += amount
+                elif spend == "charisma":
+                    c.skill["pool"] -= amount
+                    c.skill["cha"] += amount
+                elif spend == "intelligence":
+                    c.skill["pool"] -= amount
+                    c.skill["int"] += amount
+                await self.config.user(ctx.author).set(c.to_json())
                 await smart_embed(
                     ctx,
-                    _("Don't play games with me, {}.").format(
-                        self.escape(ctx.author.display_name)
+                    _("{author}, you permanently raised your {spend} value by {amount}.").format(
+                        author=self.escape(ctx.author.display_name), spend=spend, amount=amount
                     ),
                 )
-            return
-
-        if c.skill["pool"] <= 0:
-            return await smart_embed(
-                ctx,
-                _("{}, you do not have unspent skillpoints.").format(
-                    self.escape(ctx.author.display_name)
-                ),
-            )
-        elif c.skill["pool"] < amount:
-            return await smart_embed(
-                ctx,
-                _("{}, you do not have enough unspent skillpoints.").format(
-                    self.escape(ctx.author.display_name)
-                ),
-            )
-        if spend is None:
-            await smart_embed(
-                ctx,
-                _(
-                    "**{author}**, you currently have **{skillpoints}** unspent skillpoints.\n"
-                    "If you want to put them towards a permanent attack, charisma or intelligence bonus, use "
-                    "`{prefix}skill attack`, `{prefix}skill charisma` or  `{prefix}skill intelligence`"
-                ).format(
-                    author=self.escape(ctx.author.display_name),
-                    skillpoints=str(c.skill["pool"]),
-                    prefix=ctx.prefix,
-                ),
-            )
-        else:
-            if spend not in ["attack", "charisma", "intelligence"]:
-                return await smart_embed(
-                    ctx, _("Don't try to fool me! There is no such thing as {}.").format(spend)
-                )
-            elif spend == "attack":
-                c.skill["pool"] -= amount
-                c.skill["att"] += amount
-            elif spend == "charisma":
-                c.skill["pool"] -= amount
-                c.skill["cha"] += amount
-            elif spend == "intelligence":
-                c.skill["pool"] -= amount
-                c.skill["int"] += amount
-            async with self.get_lock(c.user):
-                await self.config.user(ctx.author).set(c.to_json())
-            await smart_embed(
-                ctx,
-                _("{author}, you permanently raised your {spend} value by {amount}.").format(
-                    author=self.escape(ctx.author.display_name), spend=spend, amount=amount
-                ),
-            )
 
     @commands.command()
     async def stats(self, ctx: Context, *, user: discord.Member = None):
@@ -5529,19 +5508,18 @@ class Adventure(BaseCog):
         amount: int,
         character: Character,
     ):
-        async with self.get_lock(user):
-            items = {}
-            for i in range(0, max(amount, 0)):
-                await asyncio.sleep(0)
-                item = await self._roll_chest(chest_type, character)
-                item_name = str(item)
-                if item_name in items:
-                    items[item_name].owned += 1
-                else:
-                    items[item_name] = item
-                await character.add_to_backpack(item)
-            await self.config.user(ctx.author).set(character.to_json())
-            return items
+        items = {}
+        for i in range(0, max(amount, 0)):
+            await asyncio.sleep(0)
+            item = await self._roll_chest(chest_type, character)
+            item_name = str(item)
+            if item_name in items:
+                items[item_name].owned += 1
+            else:
+                items[item_name] = item
+            await character.add_to_backpack(item)
+        await self.config.user(ctx.author).set(character.to_json())
+        return items
 
     async def _open_chest(self, ctx: Context, user, chest_type, character):
         if hasattr(user, "display_name"):
@@ -5554,7 +5532,6 @@ class Adventure(BaseCog):
             )
         open_msg = await ctx.send(box(chest_msg, lang="css"))
         await asyncio.sleep(2)
-
         item = await self._roll_chest(chest_type, character)
         if chest_type == "pet" and not item:
             await open_msg.edit(
@@ -5668,19 +5645,18 @@ class Adventure(BaseCog):
             react, user = await self.bot.wait_for("reaction_add", check=pred, timeout=60)
         except asyncio.TimeoutError:
             await self._clear_react(open_msg)
-            async with self.get_lock(ctx.author):
-                await character.add_to_backpack(item)
-                await open_msg.edit(
-                    content=(
-                        box(
-                            _("{user} put the {item} into their backpack.").format(
-                                user=self.escape(ctx.author.display_name), item=item
-                            ),
-                            lang="css",
-                        )
+            await character.add_to_backpack(item)
+            await open_msg.edit(
+                content=(
+                    box(
+                        _("{user} put the {item} into their backpack.").format(
+                            user=self.escape(ctx.author.display_name), item=item
+                        ),
+                        lang="css",
                     )
                 )
-                await self.config.user(ctx.author).set(character.to_json())
+            )
+            await self.config.user(ctx.author).set(character.to_json())
             return
         await self._clear_react(open_msg)
         if self._treasure_controls[react.emoji] == "sell":
@@ -5706,60 +5682,57 @@ class Adventure(BaseCog):
                 )
             )
             await self._clear_react(open_msg)
-            async with self.get_lock(ctx.author):
-                await self.config.user(ctx.author).set(character.to_json())
+            await self.config.user(ctx.author).set(character.to_json())
             return
         elif self._treasure_controls[react.emoji] == "equip":
-            async with self.get_lock(ctx.author):
-                equiplevel = equip_level(character, item)
-                if self.is_dev(ctx.author):
-                    equiplevel = 0
-                if not can_equip(character, item):
-                    await character.add_to_backpack(item)
-                    await self.config.user(ctx.author).set(character.to_json())
-                    return await smart_embed(
-                        ctx,
-                        f"**{self.escape(ctx.author.display_name)}**, You need to be level `{equiplevel}` to equip this item, I've put it in your backpack",
-                    )
-                if not getattr(character, item.slot[0]):
-                    equip_msg = box(
-                        _("{user} equipped {item} ({slot} slot).").format(
-                            user=self.escape(ctx.author.display_name), item=item, slot=slot
-                        ),
-                        lang="css",
-                    )
-                else:
-                    equip_msg = box(
-                        _(
-                            "{user} equipped {item} "
-                            "({slot} slot) and put {old_item} into their backpack."
-                        ).format(
-                            user=self.escape(ctx.author.display_name),
-                            item=item,
-                            slot=slot,
-                            old_item=getattr(character, item.slot[0]),
-                        ),
-                        lang="css",
-                    )
-                await open_msg.edit(content=equip_msg)
-                character = await character.equip_item(item, False, self.is_dev(ctx.author))
+            equiplevel = equip_level(character, item)
+            if self.is_dev(ctx.author):
+                equiplevel = 0
+            if not can_equip(character, item):
+                await character.add_to_backpack(item)
                 await self.config.user(ctx.author).set(character.to_json())
+                return await smart_embed(
+                    ctx,
+                    f"**{self.escape(ctx.author.display_name)}**, You need to be level `{equiplevel}` to equip this item, I've put it in your backpack",
+                )
+            if not getattr(character, item.slot[0]):
+                equip_msg = box(
+                    _("{user} equipped {item} ({slot} slot).").format(
+                        user=self.escape(ctx.author.display_name), item=item, slot=slot
+                    ),
+                    lang="css",
+                )
+            else:
+                equip_msg = box(
+                    _(
+                        "{user} equipped {item} "
+                        "({slot} slot) and put {old_item} into their backpack."
+                    ).format(
+                        user=self.escape(ctx.author.display_name),
+                        item=item,
+                        slot=slot,
+                        old_item=getattr(character, item.slot[0]),
+                    ),
+                    lang="css",
+                )
+            await open_msg.edit(content=equip_msg)
+            character = await character.equip_item(item, False, self.is_dev(ctx.author))
+            await self.config.user(ctx.author).set(character.to_json())
             return
         else:
-            async with self.get_lock(ctx.author):
-                await character.add_to_backpack(item)
-                await open_msg.edit(
-                    content=(
-                        box(
-                            _("{user} put the {item} into their backpack.").format(
-                                user=self.escape(ctx.author.display_name), item=item
-                            ),
-                            lang="css",
-                        )
+            await character.add_to_backpack(item)
+            await open_msg.edit(
+                content=(
+                    box(
+                        _("{user} put the {item} into their backpack.").format(
+                            user=self.escape(ctx.author.display_name), item=item
+                        ),
+                        lang="css",
                     )
                 )
-                await self._clear_react(open_msg)
-                await self.config.user(ctx.author).set(character.to_json())
+            )
+            await self._clear_react(open_msg)
+            await self.config.user(ctx.author).set(character.to_json())
             return
 
     @staticmethod
@@ -5797,7 +5770,7 @@ class Adventure(BaseCog):
                 c = await Character.from_json(self.config, user)
             except Exception:
                 log.exception("Error with the new character sheet")
-                return
+                continue
             userxp = int(xp + (xp * 0.1 * c.total_int))
             usercp = int(cp + (cp * c.luck) // 2)
             userxp = int(userxp * c.gear_set_bonus.get("xpmult", 1))
