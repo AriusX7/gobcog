@@ -357,7 +357,7 @@ class Adventure(BaseCog):
 
     def cog_check(self, ctx: Context):
         if self.get_lock(ctx.author):
-            raise LockIsActive()
+            return False
 
     async def cog_after_invoke(self, ctx: Context):
         self.reset_lock(ctx.author)
@@ -377,7 +377,7 @@ class Adventure(BaseCog):
         elif isinstance(error, LockIsActive):
             return await smart_embed(
                 ctx,
-                _("Your character is already performing an action, try again later."),
+                _("Character is already performing an action, try again later."),
                 success=False,
             )
 
