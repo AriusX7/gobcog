@@ -4398,25 +4398,27 @@ class Adventure(BaseCog):
             roll = random.randint(1, 10)
             monster_amount = hp + dipl if slain and persuaded else hp if slain else dipl
             if session.boss:  # rewards 60:30:10 Epic Legendary Gear Set items
-                treasure = random.choice(
-                    [
-                        [0, 1, 1, 0, 0],
-                        [0, 1, 1, 0, 0],
-                        [0, 2, 1, 0, 0],
-                        [0, 2, 1, 0, 0],
-                        [0, 3, 1, 0, 0],
-                        [0, 3, 1, 0, 0],
-                        [0, 1, 2, 0, 0],
-                        [0, 2, 2, 0, 0],
-                        [0, 3, 2, 0, 0],
-                        [0, 0, 3, 1, 0],
-                        [0, 0, 1, 2, 0],
-                        [0, 0, 0, 3, 0],
-                        [0, 0, 0, 1, 1],
-                        [0, 0, 0, 0, 1],
-                        [0, 0, 0, 0, 1],
-                    ]
-                )
+
+                avaliable_loot = [
+                    [0, 1, 1, 0, 0],
+                    [0, 1, 1, 0, 0],
+                    [0, 2, 1, 0, 0],
+                    [0, 2, 1, 0, 0],
+                    [0, 3, 1, 0, 0],
+                    [0, 3, 1, 0, 0],
+                    [0, 1, 2, 0, 0],
+                    [0, 2, 2, 0, 0],
+                    [0, 3, 2, 0, 0],
+                ]
+                if roll == 10:
+                    avaliable_loot.append([0, 0, 1, 3, 1])
+                if roll > 8:
+                    avaliable_loot.append([0, 0, 0, 0, 1])
+                if roll > 5:
+                    avaliable_loot.extend(
+                        [[0, 0, 3, 1, 0], [0, 0, 1, 2, 0], [0, 0, 0, 3, 0],]
+                    )
+                treasure = random.choice(avaliable_loot)
             elif (
                 session.miniboss
             ):  # rewards 50:50 rare:normal chest for killing something like the basilisk
