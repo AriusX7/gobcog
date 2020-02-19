@@ -13,6 +13,7 @@ from types import SimpleNamespace
 from typing import List, Optional, Union, MutableMapping
 
 import discord
+from discord.ext.commands import CheckFailure
 from redbot.cogs.bank import check_global_setting_admin
 from redbot.core import Config, bank, checks, commands
 from redbot.core.bot import Red
@@ -344,9 +345,9 @@ class Adventure(BaseCog):
     async def cog_before_invoke(self, ctx: Context):
         await self._ready_event.wait()
 
-    def cog_check(self, ctx: Context):
-        if ctx.author.id in self.locks:
-            return not self.locks[ctx.author.id].locked()
+    async def cog_before_invoke(self, ctx: Context):
+        if ctx.author.id in self.locks and self.locks[ctx.author.id].locked():
+            raise CheckFailure(f"There's an active lock for this user ({ctx.author.id})")
         return True
 
     @staticmethod
