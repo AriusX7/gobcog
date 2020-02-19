@@ -10,7 +10,7 @@ import time
 from collections import namedtuple
 from datetime import date, datetime
 from types import SimpleNamespace
-from typing import List, Optional, Union
+from typing import List, Optional, Union, MutableMapping
 
 import discord
 from redbot.cogs.bank import check_global_setting_admin
@@ -200,7 +200,7 @@ class Adventure(BaseCog):
     def __init__(self, bot: Red):
         self.bot = bot
         self._last_trade = {}
-        self._adv_results = AdventureResults(2)
+        self._adv_results = AdventureResults(15)
         self.emojis = SimpleNamespace()
         self.emojis.fumble = "\N{EXCLAMATION QUESTION MARK}"
         self.emojis.level_up = "\N{BLACK UP-POINTING DOUBLE TRIANGLE}"
@@ -3839,7 +3839,7 @@ class Adventure(BaseCog):
         possible_monsters = []
         stat_range = self._adv_results.get_stat_range()
         for e, (m, stats) in enumerate(monsters.items(), 1):
-            appropriate_range = max(stats["hp"], stats["dipl"]) <= (max(c.att, c.int, c.cha) * 2)
+            appropriate_range = max(stats["hp"], stats["dipl"]) <= (max(c.att, c.int, c.cha) * 3)
             if stat_range["max_stat"] > 0:
                 main_stat = stats["hp"] if (stat_range["stat_type"] == "attack") else stats["dipl"]
                 appropriate_range = stat_range["min_stat"] <= main_stat <= stat_range["max_stat"]
@@ -3855,10 +3855,34 @@ class Adventure(BaseCog):
                         break
             else:
                 possible_monsters.append(m)
+
         if len(possible_monsters) == 0:
-            return random.choice(list(monsters.keys()))
+            choice = random.choice(list(monsters.keys()) * 3)
         else:
-            return random.choice(possible_monsters)
+            choice = random.choice(possible_monsters)
+        maxstat = stat_range["max_stat"] or 100
+        minsta = stat_range["min_stat"] or 1
+        multiplier = minsta / maxstat
+        if bool(random.getrandbits(1)):  # Dynamically strength
+            choice["hp"] += choice["hp"] * multiplier
+        else:  # Dynamically Weaken
+            choice["hp"] -= choice["hp"] * multiplier
+
+        if bool(random.getrandbits(1)):  # Dynamically strength
+            choice["dipl"] += choice["dipl"] * multiplier
+        else:  # Dynamically Weaken
+            choice["dipl"] -= choice["dipl"] * multiplier
+
+        if bool(random.getrandbits(1)):  # Dynamically strength
+            choice["pdef"] += choice["pdef"] * multiplier
+        else:  # Dynamically Weaken
+            choice["pdef"] -= choice["pdef"] * multiplier
+
+        if bool(random.getrandbits(1)):  # Dynamically strength
+            choice["mdef"] += choice["mdef"] * multiplier
+        else:  # Dynamically Weaken
+            choice["mdef"] -= choice["mdef"] * multiplier
+        return choice
 
     async def update_monster_roster(self, user):
 
