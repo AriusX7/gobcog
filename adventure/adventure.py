@@ -134,11 +134,7 @@ class AdventureResults:
         # damage
         SOLO_RAID_SCALE = 0.25
         if len(self._last_raids) == 0:
-            return {
-                "stat_type": "hp",
-                "min_stat": 0,
-                "max_stat": 0,
-            }
+            return {"stat_type": "hp", "min_stat": 0, "max_stat": 0}
 
         # tally up stats for raids
         num_attack = 0
@@ -200,7 +196,7 @@ class Adventure(BaseCog):
     def __init__(self, bot: Red):
         self.bot = bot
         self._last_trade = {}
-        self._adv_results = AdventureResults(15)
+        self._adv_results = AdventureResults(25)
         self.emojis = SimpleNamespace()
         self.emojis.fumble = "\N{EXCLAMATION QUESTION MARK}"
         self.emojis.level_up = "\N{BLACK UP-POINTING DOUBLE TRIANGLE}"
@@ -610,13 +606,7 @@ class Adventure(BaseCog):
             slot = random.choice(ORDER)
             #  slot = random.choice(["right", "chest"])
         name = ""
-        stats = {
-            "att": 0,
-            "cha": 0,
-            "int": 0,
-            "dex": 0,
-            "luck": 0,
-        }
+        stats = {"att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0}
 
         def add_stats(word_stats):
             """Add stats in word's dict to local stats dict."""
@@ -2683,7 +2673,7 @@ class Adventure(BaseCog):
         Use the box rarity type with the command: normal, rare, epic, legendary or set.
         """
         if number > 100 or number < 1:
-            return await smart_embed(ctx, _("Nice try :smirk:."),)
+            return await smart_embed(ctx, _("Nice try :smirk:."))
         if self.in_adventure(ctx):
             return await smart_embed(
                 ctx,
@@ -3277,7 +3267,7 @@ class Adventure(BaseCog):
                     await smart_embed(
                         ctx,
                         _("{bless}📜 **{c}** is starting an inspiring sermon. {bless}📜").format(
-                            c=self.escape(ctx.author.display_name), bless=self.emojis.skills.bless,
+                            c=self.escape(ctx.author.display_name), bless=self.emojis.skills.bless
                         ),
                     )
                 else:
@@ -3448,7 +3438,7 @@ class Adventure(BaseCog):
                     await smart_embed(
                         ctx,
                         _("{skill} **{c}** is whipping up a performance...{skill}").format(
-                            c=self.escape(ctx.author.display_name), skill=self.emojis.skills.bard,
+                            c=self.escape(ctx.author.display_name), skill=self.emojis.skills.bard
                         ),
                     )
                 else:
@@ -3860,6 +3850,10 @@ class Adventure(BaseCog):
             choice = random.choice(list(monsters.keys()) * 3)
         else:
             choice = random.choice(possible_monsters)
+        return choice
+
+    def _dynamic_monster_stats(self, choice: MutableMapping):
+        stat_range = self._adv_results.get_stat_range()
         maxstat = stat_range["max_stat"] or 100
         minsta = stat_range["min_stat"] or 1
         multiplier = minsta / maxstat
@@ -3882,6 +3876,7 @@ class Adventure(BaseCog):
             choice["mdef"] += choice["mdef"] * multiplier
         else:  # Dynamically Weaken
             choice["mdef"] -= choice["mdef"] * multiplier
+
         return choice
 
     async def update_monster_roster(self, user):
@@ -3943,6 +3938,7 @@ class Adventure(BaseCog):
             monsters=monster_roaster,
             monster_stats=monster_stats,
             message=ctx.message,
+            monster_modified_stats=self._dynamic_monster_stats(monster_roaster[challenge]),
         )
         adventure_msg = (
             f"{adventure_msg}{text}\n{random.choice(self.LOCATIONS)}\n"
@@ -4330,14 +4326,13 @@ class Adventure(BaseCog):
 
         result_msg = run_msg + pray_msg + talk_msg + fight_msg
         challenge_attrib = session.attribute
-
         hp = (
-            session.monsters[challenge]["hp"]
+            session.monster_modified_stats["hp"]
             * self.ATTRIBS[challenge_attrib][0]
             * session.monster_stats
         )
         dipl = (
-            session.monsters[challenge]["dipl"]
+            session.monster_modified_stats["dipl"]
             * self.ATTRIBS[challenge_attrib][1]
             * session.monster_stats
         )
@@ -4431,9 +4426,7 @@ class Adventure(BaseCog):
                 if roll > 8:
                     avaliable_loot.append([0, 0, 0, 0, 1])
                 if roll > 5:
-                    avaliable_loot.extend(
-                        [[0, 0, 3, 1, 0], [0, 0, 1, 2, 0], [0, 0, 0, 3, 0],]
-                    )
+                    avaliable_loot.extend([[0, 0, 3, 1, 0], [0, 0, 1, 2, 0], [0, 0, 0, 3, 0]])
                 treasure = random.choice(avaliable_loot)
             elif (
                 session.miniboss
@@ -4913,8 +4906,9 @@ class Adventure(BaseCog):
         fight_list = list(set(session.fight))
         magic_list = list(set(session.magic))
         attack_list = list(set(fight_list + magic_list))
-        pdef = session.monsters[challenge]["pdef"]
-        mdef = session.monsters[challenge]["mdef"]
+        pdef = session.monster_modified_stats["pdef"]
+        mdef = session.monster_modified_stats["mdef"]
+
         fumble_count = 0
         # make sure we pass this check first
         failed_emoji = self.emojis.fumble
@@ -6046,14 +6040,7 @@ class Adventure(BaseCog):
             price *= item.max_main_stat
 
             items.update(
-                {
-                    item.name: {
-                        "itemname": item.name,
-                        "item": item,
-                        "price": price,
-                        "lvl": item.lvl,
-                    }
-                }
+                {item.name: {"itemname": item.name, "item": item, "price": price, "lvl": item.lvl}}
             )
 
         for index, item in enumerate(items):

@@ -4,7 +4,7 @@ import logging
 import re
 from copy import copy
 from datetime import date, timedelta
-from typing import Dict, List, Mapping, Optional, Set
+from typing import Dict, List, Mapping, Optional, Set, MutableMapping
 
 import discord
 from discord.ext.commands import check
@@ -356,6 +356,7 @@ class GameSession:
     message_id: int
     reacted: bool = False
     participants: Set[discord.Member] = set()
+    monster_modified_stats: MutableMapping = {}
     fight: List[discord.Member] = []
     magic: List[discord.Member] = []
     talk: List[discord.Member] = []
@@ -372,8 +373,11 @@ class GameSession:
         self.miniboss: dict = kwargs.pop("miniboss")
         self.timer: int = kwargs.pop("timer")
         self.monster: dict = kwargs.pop("monster")
-        self.monsters: List[Mapping] = kwargs.pop("monsters", [])
+        self.monsters: Mapping[str, Mapping] = kwargs.pop("monsters", [])
         self.monster_stats: int = kwargs.pop("monster_stats", 1)
+        self.monster_modified_stats = kwargs.pop(
+            "monster_modified_stats", self.monsters[self.challenge]
+        )
         self.message = kwargs.pop("message", 1)
         self.message_id: int = 0
         self.reacted = False
