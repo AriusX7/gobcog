@@ -1336,7 +1336,7 @@ class Adventure(BaseCog):
             )
             character_data = await c.rebirth(dev_val=rebirth_level)
             character_data["lvl"] = character_level
-            await self.config.user(ctx.author).set(character_data)
+            await self.config.user(target).set(character_data)
         await ctx.tick()
 
     @commands.is_owner()
