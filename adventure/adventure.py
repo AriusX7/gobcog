@@ -894,6 +894,7 @@ class Adventure(BaseCog):
             item = c.backpack[item.name]
         except KeyError:
             return
+
         async def _backpack_sell_menu(
             ctx: commands.Context,
             pages: list,
@@ -1127,13 +1128,6 @@ class Adventure(BaseCog):
                                     ctx,
                                     _(
                                         "You can only trade with people the same rebirth level or higher than yours."
-                                    ),
-                                )
-                            if not can_equip(buy_user, item):
-                                return await smart_embed(
-                                    ctx,
-                                    "{buyer} can't equip this item so cancelling the trade".format(
-                                        buyer=buyer.display_name
                                     ),
                                 )
                             await bank.transfer_credits(buyer, ctx.author, asking)
