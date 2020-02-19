@@ -75,7 +75,7 @@ _ = Translator("Adventure", __file__)
 log = logging.getLogger("red.cogs.adventure")
 
 REBIRTH_LVL = 20
-REBIRTH_STEP = 5
+REBIRTH_STEP = 10
 _SCHEMA_VERSION = 2
 _config: Config = None
 
@@ -467,20 +467,11 @@ class Adventure(BaseCog):
         if from_version == to_version:
             return
         if from_version < 2 <= to_version:
-            # _guilds = [g for g in self.bot.guilds if not g.unavailable and g.large and not g.chunked]
-            # _uguilds = [g for g in self.bot.guilds if g.unavailable]
             group = self.config._get_base_group(self.config.USER)
-            # await self.bot.request_offline_members(*_guilds)
             accounts = await group.all()
             tmp = accounts.copy()
-            # members = self.bot.get_all_members()
-            # user_list = {str(m.id) for m in members if m.guild not in _uguilds}
-
             async with group.all() as adventurers_data:
                 for user in tmp:
-                    # if user not in user_list:
-                    #     del adventurers_data[user]
-                    # else:
                     new_backpack = {}
                     new_loadout = {}
                     user_equipped_items = adventurers_data[user]["items"]
@@ -489,7 +480,6 @@ class Adventure(BaseCog):
                             for slot_item_name, slot_item in list(
                                 user_equipped_items[slot].items()
                             )[:1]:
-                                # update slot item if item equipped
                                 new_name, slot_item = self._convert_item_migration(
                                     slot_item_name, slot_item
                                 )
@@ -525,7 +515,7 @@ class Adventure(BaseCog):
         new_name = item_name
         if "name" in item_dict:
             del item_dict["name"]
-        if "rarity" not in item_name:
+        if "rarity" not in item_dict:
             item_dict["rarity"] = "common"
         if item_dict["rarity"] == "legendary":
             new_name = (
@@ -2910,7 +2900,7 @@ class Adventure(BaseCog):
             except Exception:
                 log.exception("Error with the new character sheet")
                 return
-            xp_to_max = int((c.maxlevel + 1) ** 3)
+            xp_to_max = int((c.maxlevel + 1) ** 3.5)
             ten_percent = xp_to_max * 0.1
             xp_won = ten_percent if xp_won > ten_percent else xp_won
             xp_won = int(xp_won * (min(max(random.randint(0, c.rebirths), 1), 50) / 100 + 1))
@@ -4960,23 +4950,25 @@ class Adventure(BaseCog):
                     roll = random.randint(roll, 20)
 
             att_value = c.total_att
+            rebirths = c.rebirths * 3 if c.heroclass["name"] == "Berserker" else 0
             if roll == 1:
-                msg += _("**{}** fumbled the attack.\n").format(self.escape(user.display_name))
-                fumblelist.append(user)
-                fumble_count += 1
                 if c.heroclass["name"] == "Berserker" and c.heroclass["ability"]:
                     bonus_roll = random.randint(5, 15)
                     bonus_multi = random.choice([0.2, 0.3, 0.4, 0.5])
-                    bonus = max(bonus_roll, int((roll + att_value) * bonus_multi))
+                    bonus = max(bonus_roll, int((roll + att_value + rebirths) * bonus_multi))
                     attack += int((roll - bonus + att_value) / pdef)
                     report += (
                         f"**{self.escape(user.display_name)}**: "
                         f"{self.emojis.dice}({roll}) + {self.emojis.berserk}{bonus} + {self.emojis.attack}{str(att_value)}\n"
                     )
+                else:
+                    msg += _("**{}** fumbled the attack.\n").format(self.escape(user.display_name))
+                    fumblelist.append(user)
+                    fumble_count += 1
             elif roll == 20 or c.heroclass["name"] == "Berserker":
                 crit_str = ""
                 crit_bonus = 0
-                base_bonus = random.randint(5, 10) + c.rebirths // 3
+                base_bonus = random.randint(5, 10) + c.rebirths // 3 + rebirths
                 if roll == 20:
                     msg += _("**{}** landed a critical hit.\n").format(
                         self.escape(user.display_name)
@@ -5019,6 +5011,7 @@ class Adventure(BaseCog):
                 elif roll > 15 and pet_crit >= 95:
                     roll = random.randint(roll, 20)
             int_value = c.total_int
+            rebirths = c.rebirths * 3 if c.heroclass["name"] == "Wizard" else 0
             if roll == 1:
                 msg += _("{}**{}** almost set themselves on fire.\n").format(
                     failed_emoji, self.escape(user.display_name)
@@ -5028,7 +5021,7 @@ class Adventure(BaseCog):
                 if c.heroclass["name"] == "Wizard" and c.heroclass["ability"]:
                     bonus_roll = random.randint(5, 15)
                     bonus_multi = random.choice([0.2, 0.3, 0.4, 0.5])
-                    bonus = max(bonus_roll, int((roll + int_value) * bonus_multi))
+                    bonus = max(bonus_roll, int((roll + int_value + rebirths) * bonus_multi))
                     magic += int((roll - bonus + int_value) / mdef)
                     report += (
                         f"**{self.escape(user.display_name)}**: "
@@ -5037,7 +5030,7 @@ class Adventure(BaseCog):
             elif roll == 20 or (c.heroclass["name"] == "Wizard"):
                 crit_str = ""
                 crit_bonus = 0
-                base_bonus = random.randint(5, 10) + c.rebirths // 3
+                base_bonus = random.randint(5, 10) + c.rebirths // 3 + rebirths
                 base_str = f"{self.emojis.magic_crit}️ {base_bonus}"
                 if roll == 20:
                     msg += _("**{}** had a surge of energy.\n").format(
@@ -5085,7 +5078,9 @@ class Adventure(BaseCog):
             except Exception:
                 log.exception("Error with the new character sheet")
                 continue
+
             if c.heroclass["name"] == "Cleric":
+                rebirths = c.rebirths * 3 if c.heroclass["name"] == "Cleric" else 0
                 crit_mod = max(c.dex, c.luck) + (c.total_int // 20)
                 mod = 0
                 if crit_mod != 0:
@@ -5099,9 +5094,9 @@ class Adventure(BaseCog):
                     ).format(self.escape(user.display_name))
 
                 if roll == 1:
-                    attack -= 5 * len(fight_list)
-                    diplomacy -= 5 * len(talk_list)
-                    magic -= 5 * len(magic_list)
+                    attack -= (5 * len(fight_list)) - rebirths
+                    diplomacy -= (5 * len(talk_list)) - rebirths
+                    magic -= (5 * len(magic_list)) - rebirths
                     fumblelist.append(user)
                     msg += _(
                         "**{user}'s** sermon offended the mighty {god}. {failed_emoji}"
@@ -5120,9 +5115,9 @@ class Adventure(BaseCog):
 
                 else:
                     mod = roll if not c.heroclass["ability"] else roll * 2
-                    attack += mod * (len(fight_list) + c.rebirths // 5)
-                    diplomacy += mod * (len(talk_list) + c.rebirths // 5)
-                    magic += mod * (len(magic_list) + c.rebirths // 5)
+                    attack += mod * (len(fight_list) + c.rebirths // 5) + rebirths
+                    diplomacy += mod * (len(talk_list) + c.rebirths // 5) + rebirths
+                    magic += mod * (len(magic_list) + c.rebirths // 5) + rebirths
                     if roll == 20:
                         roll_msg = _(
                             "{user} turned into an avatar of mighty {god}. "
@@ -5201,23 +5196,25 @@ class Adventure(BaseCog):
                 mod = 19
             roll = random.randint((1 + mod), 20)
             dipl_value = c.total_cha
+            rebirths = c.rebirths * 3 if c.heroclass["name"] == "Bard" else 0
             if roll == 1:
-                msg += _("{}**{}** accidentally offended the enemy.\n").format(
-                    failed_emoji, self.escape(user.display_name)
-                )
-                fumblelist.append(user)
-                fumble_count += 1
                 if c.heroclass["name"] == "Bard" and c.heroclass["ability"]:
                     bonus = random.randint(5, 15)
-                    diplomacy += roll - bonus + dipl_value
+                    diplomacy += roll - bonus + dipl_value + rebirths
                     report += (
                         f"**{self.escape(user.display_name)}** "
                         f"🎲({roll}) +💥{bonus} +🗨{str(dipl_value)} | "
                     )
+                else:
+                    msg += _("{}**{}** accidentally offended the enemy.\n").format(
+                        failed_emoji, self.escape(user.display_name)
+                    )
+                    fumblelist.append(user)
+                    fumble_count += 1
             elif roll == 20 or c.heroclass["name"] == "Bard":
                 crit_str = ""
                 crit_bonus = 0
-                base_bonus = random.randint(5, 10) + c.rebirths // 3
+                base_bonus = random.randint(5, 10) + c.rebirths // 3 + rebirths
                 if roll == 20:
                     msg += _("**{}** made a compelling argument.\n").format(
                         self.escape(user.display_name)
@@ -5302,7 +5299,7 @@ class Adventure(BaseCog):
             extra = ""
             rebirthextra = ""
             lvl_start = c.lvl
-            lvl_end = int(max(c.exp, 0) ** (1 / 3))
+            lvl_end = int(max(c.exp, 0) ** (1 / 3.5))
             lvl_end = lvl_end if lvl_end < c.maxlevel else c.maxlevel
             levelup_emoji = self.emojis.level_up
             rebirth_emoji = self.emojis.rebirth

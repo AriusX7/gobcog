@@ -64,7 +64,7 @@ TIME_RE = re.compile(TIME_RE_STRING, re.I)
 REBIRTHSTATMULT = 2
 
 REBIRTH_LVL = 20
-REBIRTH_STEP = 5
+REBIRTH_STEP = 10
 
 TR_GEAR_SET = {}
 PETS = {}
@@ -495,6 +495,16 @@ class Character(Item):
     def get_set_bonus(self):
         set_names = {}
         last_slot = ""
+        base = {
+            "att": 0,
+            "cha": 0,
+            "int": 0,
+            "dex": 0,
+            "luck": 0,
+            "statmult": 1,
+            "xpmult": 1,
+            "cpmult": 1,
+        }
         for slots in ORDER:
             if slots == "two handed":
                 continue
@@ -508,19 +518,14 @@ class Character(Item):
                 set_names.update({item.set: (item.parts, 1, item.bonus)})
             elif item.set and item.set in set_names:
                 parts, count, bonus = set_names[item.set]
+                for k in base.keys():
+                    if bonus.get(k, 0) > item.bonus.get(k, 0):
+                        bonus = item.bonus
+                        break
                 set_names[item.set] = (parts, count + 1, bonus)
         valid_sets = [v[-1] for _, v in set_names.items() if v[1] >= v[0]]
         self.sets = [s for s, _ in set_names.items() if s]
-        base = {
-            "att": 0,
-            "cha": 0,
-            "int": 0,
-            "dex": 0,
-            "luck": 0,
-            "statmult": 1,
-            "xpmult": 1,
-            "cpmult": 1,
-        }
+
         for set_bonus in valid_sets:
             for key, value in set_bonus.items():
                 if key not in ["cpmult", "xpmult", "statmult"]:
@@ -532,7 +537,7 @@ class Character(Item):
 
     def __str__(self):
         """Define str to be our default look for the character sheet :thinkies:"""
-        next_lvl = int((self.lvl + 1) ** 3)
+        next_lvl = int((self.lvl + 1) ** 3.5)
 
         if self.heroclass != {} and "name" in self.heroclass:
             class_desc = self.heroclass["name"] + "\n\n" + self.heroclass["desc"]
@@ -669,7 +674,7 @@ class Character(Item):
             maxlevel = REBIRTH_LVL
 
         while rebirths >= 20:
-            maxlevel += 5
+            maxlevel += REBIRTH_STEP
             rebirths -= 1
         while rebirths >= 10:
             maxlevel += 10
@@ -678,7 +683,7 @@ class Character(Item):
             rebirths -= 1
             maxlevel += 5
 
-        return min(maxlevel, 255)
+        return min(maxlevel, 1000)
 
     @staticmethod
     def get_item_rarity(item):
