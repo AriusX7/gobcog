@@ -313,6 +313,7 @@ class Adventure(BaseCog):
             "cartroom": None,
             "cart_timeout": 10800,
             "cooldown_timer_manual": 120,
+            "rebirth_cost": 100.0,
         }
         default_global = {
             "god_name": _("Herbert"),
@@ -323,6 +324,7 @@ class Adventure(BaseCog):
             "enable_chests": True,
             "currentweek": date.today().isocalendar()[1],
             "schema_version": 1,
+            "rebirth_cost": 100.0,
         }
         self.RAISINS: list = None
         self.THREATEE: list = None
@@ -1230,7 +1232,11 @@ class Adventure(BaseCog):
                 return await smart_embed(
                     ctx, _("You need to be Level `{c.maxlevel}` to rebirth").format(c=c)
                 )
-            rebirthcost = 1000 * c.rebirths
+            if not await bank.is_global():
+                rebirth_cost = await self.config.guild(ctx.guild).rebirth_cost()
+            else:
+                rebirth_cost = await self.config.rebirth_cost()
+            rebirthcost = 1000 * c.rebirths * (rebirth_cost / 100.0)
             has_fund = await has_funds(ctx.author, rebirthcost)
             if not has_fund:
                 currency_name = await bank.get_currency_name(ctx.guild)
@@ -1280,10 +1286,10 @@ class Adventure(BaseCog):
                     )
                 bal = await bank.get_balance(ctx.author)
                 if bal >= 1000:
-                    withdraw = bal - 1000
+                    withdraw = int((bal - 1000) * (rebirth_cost / 100.0))
                     await bank.withdraw_credits(ctx.author, withdraw)
                 else:
-                    withdraw = bal
+                    withdraw = int(bal * (rebirth_cost / 100.0))
                     await bank.set_balance(ctx.author, 0)
 
                 await open_msg.edit(
@@ -1489,6 +1495,32 @@ class Adventure(BaseCog):
     @commands.guild_only()
     async def adventureset(self, ctx: Context):
         """Setup various adventure settings."""
+
+    @adventureset.command()
+    @check_global_setting_admin()
+    async def rebirthcost(self, ctx: Context, percentage: float):
+        """Set what percentage of the user balance to charge for rebirths.
+
+        Unless the user's balance is under 1k, users that rebirth will be left with the base of 1k credits plus the remaining credit percentage after the rebirth charge.
+        """
+        if percentage < 0 or percentage > 100:
+            return await smart_embed(ctx, _("Percentage has to be between 0 and 100."))
+        if not await bank.is_global():
+            await self.config.guild(ctx.guild).rebirth_cost.set(percentage)
+            await smart_embed(
+                ctx,
+                _("I will now charge {0:.0%} of the user's balance for a rebirth.").format(
+                    percentage / 100
+                ),
+            )
+        else:
+            await self.config.rebirth_cost.set(percentage)
+            await smart_embed(
+                ctx,
+                _("I will now charge {0:.0%} of the user's global balance for a rebirth.").format(
+                    percentage / 100
+                ),
+            )
 
     @adventureset.command()
     @checks.admin_or_permissions(administrator=True)
