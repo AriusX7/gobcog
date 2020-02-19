@@ -3500,7 +3500,7 @@ class Adventure(BaseCog):
                 last_reset = await self.config.user(ctx.author).last_skill_reset()
                 if last_reset + 3600 > time.time():
                     return await smart_embed(
-                        ctx, _("You reset your skills withing the last hour, try again later.")
+                        ctx, _("You reset your skills within the last hour, try again later.")
                     )
                 bal = c.bal
                 currency_name = await bank.get_currency_name(ctx.guild)
