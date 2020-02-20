@@ -2741,15 +2741,15 @@ class Adventure(BaseCog):
                     )
                 )
             if box_type == "normal":
-                redux = [1, 0, 0, 0, 0]
+                redux = 0
             elif box_type == "rare":
-                redux = [0, 1, 0, 0, 0]
+                redux = 1
             elif box_type == "epic":
-                redux = [0, 0, 1, 0, 0]
+                redux = 2
             elif box_type == "legendary":
-                redux = [0, 0, 0, 1, 0]
+                redux = 3
             elif box_type == "set":
-                redux = [0, 0, 0, 0, 1]
+                redux = 4
             else:
                 return await smart_embed(
                     ctx,
@@ -2757,7 +2757,7 @@ class Adventure(BaseCog):
                         box_type
                     ),
                 )
-            treasure = c.treasure[redux.index(1)]
+            treasure = c.treasure[redux]
             if treasure < 1 or treasure < number:
                 await smart_embed(
                     ctx,
@@ -2769,7 +2769,7 @@ class Adventure(BaseCog):
                 if number > 1:
                     # atomically save reduced loot count then lock again when saving inside
                     # open chests
-                    c.treasure[redux.index(1)] -= number
+                    c.treasure[redux] -= number
                     await self.config.user(ctx.author).set(c.to_json())
                     items = await self._open_chests(ctx, ctx.author, box_type, number, character=c)
                     msg = _(
@@ -2805,7 +2805,7 @@ class Adventure(BaseCog):
                     msgs = []
                     # atomically save reduced loot count then lock again when saving inside
                     # open chests
-                    c.treasure[redux.index(1)] -= number
+                    c.treasure[redux] -= 1
                     await self.config.user(ctx.author).set(c.to_json())
 
                     await self._open_chest(

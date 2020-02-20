@@ -542,6 +542,7 @@ class Character(Item):
     def __str__(self):
         """Define str to be our default look for the character sheet :thinkies:"""
         next_lvl = int((self.lvl + 1) ** 3.5)
+        max_level_xp = int((self.maxlevel + 1) ** 3.5)
 
         if self.heroclass != {} and "name" in self.heroclass:
             class_desc = self.heroclass["name"] + "\n\n" + self.heroclass["desc"]
@@ -588,7 +589,7 @@ class Character(Item):
             luck=self.luck,
             bal=humanize_number(self.bal),
             xp=humanize_number(round(self.exp)),
-            next_lvl=humanize_number(next_lvl) if self.lvl < self.maxlevel else 0,
+            next_lvl=humanize_number(next_lvl) if self.lvl < self.maxlevel else max_level_xp,
             skill_points=0 if self.skill["pool"] < 0 else self.skill["pool"],
             legend=legend,
             equip=self.get_equipment(),
@@ -654,17 +655,19 @@ class Character(Item):
             int_space = " " if len(str(inter)) == 1 else ""
             dex_space = " " if len(str(dex)) == 1 else ""
             luck_space = " " if len(str(luck)) == 1 else ""
+
             owned = f" | {item.owned}"
             if item.set:
                 settext += f" | Set `{item.set}` ({item.parts}pcs)"
             form_string += (
-                f"\n Lv {equip_level(self, item):<2} | "
-                f"{str(item):<{rjust}} - "
+                f"\n{str(item[1]):<{rjust}} - "
                 f"({att_space}{att} |"
                 f"{cha_space}{cha} |"
                 f"{int_space}{inter} |"
                 f"{dex_space}{dex} |"
-                f"{luck_space}{luck} ){owned}{settext}"
+                f"{luck_space}{luck} )"
+                f" | Lv {equip_level(self, item):<3}"
+                f"{owned}{settext}"
             )
 
         return form_string + "\n"
