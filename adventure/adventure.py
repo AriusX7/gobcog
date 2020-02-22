@@ -860,7 +860,7 @@ class Adventure(BaseCog):
             return await ctx.send(
                 box(
                     _(
-                        "\n{author}, you are not able to sell Gear Set items as they are bound to your soul."
+                        "\n{author}, you are not able to sell Set items as they are bound to your soul."
                     ).format(author=self.escape(ctx.author.display_name)),
                     lang="css",
                 )
@@ -1063,7 +1063,7 @@ class Adventure(BaseCog):
             return await ctx.send(
                 box(
                     _(
-                        "\n{character}, you cannot trade Gear set as they are bound to your soul."
+                        "\n{character}, you cannot trade set as they are bound to your soul."
                     ).format(character=self.escape(ctx.author.display_name)),
                     lang="css",
                 )
