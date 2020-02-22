@@ -1764,14 +1764,14 @@ class Adventure(BaseCog):
         # Thanks to flare#0001 for the idea and writing the first instance of this
         if self.in_adventure(ctx):
             return await smart_embed(
-                ctx, _("You tried to converting some chets but the magician is back in town.")
+                ctx, _("You tried to converting some chests but the magician is back in town.")
             )
         normalcost = 20
         rarecost = 20
         epiccost = 50
         rebirth_normal = 2
-        rebirth_rare = 30
-        rebirth_epic = 50
+        rebirth_rare = 8
+        rebirth_epic = 10
         if amount < 1:
             return await smart_embed(ctx, _("Nice try :smirk:"))
         if amount > 1:
