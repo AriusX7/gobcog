@@ -492,8 +492,8 @@ class Character(Item):
                         (getattr(item, stat) * self.gear_set_bonus.get("statmult", 1))
                         + self.gear_set_bonus.get(stats, 0)
                     )
-            except Exception:
-                log.error(f"error calculating {stat}", exc_info=True)
+            except Exception as exc:
+                log.error(f"error calculating {stat}", exc_info=exc)
         return stats
 
     def get_set_bonus(self):
@@ -867,11 +867,11 @@ class Character(Item):
             # potential issues
         loadouts = data["loadouts"]
         heroclass = {
-                "name": "Hero",
-                "ability": False,
-                "desc": "Your basic adventuring hero.",
-                "cooldown": 0,
-            }
+            "name": "Hero",
+            "ability": False,
+            "desc": "Your basic adventuring hero.",
+            "cooldown": 0,
+        }
         if "class" in data:
             # to move from old data to new data
             heroclass = data["class"]
@@ -1096,9 +1096,9 @@ class ItemConverter(Converter):
     async def convert(self, ctx, argument) -> Item:
         try:
             c = await Character.from_json(ctx.bot.get_cog("Adventure").config, ctx.author)
-        except Exception:
-            log.exception("Error with the new character sheet")
-            return
+        except Exception as exc:
+            log.exception("Error with the new character sheet", exc_info=exc)
+            raise BadArgument
         no_markdown = Item.remove_markdowns(argument)
         lookup = list(i for x, i in c.backpack.items() if no_markdown.lower() in x.lower())
         lookup_m = list(i for x, i in c.backpack.items() if argument.lower() == str(i).lower())
