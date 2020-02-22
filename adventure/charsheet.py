@@ -660,7 +660,7 @@ class Character(Item):
             if item.set:
                 settext += f" | Set `{item.set}` ({item.parts}pcs)"
             form_string += (
-                f"\n{str(item[1]):<{rjust}} - "
+                f"\n{str(item):<{rjust}} - "
                 f"({att_space}{att} |"
                 f"{cha_space}{cha} |"
                 f"{int_space}{inter} |"

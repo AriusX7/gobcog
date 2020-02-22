@@ -835,7 +835,7 @@ class Adventure(BaseCog):
             msg_list.append(box(page, lang="css"))
         await menu(ctx, msg_list, DEFAULT_CONTROLS)
 
-    @_backpack.command(name="sell")
+    @_backpack.command(name="sell", cooldown_after_parsing=True)
     @commands.cooldown(rate=3, per=60, type=commands.BucketType.user)
     async def backpack_sell(self, ctx: Context, *, item: ItemConverter):
         """Sell an item from your backpack."""
@@ -1182,7 +1182,7 @@ class Adventure(BaseCog):
         if not await self.allow_in_dm(ctx):
             return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
         name = name.lower()
-        async with self.get_lock(ctx.user):
+        async with self.get_lock(ctx.author):
             try:
                 c = await Character.from_json(self.config, ctx.author)
             except Exception:
@@ -1420,7 +1420,7 @@ class Adventure(BaseCog):
                 ),
             )
             return
-        else:
+        elif name is not None:
             msg_list = []
             index = 0
             count = 0
@@ -1435,7 +1435,7 @@ class Adventure(BaseCog):
                 count += 1
             await menu(ctx, msg_list, DEFAULT_CONTROLS, page=index)
 
-    @loadout.command(name="equip", aliases=["load"])
+    @loadout.command(name="equip", aliases=["load"], cooldown_after_parsing=True)
     @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
     async def equip_loadout(self, ctx: Context, name: str):
         """Equip a saved loadout."""
@@ -2235,6 +2235,7 @@ class Adventure(BaseCog):
         ).format(self.escape(ctx.author.display_name))
         await smart_embed(ctx, get_name)
         reply = None
+        name = _("Unnamed Artifact")
         try:
             reply = await ctx.bot.wait_for(
                 "message", check=MessagePredicate.same_context(user=ctx.author), timeout=30
@@ -2408,7 +2409,7 @@ class Adventure(BaseCog):
                 )
             )
 
-    @commands.command()
+    @commands.command(cooldown_after_parsing=True)
     @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
     async def heroclass(self, ctx: Context, clz: str = None, action: str = None):
         """This allows you to select a class if you are Level 10 or above.
@@ -2814,7 +2815,7 @@ class Adventure(BaseCog):
         if msgs:
             await menu(ctx, msgs, DEFAULT_CONTROLS)
 
-    @commands.command(name="negaverse", aliases=["nv"])
+    @commands.command(name="negaverse", aliases=["nv"], cooldown_after_parsing=True)
     @commands.cooldown(rate=1, per=3600, type=commands.BucketType.user)
     @commands.guild_only()
     async def _negaverse(self, ctx: Context, offering: int = None):
@@ -3073,6 +3074,7 @@ class Adventure(BaseCog):
                             lang="css",
                         )
                     )
+                else:
                     cooldown_time = max(600, (3600 - (c.luck * 2 + c.total_int * 2)))
                     if "catch_cooldown" not in c.heroclass:
                         c.heroclass["catch_cooldown"] = cooldown_time + 1
@@ -5534,28 +5536,24 @@ class Adventure(BaseCog):
         top_range = max(max_roll, INITIAL_MAX_ROLL - MAX_CHEST_LUCK)
         roll = random.randint(1, top_range)
         if chest_type == "normal":
-            if roll <= top_range * 0.025:  # 2.5% to roll epic
-                rarity = "epic"
-            elif roll <= top_range * 0.2:  # 17.5% to roll rare
+            if roll <= top_range * 0.05:  # 5% to roll rare
                 rarity = "rare"
             else:
-                pass  # 80% to roll common
+                pass  # 95% to roll common
         elif chest_type == "rare":
-            if roll <= top_range * 0.2:  # 20% to roll epic
+            if roll <= top_range * 0.05:  # 5% to roll epic
                 rarity = "epic"
-            elif roll <= top_range * 0.8:  # 60% to roll rare
+            elif roll <= top_range * 0.95:  # 90% to roll rare
                 pass
             else:
-                rarity = "normal"  # 20% to roll normal
+                rarity = "normal"  # 0.05% to roll normal
         elif chest_type == "epic":
             if roll <= top_range * 0.05:  # 5% to roll legendary
                 rarity = "legendary"
-            elif roll <= top_range * 0.85:  # 80% to roll epic
+            elif roll <= top_range * 0.90:  # 85% to roll epic
                 pass
-            elif roll <= top_range * 0.95:  # 10% to roll rare
+            else:  # 10% to roll rare
                 rarity = "rare"
-            else:
-                rarity = "normal"  # 5% to roll common
         elif chest_type == "legendary":
             if roll <= top_range * 0.55:  # 55% to roll legendary
                 pass
@@ -6093,6 +6091,11 @@ class Adventure(BaseCog):
 
         for msg_id, task in self.tasks.items():
             task.cancel()
+
+        for lock in self.locks.values():
+            with contextlib.suppress(Exception):
+                lock.release()
+
 
     async def get_leaderboard(
         self, positions: int = None, guild: discord.Guild = None
