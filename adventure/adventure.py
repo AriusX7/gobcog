@@ -716,7 +716,7 @@ class Adventure(BaseCog):
                 author=self.escape(ctx.author.display_name), backpack=c.get_backpack()
             )
             msgs = []
-            for page in pagify(backpack_contents, delims=["\n"], shorten_by=20):
+            for page in pagify(backpack_contents, delims=["\n"], shorten_by=20, page_length=1900):
                 msgs.append(box(page, lang="css"))
             return await menu(ctx, msgs, DEFAULT_CONTROLS)
 
@@ -831,7 +831,7 @@ class Adventure(BaseCog):
             price=humanize_number(total_price),
             items=msg,
         )
-        for page in pagify(new_msg, shorten_by=10):
+        for page in pagify(new_msg, shorten_by=10, page_length=1900):
             msg_list.append(box(page, lang="css"))
         await menu(ctx, msg_list, DEFAULT_CONTROLS)
 
@@ -1001,7 +1001,7 @@ class Adventure(BaseCog):
 
         if msg:
             await self.config.user(ctx.author).set(character.to_json())
-            pages = [page for page in pagify(msg, delims=["\n"])]
+            pages = [page for page in pagify(msg, delims=["\n"], page_length=1900)]
             if pages:
                 await menu(ctx, pages, DEFAULT_CONTROLS)
 
@@ -1999,7 +1999,7 @@ class Adventure(BaseCog):
                     "(Reply with the full or partial name "
                     "of item 1 to select for forging. Try to be specific.)"
                 ).format(author=self.escape(ctx.author.display_name), bc=c.get_backpack(True))
-                for page in pagify(forgeables, delims=["\n"], shorten_by=20):
+                for page in pagify(forgeables, delims=["\n"], shorten_by=20, page_length=1900):
                     await ctx.send(box(page, lang="css"))
 
                 try:
@@ -4891,7 +4891,7 @@ class Adventure(BaseCog):
                 text = random.choice(options)
 
         output = f"{result_msg}\n{text}"
-        output = pagify(output)
+        output = pagify(output, page_length=1900)
         for i in output:
             await smart_embed(ctx, i, success=success)
         await self._data_check(ctx)
