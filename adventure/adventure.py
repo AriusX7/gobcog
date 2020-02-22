@@ -2571,7 +2571,7 @@ class Adventure(BaseCog):
                         log.exception("Error with the new character sheet", exc_info=exc)
                         return
                     now_class_msg = _(
-                        "Congratulations, **{author}**.\nYou are now a {clz}."
+                        "Congratulations, {author}.\nYou are now a {clz}."
                     ).format(author=self.escape(ctx.author.display_name), clz=classes[clz]["name"])
                     if c.lvl >= 10:
                         if c.heroclass["name"] == "Tinkerer" or c.heroclass["name"] == "Ranger":
