@@ -5030,15 +5030,15 @@ class Adventure(BaseCog):
                     )
                     critlist.append(user)
                     crit_bonus = random.randint(5, 20) + 2 * c.rebirths // 5
-                    crit_str = f"{self.emojis.crit} {crit_bonus}"
+                    crit_str = f"{self.emojis.crit} {humanize_number(crit_bonus)}"
                 if c.heroclass["ability"]:
                     base_bonus = random.randint(15, 50) + 5 * c.rebirths // 10
-                base_str = f"{self.emojis.crit}️ {base_bonus}"
+                base_str = f"{self.emojis.crit}️ {humanize_number(base_bonus)}"
                 attack += int((roll + base_bonus + crit_bonus + att_value) / pdef)
                 bonus = base_str + crit_str
                 report += (
                     f"**{self.escape(user.display_name)}**: "
-                    f"{self.emojis.dice}({roll}) + {self.emojis.berserk}{humanize_number(bonus)} + {self.emojis.attack}{str(humanize_number(att_value))}\n"
+                    f"{self.emojis.dice}({roll}) + {self.emojis.berserk}{bonus} + {self.emojis.attack}{str(humanize_number(att_value))}\n"
                 )
             else:
                 attack += int((roll + att_value) / pdef) + c.rebirths // 5

@@ -866,7 +866,12 @@ class Character(Item):
             # likely unnecessary since this worked without it but this prevents
             # potential issues
         loadouts = data["loadouts"]
-        heroclass = "Hero"
+        heroclass = {
+                "name": "Hero",
+                "ability": False,
+                "desc": "Your basic adventuring hero.",
+                "cooldown": 0,
+            }
         if "class" in data:
             # to move from old data to new data
             heroclass = data["class"]
