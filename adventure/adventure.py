@@ -39,6 +39,7 @@ from .charsheet import (
     GameSession,
     Item,
     ItemConverter,
+    EquipmentConverter,
     Stats,
     calculate_sp,
     can_equip,
@@ -375,6 +376,7 @@ class Adventure(BaseCog):
             materials_fp = cog_data_path(self) / f"{theme}" / "materials.json"
             equipment_fp = cog_data_path(self) / f"{theme}" / "equipment.json"
             suffixes_fp = cog_data_path(self) / f"{theme}" / "suffixes.json"
+            set_bonuses = cog_data_path(self) / f"{theme}" / "set_bonuses.json"
             files = {
                 "pets": pets_fp,
                 "attr": attribs_fp,
@@ -388,10 +390,12 @@ class Adventure(BaseCog):
                 "materials": materials_fp,
                 "equipment": equipment_fp,
                 "suffixes": suffixes_fp,
+                "set_bonuses": set_bonuses,
             }
-            for name, file in files.items():
+            for (name, file) in files.items():
                 if not file.exists():
                     files[name] = bundled_data_path(self) / "default" / f"{file.name}"
+
             with files["pets"].open("r") as f:
                 self.PETS = json.load(f)
             with files["attr"].open("r") as f:
@@ -416,6 +420,8 @@ class Adventure(BaseCog):
                 self.EQUIPMENT = json.load(f)
             with files["suffixes"].open("r") as f:
                 self.SUFFIXES = json.load(f)
+            with files["set_bonuses"].open("r") as f:
+                self.SET_BONUSES = json.load(f)
 
             if not all(
                 i
@@ -431,6 +437,7 @@ class Adventure(BaseCog):
                     len(self.MATERIALS) > 0,
                     len(self.EQUIPMENT) > 0,
                     len(self.SUFFIXES) > 0,
+                    len(self.SET_BONUSES) > 0,
                 ]
             ):
                 log.critical(f"{theme} theme is invalid, resetting it to the default theme.")
@@ -441,6 +448,7 @@ class Adventure(BaseCog):
             adventure.charsheet.PETS = self.PETS
             adventure.charsheet.REBIRTH_LVL = REBIRTH_LVL
             adventure.charsheet.REBIRTH_STEP = REBIRTH_STEP
+            adventure.charsheet.SET_BONUSES = self.SET_BONUSES
             await self._migrate_config(
                 from_version=await self.config.schema_version(), to_version=_SCHEMA_VERSION
             )
@@ -453,7 +461,7 @@ class Adventure(BaseCog):
         await self._ready_event.wait()
         while self is self.bot.get_cog("Adventure"):
             to_delete = []
-            for msg_id, task in self.tasks.items():
+            for (msg_id, task) in self.tasks.items():
                 if task.done():
                     to_delete.append(msg_id)
             for task in to_delete:
@@ -476,7 +484,7 @@ class Adventure(BaseCog):
                     user_equipped_items = adventurers_data[user]["items"]
                     for slot in user_equipped_items.keys():
                         if user_equipped_items[slot]:
-                            for slot_item_name, slot_item in list(
+                            for (slot_item_name, slot_item) in list(
                                 user_equipped_items[slot].items()
                             )[:1]:
                                 new_name, slot_item = self._convert_item_migration(
@@ -485,7 +493,7 @@ class Adventure(BaseCog):
                                 adventurers_data[user]["items"][slot] = {new_name: slot_item}
                     if "backpack" not in adventurers_data[user]:
                         adventurers_data[user]["backpack"] = {}
-                    for backpack_item_name, backpack_item in adventurers_data[user][
+                    for (backpack_item_name, backpack_item) in adventurers_data[user][
                         "backpack"
                     ].items():
                         new_name, backpack_item = self._convert_item_migration(
@@ -496,10 +504,10 @@ class Adventure(BaseCog):
                     if "loadouts" not in adventurers_data[user]:
                         adventurers_data[user]["loadouts"] = {}
                     try:
-                        for loadout_name, loadout in adventurers_data[user]["loadouts"].items():
-                            for slot, equipped_loadout in loadout.items():
+                        for (loadout_name, loadout) in adventurers_data[user]["loadouts"].items():
+                            for (slot, equipped_loadout) in loadout.items():
                                 new_loadout[slot] = {}
-                                for loadout_item_name, loadout_item in equipped_loadout.items():
+                                for (loadout_item_name, loadout_item) in equipped_loadout.items():
 
                                     new_name, loadout_item = self._convert_item_migration(
                                         loadout_item_name, loadout_item
@@ -538,7 +546,7 @@ class Adventure(BaseCog):
                 del item_dict["parts"]
             if "set" in item_dict:
                 del item_dict["set"]
-        return new_name, item_dict
+        return (new_name, item_dict)
 
     def in_adventure(self, ctx=None, user=None):
         author = user or ctx.author
@@ -1426,7 +1434,7 @@ class Adventure(BaseCog):
             msg_list = []
             index = 0
             count = 0
-            for l_name, loadout in c.loadouts.items():
+            for (l_name, loadout) in c.loadouts.items():
                 if name and name.lower() == l_name:
                     index = count
                 stats = await self._build_loadout_display({"items": loadout})
@@ -1688,18 +1696,19 @@ class Adventure(BaseCog):
             await smart_embed(ctx, _("That theme pack does not exist!"))
             return
         good_files = [
+            "as_monsters.json",
             "attribs.json",
             "locations.json",
-            "as_monsters.json",
             "monsters.json",
             "pets.json",
             "raisins.json",
             "threatee.json",
-            "tr_common.json",
-            "tr_epic.json",
-            "tr_rare.json",
-            "tr_legendary.json",
             "tr_set.json",
+            "prefixes.json",
+            "materials.json",
+            "equipment.json",
+            "suffixes.json",
+            "set_bonuses.json",
         ]
         missing_files = set(good_files).difference(os.listdir(cog_data_path(self) / theme))
 
@@ -2570,9 +2579,9 @@ class Adventure(BaseCog):
                     except Exception as exc:
                         log.exception("Error with the new character sheet", exc_info=exc)
                         return
-                    now_class_msg = _(
-                        "Congratulations, {author}.\nYou are now a {clz}."
-                    ).format(author=self.escape(ctx.author.display_name), clz=classes[clz]["name"])
+                    now_class_msg = _("Congratulations, {author}.\nYou are now a {clz}.").format(
+                        author=self.escape(ctx.author.display_name), clz=classes[clz]["name"]
+                    )
                     if c.lvl >= 10:
                         if c.heroclass["name"] == "Tinkerer" or c.heroclass["name"] == "Ranger":
                             if c.heroclass["name"] == "Tinkerer":
@@ -2610,7 +2619,7 @@ class Adventure(BaseCog):
                                 for item in c.get_current_equipment():
                                     if item.rarity == "forged":
                                         c = await c.unequip_item(item)
-                                for name, item in c.backpack.items():
+                                for (name, item) in c.backpack.items():
                                     if item.rarity == "forged":
                                         tinker_wep.append(item)
                                 for item in tinker_wep:
@@ -2692,7 +2701,7 @@ class Adventure(BaseCog):
 
     @staticmethod
     def check_running_adventure(ctx):
-        for guild_id, session in ctx.bot.get_cog("Adventure")._sessions.items():
+        for (guild_id, session) in ctx.bot.get_cog("Adventure")._sessions.items():
             user_ids: list = []
             options = ["fight", "magic", "talk", "pray", "run"]
             for i in options:
@@ -3646,7 +3655,7 @@ class Adventure(BaseCog):
         intel = 0
         dex = 0
         luck = 0
-        for slot, data in userdata["items"].items():
+        for (slot, data) in userdata["items"].items():
 
             if slot == "backpack":
                 continue
@@ -3682,7 +3691,7 @@ class Adventure(BaseCog):
         return form_string + "\n"
 
     @commands.command()
-    async def unequip(self, ctx: Context, *, item: str):
+    async def unequip(self, ctx: Context, *, item: EquipmentConverter):
         """This stashes a specified equipped item into your backpack.
 
         `[p]unequip name of item` or `[p]unequip slot` You can only have one of each uniquely named
@@ -3731,7 +3740,7 @@ class Adventure(BaseCog):
                 ).format(author=self.escape(ctx.author.display_name), current_item=current_item)
             else:
                 for current_item in c.get_current_equipment():
-                    if item.lower() in current_item.name.lower():
+                    if item.name.lower() in current_item.name.lower():
                         await c.unequip_item(current_item)
                         msg = _(
                             "{author} removed the {current_item} and put it into their backpack."
@@ -3815,7 +3824,7 @@ class Adventure(BaseCog):
             await self.config.guild(ctx.guild).cooldown.set(0)
             return
         reward_copy = reward.copy()
-        for userid, rewards in reward_copy.items():
+        for (userid, rewards) in reward_copy.items():
             if rewards:
                 user = ctx.guild.get_member(userid)  # bot.get_user breaks sometimes :ablobsweats:
                 if user is None:
@@ -3865,7 +3874,7 @@ class Adventure(BaseCog):
             return
         possible_monsters = []
         stat_range = self._adv_results.get_stat_range()
-        for e, (m, stats) in enumerate(monsters.items(), 1):
+        for (e, (m, stats)) in enumerate(monsters.items(), 1):
             appropriate_range = max(stats["hp"], stats["dipl"]) <= (max(c.att, c.int, c.cha) * 3)
             if stat_range["max_stat"] > 0:
                 main_stat = stats["hp"] if (stat_range["stat_type"] == "attack") else stats["dipl"]
@@ -3922,7 +3931,7 @@ class Adventure(BaseCog):
             c = await Character.from_json(self.config, user)
         except Exception as exc:
             log.exception("Error with the new character sheet", exc_info=exc)
-            return self.MONSTERS, 1
+            return (self.MONSTERS, 1)
         else:
             monster_stats = 1
 
@@ -3937,7 +3946,7 @@ class Adventure(BaseCog):
             monster_stats = 1
             monsters = self.MONSTERS
 
-        return monsters, monster_stats
+        return (monsters, monster_stats)
 
     async def _simple(
         self, ctx: Context, adventure_msg, challenge: str = None, attribute: str = None
@@ -3983,7 +3992,7 @@ class Adventure(BaseCog):
         )
         await self._choice(ctx, adventure_msg)
         if ctx.guild.id not in self._sessions:
-            return None, None
+            return (None, None)
         rewards = self._rewards
         participants = self._sessions[ctx.guild.id].participants
         return (rewards, participants)
@@ -4196,7 +4205,7 @@ class Adventure(BaseCog):
                 return
             if restricted:
                 all_users = []
-                for guild_id, guild_session in self._sessions.items():
+                for (guild_id, guild_session) in self._sessions.items():
                     guild_users_in_game = (
                         guild_session.fight
                         + guild_session.magic
@@ -4535,7 +4544,7 @@ class Adventure(BaseCog):
             result_msg += session.miniboss["defeat"]
             if len(repair_list) > 0:
                 temp_repair = []
-                for user, loss in repair_list:
+                for (user, loss) in repair_list:
                     if user not in temp_repair:
                         loss_list.append(
                             _("**{user}** used {loss} {currency_name}").format(
@@ -4583,7 +4592,7 @@ class Adventure(BaseCog):
             loss_list = []
             if len(repair_list) > 0:
                 temp_repair = []
-                for user, loss in repair_list:
+                for (user, loss) in repair_list:
                     if user not in temp_repair:
                         loss_list.append(
                             f"**{self.escape(user.display_name)}** used {humanize_number(loss)} {currency_name}"
@@ -4654,7 +4663,7 @@ class Adventure(BaseCog):
                 loss_list = []
                 if len(repair_list) > 0:
                     temp_repair = []
-                    for user, loss in repair_list:
+                    for (user, loss) in repair_list:
                         if user not in temp_repair:
                             loss_list.append(
                                 f"**{self.escape(user.display_name)}** used {humanize_number(loss)} {currency_name}"
@@ -4867,7 +4876,7 @@ class Adventure(BaseCog):
                 loss_list = []
                 if len(repair_list) > 0:
                     temp_repair = []
-                    for user, loss in repair_list:
+                    for (user, loss) in repair_list:
                         if user not in temp_repair:
                             loss_list.append(
                                 _("**{user}** used {loss} {currency_name}").format(
@@ -4910,7 +4919,7 @@ class Adventure(BaseCog):
         }
 
         parsed_users = []
-        for action_name, action in participants.items():
+        for (action_name, action) in participants.items():
             for user in action:
                 try:
                     c = await Character.from_json(self.config, user)
@@ -5322,7 +5331,7 @@ class Adventure(BaseCog):
         for user in fumblelist:
             if user in talk_list:
                 session.talk.remove(user)
-        return fumblelist, critlist, diplomacy, msg
+        return (fumblelist, critlist, diplomacy, msg)
 
     async def handle_basilisk(self, ctx: Context, failed):
         session = self._sessions[ctx.guild.id]
@@ -5829,7 +5838,7 @@ class Adventure(BaseCog):
             out = "{:02d}:{:02d}".format(m, s)
         else:
             out = "{:01d}:{:02d}:{:02d}".format(h, m, s)
-        return out, finish, remaining
+        return (out, finish, remaining)
 
     async def _reward(self, ctx: Context, userlist, amount, modif, special):
         if modif == 0:
@@ -5981,13 +5990,13 @@ class Adventure(BaseCog):
         self.bot.dispatch("adventure_cart", ctx)  # dispatch after silent return
         stockcount = random.randint(3, 9)
         controls = {em_list[i + 1]: i for i in range(stockcount)}
-        self._curent_trader_stock[ctx.guild.id] = stockcount, controls
+        self._curent_trader_stock[ctx.guild.id] = (stockcount, controls)
 
         stock = await self._trader_get_items(stockcount)
         currency_name = await bank.get_currency_name(ctx.guild)
         if str(currency_name).startswith("<"):
             currency_name = "credits"
-        for index, item in enumerate(stock):
+        for (index, item) in enumerate(stock):
             item = stock[index]
             if len(item["item"].slot) == 2:  # two handed weapons add their bonuses twice
                 hand = "two handed"
@@ -6080,7 +6089,7 @@ class Adventure(BaseCog):
                 {item.name: {"itemname": item.name, "item": item, "price": price, "lvl": item.lvl}}
             )
 
-        for index, item in enumerate(items):
+        for (index, item) in enumerate(items):
             output.update({index: items[item]})
         return output
 
@@ -6090,7 +6099,7 @@ class Adventure(BaseCog):
         if self._init_task:
             self._init_task.cancel()
 
-        for msg_id, task in self.tasks.items():
+        for (msg_id, task) in self.tasks.items():
             task.cancel()
 
         for lock in self.locks.values():
@@ -6122,12 +6131,12 @@ class Adventure(BaseCog):
                 if not guild.get_member(acc):
                     del raw_accounts[acc]
         raw_accounts_new = {}
-        for k, v in raw_accounts.items():
+        for (k, v) in raw_accounts.items():
             user_data = {}
             for item in ["lvl", "rebirths", "set_items"]:
                 if item not in v:
                     v.update({item: 0})
-            for vk, vi in v.items():
+            for (vk, vi) in v.items():
                 if vk in ["lvl", "rebirths", "set_items"]:
                     user_data.update({vk: vi})
 
@@ -6190,7 +6199,7 @@ class Adventure(BaseCog):
                 if not guild.get_member(acc):
                     del raw_accounts[acc]
         raw_accounts_new = {}
-        for k, v in raw_accounts.items():
+        for (k, v) in raw_accounts.items():
             user_data = {}
             for item in ["adventures", "rebirths"]:
                 if item not in v:
@@ -6199,11 +6208,11 @@ class Adventure(BaseCog):
                     else:
                         v.update({item: 0})
 
-            for vk, vi in v.items():
+            for (vk, vi) in v.items():
                 if vk in ["rebirths"]:
                     user_data.update({vk: vi})
                 elif vk in ["adventures"]:
-                    for s, sv in vi.items():
+                    for (s, sv) in vi.items():
                         if s == keyword:
                             user_data.update(vi)
 
@@ -6302,17 +6311,17 @@ class Adventure(BaseCog):
                 if not guild.get_member(acc):
                     del raw_accounts[acc]
         raw_accounts_new = {}
-        for k, v in raw_accounts.items():
+        for (k, v) in raw_accounts.items():
             user_data = {}
             for item in ["weekly_score"]:
                 if item not in v:
                     if item == "weekly_score":
                         v.update({item: {keyword: 0, "rebirths": 0}})
 
-            for vk, vi in v.items():
+            for (vk, vi) in v.items():
                 if vk in ["weekly_score"]:
                     if vi.get("week", -1) == current_week:
-                        for s, sv in vi.items():
+                        for (s, sv) in vi.items():
                             if s in [keyword]:
                                 user_data.update(vi)
 
@@ -6352,7 +6361,7 @@ class Adventure(BaseCog):
             guild = None
         entries = [header]
         pages = []
-        for pos, (user_id, account_data) in enumerate(_accounts, start=1):
+        for (pos, (user_id, account_data)) in enumerate(_accounts, start=1):
             if guild is not None:
                 member = guild.get_member(user_id)
             else:
@@ -6414,7 +6423,7 @@ class Adventure(BaseCog):
             guild = None
         entries = [header]
         pages = []
-        for pos, (user_id, account_data) in enumerate(_accounts, start=1):
+        for (pos, (user_id, account_data)) in enumerate(_accounts, start=1):
             if guild is not None:
                 member = guild.get_member(user_id)
             else:
