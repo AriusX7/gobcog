@@ -5537,42 +5537,42 @@ class Adventure(BaseCog):
         top_range = max(max_roll, INITIAL_MAX_ROLL - MAX_CHEST_LUCK)
         roll = random.randint(1, top_range)
         if chest_type == "normal":
-            if roll <= top_range * 0.05:  # 5% to roll rare
+            if roll <= INITIAL_MAX_ROLL * 0.05:  # 5% to roll rare
                 rarity = "rare"
             else:
                 pass  # 95% to roll common
         elif chest_type == "rare":
-            if roll <= top_range * 0.05:  # 5% to roll epic
+            if roll <= INITIAL_MAX_ROLL * 0.05:  # 5% to roll epic
                 rarity = "epic"
-            elif roll <= top_range * 0.95:  # 90% to roll rare
+            elif roll <= INITIAL_MAX_ROLL * 0.95:  # 90% to roll rare
                 pass
             else:
                 rarity = "normal"  # 0.05% to roll normal
         elif chest_type == "epic":
-            if roll <= top_range * 0.05:  # 5% to roll legendary
+            if roll <= INITIAL_MAX_ROLL * 0.05:  # 5% to roll legendary
                 rarity = "legendary"
-            elif roll <= top_range * 0.90:  # 85% to roll epic
+            elif roll <= INITIAL_MAX_ROLL * 0.90:  # 85% to roll epic
                 pass
             else:  # 10% to roll rare
                 rarity = "rare"
         elif chest_type == "legendary":
-            if roll <= top_range * 0.55:  # 55% to roll legendary
+            if roll <= INITIAL_MAX_ROLL * 0.75:  # 75% to roll legendary
                 pass
-            elif roll <= top_range * 0.95:  # 40% to roll epic
+            elif roll <= INITIAL_MAX_ROLL * 0.95:  # 20% to roll epic
                 rarity = "epic"
             else:
                 rarity = "rare"  # 5% to roll rare
         elif chest_type == "pet":
-            if roll <= top_range * 0.05:  # 5% to roll legendary
+            if roll <= INITIAL_MAX_ROLL * 0.05:  # 5% to roll legendary
                 rarity = "legendary"
-            elif roll <= top_range * 0.15:  # 10% to roll epic
+            elif roll <= INITIAL_MAX_ROLL * 0.15:  # 10% to roll epic
                 rarity = "epic"
-            elif roll <= top_range * 0.57:  # 42% to roll rare
+            elif roll <= INITIAL_MAX_ROLL * 0.57:  # 42% to roll rare
                 rarity = "rare"
             else:
                 rarity = "normal"  # 47% to roll common
         elif chest_type == "set":
-            if roll <= top_range * 0.55:  # 55% to roll set
+            if roll <= INITIAL_MAX_ROLL * 0.55:  # 55% to roll set
                 rarity = "set"
             else:
                 rarity = "legendary"  # 45% to roll legendary
