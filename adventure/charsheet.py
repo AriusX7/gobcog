@@ -4,7 +4,7 @@ import logging
 import re
 from copy import copy
 from datetime import date, timedelta
-from typing import Dict, List, Mapping, Optional, Set
+from typing import Dict, List, Mapping, Optional, Set, MutableMapping
 
 import discord
 from discord.ext.commands import check
@@ -64,7 +64,7 @@ TIME_RE = re.compile(TIME_RE_STRING, re.I)
 REBIRTHSTATMULT = 2
 
 REBIRTH_LVL = 20
-REBIRTH_STEP = 5
+REBIRTH_STEP = 10
 
 TR_GEAR_SET = {}
 PETS = {}
@@ -356,6 +356,7 @@ class GameSession:
     message_id: int
     reacted: bool = False
     participants: Set[discord.Member] = set()
+    monster_modified_stats: MutableMapping = {}
     fight: List[discord.Member] = []
     magic: List[discord.Member] = []
     talk: List[discord.Member] = []
@@ -372,8 +373,11 @@ class GameSession:
         self.miniboss: dict = kwargs.pop("miniboss")
         self.timer: int = kwargs.pop("timer")
         self.monster: dict = kwargs.pop("monster")
-        self.monsters: List[Mapping] = kwargs.pop("monsters", [])
+        self.monsters: Mapping[str, Mapping] = kwargs.pop("monsters", [])
         self.monster_stats: int = kwargs.pop("monster_stats", 1)
+        self.monster_modified_stats = kwargs.pop(
+            "monster_modified_stats", self.monsters[self.challenge]
+        )
         self.message = kwargs.pop("message", 1)
         self.message_id: int = 0
         self.reacted = False
@@ -452,6 +456,7 @@ class Character(Item):
             "ring": {},
             "charm": {},
         }
+        self.last_skill_reset: int = kwargs.pop("last_skill_reset", 0)
 
     def get_stat_value(self, stat: str):
         """Calculates the stats dynamically for each slot of equipment."""
@@ -487,13 +492,23 @@ class Character(Item):
                         (getattr(item, stat) * self.gear_set_bonus.get("statmult", 1))
                         + self.gear_set_bonus.get(stats, 0)
                     )
-            except Exception:
-                log.error(f"error calculating {stat}", exc_info=True)
+            except Exception as exc:
+                log.error(f"error calculating {stat}", exc_info=exc)
         return stats
 
     def get_set_bonus(self):
         set_names = {}
         last_slot = ""
+        base = {
+            "att": 0,
+            "cha": 0,
+            "int": 0,
+            "dex": 0,
+            "luck": 0,
+            "statmult": 1,
+            "xpmult": 1,
+            "cpmult": 1,
+        }
         for slots in ORDER:
             if slots == "two handed":
                 continue
@@ -507,19 +522,14 @@ class Character(Item):
                 set_names.update({item.set: (item.parts, 1, item.bonus)})
             elif item.set and item.set in set_names:
                 parts, count, bonus = set_names[item.set]
+                for k in base.keys():
+                    if bonus.get(k, 0) > item.bonus.get(k, 0):
+                        bonus = item.bonus
+                        break
                 set_names[item.set] = (parts, count + 1, bonus)
         valid_sets = [v[-1] for _, v in set_names.items() if v[1] >= v[0]]
         self.sets = [s for s, _ in set_names.items() if s]
-        base = {
-            "att": 0,
-            "cha": 0,
-            "int": 0,
-            "dex": 0,
-            "luck": 0,
-            "statmult": 1,
-            "xpmult": 1,
-            "cpmult": 1,
-        }
+
         for set_bonus in valid_sets:
             for key, value in set_bonus.items():
                 if key not in ["cpmult", "xpmult", "statmult"]:
@@ -531,7 +541,8 @@ class Character(Item):
 
     def __str__(self):
         """Define str to be our default look for the character sheet :thinkies:"""
-        next_lvl = int((self.lvl + 1) ** 3)
+        next_lvl = int((self.lvl + 1) ** 3.5)
+        max_level_xp = int((self.maxlevel + 1) ** 3.5)
 
         if self.heroclass != {} and "name" in self.heroclass:
             class_desc = self.heroclass["name"] + "\n\n" + self.heroclass["desc"]
@@ -578,7 +589,7 @@ class Character(Item):
             luck=self.luck,
             bal=humanize_number(self.bal),
             xp=humanize_number(round(self.exp)),
-            next_lvl=humanize_number(next_lvl) if self.lvl < self.maxlevel else 0,
+            next_lvl=humanize_number(next_lvl) if self.lvl < self.maxlevel else max_level_xp,
             skill_points=0 if self.skill["pool"] < 0 else self.skill["pool"],
             legend=legend,
             equip=self.get_equipment(),
@@ -644,17 +655,19 @@ class Character(Item):
             int_space = " " if len(str(inter)) == 1 else ""
             dex_space = " " if len(str(dex)) == 1 else ""
             luck_space = " " if len(str(luck)) == 1 else ""
+
             owned = f" | {item.owned}"
             if item.set:
                 settext += f" | Set `{item.set}` ({item.parts}pcs)"
             form_string += (
-                f"\n Lv {equip_level(self, item):<2} | "
-                f"{str(item):<{rjust}} - "
+                f"\n{str(item):<{rjust}} - "
                 f"({att_space}{att} |"
                 f"{cha_space}{cha} |"
                 f"{int_space}{inter} |"
                 f"{dex_space}{dex} |"
-                f"{luck_space}{luck} ){owned}{settext}"
+                f"{luck_space}{luck} )"
+                f" | Lv {equip_level(self, item):<3}"
+                f"{owned}{settext}"
             )
 
         return form_string + "\n"
@@ -668,7 +681,7 @@ class Character(Item):
             maxlevel = REBIRTH_LVL
 
         while rebirths >= 20:
-            maxlevel += 5
+            maxlevel += REBIRTH_STEP
             rebirths -= 1
         while rebirths >= 10:
             maxlevel += 10
@@ -677,7 +690,7 @@ class Character(Item):
             rebirths -= 1
             maxlevel += 5
 
-        return min(maxlevel, 255)
+        return min(maxlevel, 1000)
 
     @staticmethod
     def get_item_rarity(item):
@@ -853,7 +866,12 @@ class Character(Item):
             # likely unnecessary since this worked without it but this prevents
             # potential issues
         loadouts = data["loadouts"]
-        heroclass = "Hero"
+        heroclass = {
+            "name": "Hero",
+            "ability": False,
+            "desc": "Your basic adventuring hero.",
+            "cooldown": 0,
+        }
         if "class" in data:
             # to move from old data to new data
             heroclass = data["class"]
@@ -913,6 +931,7 @@ class Character(Item):
         }
         for k, v in equipment.items():
             hero_data[k] = v
+        hero_data["last_skill_reset"] = data.get("last_skill_reset", 0)
         return cls(**hero_data)
 
     def get_set_item_count(self):
@@ -975,6 +994,7 @@ class Character(Item):
             "skill": self.skill,
             "rebirths": self.rebirths,
             "set_items": self.set_items,
+            "last_skill_reset": self.last_skill_reset,
         }
 
     async def rebirth(self, dev_val: int = None) -> dict:
@@ -1076,9 +1096,9 @@ class ItemConverter(Converter):
     async def convert(self, ctx, argument) -> Item:
         try:
             c = await Character.from_json(ctx.bot.get_cog("Adventure").config, ctx.author)
-        except Exception:
-            log.exception("Error with the new character sheet")
-            return
+        except Exception as exc:
+            log.exception("Error with the new character sheet", exc_info=exc)
+            raise BadArgument
         no_markdown = Item.remove_markdowns(argument)
         lookup = list(i for x, i in c.backpack.items() if no_markdown.lower() in x.lower())
         lookup_m = list(i for x, i in c.backpack.items() if argument.lower() == str(i).lower())
@@ -1188,12 +1208,3 @@ def get_true_name(rarity, name):
         return f"{SET_OPEN}{name}{LEGENDARY_CLOSE}"
     if rarity == "forged":
         return f"{TINKER_OPEN}{name}{TINKER_CLOSE}"
-
-
-def parse_timedelta(argument: str) -> Optional[timedelta]:
-    matches = TIME_RE.match(argument)
-    if matches:
-        params = {k: int(v) for k, v in matches.groupdict().items() if v is not None}
-        if params:
-            return timedelta(**params)
-    return None
