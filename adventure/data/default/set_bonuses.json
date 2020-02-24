@@ -1,0 +1,14 @@
+{
+    "Ainz Ooal Gown" : [{"parts": 10, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 3, "xpmult": 0, "cpmult": 2}],
+    "Skrrtis": [{"parts": 2, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 2, "statmult": 1, "xpmult": 1.4, "cpmult": 1}],
+    "Heavenswheel": [{"parts": 5, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 5, "statmult": 1, "xpmult": 1, "cpmult": 2.0}],
+    "Titan": [{"parts": 8, "att": 80, "cha": 0, "int": 0, "dex": -10, "luck": 0, "statmult": 1, "xpmult": 0.2, "cpmult": 0.1}],
+    "World Breaker": [{"parts": 11, "att": 3, "cha": 3, "int": 3, "dex": 3, "luck": -50, "statmult": 1.2, "xpmult": 0.5, "cpmult": 0}],
+    "Thunderfury": [{"parts": 3, "att": -5, "cha": -5, "int": -5, "dex": -5, "luck": -5, "statmult": 0.1, "xpmult": 5.0, "cpmult": 0}],
+    "Slobberknocker": [{"parts": 7, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.1, "xpmult": 1.5, "cpmult": 1.3}],
+    "The Groovinator": [{"parts": 2, "att": 0, "cha": 30, "int": 0, "dex": 0, "luck": 0, "statmult": 1.1, "xpmult": 1.1, "cpmult": 1.1}],
+    "The Paninator": [{"parts": 11, "att": 1, "cha": 1, "int": 1, "dex": 1, "luck": 1, "statmult": 1, "xpmult": 1.5, "cpmult": 1.3}],
+    "Unholy Seasoning": [{"parts": 4, "att": 150, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1, "xpmult": 0.1, "cpmult": 0}],
+    "Mad Mook": [{"parts": 8, "att": 21, "cha": 0, "int": 21, "dex": 0, "luck": 3, "statmult": 1.1, "xpmult": 1.3, "cpmult": 1.2}],
+    "Badass Bop": [{"parts": 2,"att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 0, "xpmult": 0, "cpmult": 0}]
+}
