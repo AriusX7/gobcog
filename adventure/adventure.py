@@ -2860,185 +2860,184 @@ class Adventure(BaseCog):
             return await smart_embed(ctx, _("The gods refuse your pitiful offering."))
         if offering > bal:
             offering = bal
-        async with self.get_lock(ctx.author):
-            nv_msg = await ctx.send(
-                _(
-                    "**{author}**, this will cost you at least {offer} {currency_name}.\n"
-                    "You currently have {bal}. Do you want to proceed?"
-                ).format(
-                    author=self.escape(ctx.author.display_name),
-                    offer=humanize_number(offering),
-                    currency_name=currency_name,
-                    bal=humanize_number(bal),
-                )
+        nv_msg = await ctx.send(
+            _(
+                "**{author}**, this will cost you at least {offer} {currency_name}.\n"
+                "You currently have {bal}. Do you want to proceed?"
+            ).format(
+                author=self.escape(ctx.author.display_name),
+                offer=humanize_number(offering),
+                currency_name=currency_name,
+                bal=humanize_number(bal),
             )
-            start_adding_reactions(nv_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-            pred = ReactionPredicate.yes_or_no(nv_msg, ctx.author)
-            try:
-                await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
-            except asyncio.TimeoutError:
+        )
+        start_adding_reactions(nv_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+        pred = ReactionPredicate.yes_or_no(nv_msg, ctx.author)
+        try:
+            await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
+        except asyncio.TimeoutError:
+            ctx.command.reset_cooldown(ctx)
+            await self._clear_react(nv_msg)
+            return
+        if not pred.result:
+            with contextlib.suppress(discord.HTTPException):
                 ctx.command.reset_cooldown(ctx)
-                await self._clear_react(nv_msg)
-                return
-            if not pred.result:
-                with contextlib.suppress(discord.HTTPException):
-                    ctx.command.reset_cooldown(ctx)
-                    await nv_msg.edit(
-                        content=_(
-                            "**{}** decides against visiting the negaverse... for now."
-                        ).format(self.escape(ctx.author.display_name))
-                    )
-                    return await self._clear_react(nv_msg)
+                await nv_msg.edit(
+                    content=_(
+                        "**{}** decides against visiting the negaverse... for now."
+                    ).format(self.escape(ctx.author.display_name))
+                )
+                return await self._clear_react(nv_msg)
 
-            percentage_offered = (offering / bal) * 100
-            min_roll = int(percentage_offered / 10)
-            entry_roll = random.randint(max(1, min_roll), 20)
-            if entry_roll == 1:
-                tax_mod = random.randint(4, 8)
-                tax = round(bal / tax_mod)
-                if tax > offering:
-                    loss = tax
-                else:
-                    loss = offering
+        percentage_offered = (offering / bal) * 100
+        min_roll = int(percentage_offered / 10)
+        entry_roll = random.randint(max(1, min_roll), 20)
+        if entry_roll == 1:
+            tax_mod = random.randint(4, 8)
+            tax = round(bal / tax_mod)
+            if tax > offering:
+                loss = tax
+            else:
+                loss = offering
+            await bank.withdraw_credits(ctx.author, loss)
+            entry_msg = _(
+                "A swirling void slowly grows and you watch in horror as it rushes to "
+                "wash over you, leaving you cold... and your coin pouch significantly lighter. "
+                "The portal to the negaverse remains closed."
+            )
+            return await nv_msg.edit(content=entry_msg)
+        else:
+            entry_msg = _(
+                "Shadowy hands reach out to take your offering from you and a swirling "
+                "black void slowly grows and engulfs you, transporting you to the negaverse."
+            )
+            await nv_msg.edit(content=entry_msg)
+            await self._clear_react(nv_msg)
+            await bank.withdraw_credits(ctx.author, offering)
+
+        negachar = _("Nega-{c}").format(
+            c=self.escape(random.choice(ctx.message.guild.members).display_name)
+        )
+
+        nega_msg = await ctx.send(
+            _("**{author}** enters the negaverse and meets **{negachar}**.").format(
+                author=self.escape(ctx.author.display_name), negachar=negachar
+            )
+        )
+        roll = random.randint(max(1, min_roll * 2), 50)
+        versus = random.randint(10, 60)
+        xp_mod = random.randint(1, 10)
+        weekend = datetime.today().weekday() in [5, 6]
+        wedfriday = datetime.today().weekday() in [2, 4]
+        daymult = 2 if weekend else 1.5 if wedfriday else 1
+        xp_won = int((offering / xp_mod) * daymult)
+        try:
+            c = await Character.from_json(self.config, ctx.message.author)
+        except Exception as exc:
+            log.exception("Error with the new character sheet", exc_info=exc)
+            return
+        xp_to_max = int((c.maxlevel + 1) ** 3.5)
+        ten_percent = xp_to_max * 0.1
+        xp_won = ten_percent if xp_won > ten_percent else xp_won
+        xp_won = int(xp_won * (min(max(random.randint(0, c.rebirths), 1), 50) / 100 + 1))
+        if roll < 10:
+            loss = round(bal // 3)
+            try:
                 await bank.withdraw_credits(ctx.author, loss)
-                entry_msg = _(
-                    "A swirling void slowly grows and you watch in horror as it rushes to "
-                    "wash over you, leaving you cold... and your coin pouch significantly lighter. "
-                    "The portal to the negaverse remains closed."
-                )
-                return await nv_msg.edit(content=entry_msg)
-            else:
-                entry_msg = _(
-                    "Shadowy hands reach out to take your offering from you and a swirling "
-                    "black void slowly grows and engulfs you, transporting you to the negaverse."
-                )
-                await nv_msg.edit(content=entry_msg)
-                await self._clear_react(nv_msg)
-                await bank.withdraw_credits(ctx.author, offering)
-
-            negachar = _("Nega-{c}").format(
-                c=self.escape(random.choice(ctx.message.guild.members).display_name)
-            )
-
-            nega_msg = await ctx.send(
-                _("**{author}** enters the negaverse and meets **{negachar}**.").format(
-                    author=self.escape(ctx.author.display_name), negachar=negachar
-                )
-            )
-            roll = random.randint(max(1, min_roll * 2), 50)
-            versus = random.randint(10, 60)
-            xp_mod = random.randint(1, 10)
-            weekend = datetime.today().weekday() in [5, 6]
-            wedfriday = datetime.today().weekday() in [2, 4]
-            daymult = 2 if weekend else 1.5 if wedfriday else 1
-            xp_won = int((offering / xp_mod) * daymult)
-            try:
-                c = await Character.from_json(self.config, ctx.message.author)
-            except Exception as exc:
-                log.exception("Error with the new character sheet", exc_info=exc)
-                return
-            xp_to_max = int((c.maxlevel + 1) ** 3.5)
-            ten_percent = xp_to_max * 0.1
-            xp_won = ten_percent if xp_won > ten_percent else xp_won
-            xp_won = int(xp_won * (min(max(random.randint(0, c.rebirths), 1), 50) / 100 + 1))
-            if roll < 10:
-                loss = round(bal // 3)
-                try:
-                    await bank.withdraw_credits(ctx.author, loss)
-                    loss_msg = ""
-                    loss = humanize_number(loss)
-                except ValueError:
-                    await bank.set_balance(ctx.author, 0)
-                    loss = _("all of their")
-                loss_msg = _(
-                    ", losing {loss} {currency_name} as **{negachar}** rifled through their belongings"
-                ).format(loss=loss, currency_name=currency_name, negachar=negachar)
-                await nega_msg.edit(
-                    content=_(
-                        "{content}\n**{author}** fumbled and died to **{negachar}'s** savagery{loss_msg}."
-                    ).format(
-                        content=nega_msg.content,
-                        author=self.escape(ctx.author.display_name),
-                        negachar=negachar,
-                        loss_msg=loss_msg,
-                    )
-                )
-                ctx.command.reset_cooldown(ctx)
-            elif roll == 50 and versus < 50:
-                await nega_msg.edit(
-                    content=_(
-                        "{content}\n**{author}** decapitated **{negachar}**. You gain {xp_gain} xp and take "
-                        "{offering} {currency_name} back from the shadowy corpse."
-                    ).format(
-                        content=nega_msg.content,
-                        author=self.escape(ctx.author.display_name),
-                        negachar=negachar,
-                        xp_gain=humanize_number(xp_won),
-                        offering=humanize_number(offering),
-                        currency_name=currency_name,
-                    )
-                )
-                await self._add_rewards(ctx, ctx.message.author, xp_won, offering, False)
-            elif roll > versus:
-                await nega_msg.edit(
-                    content=_(
-                        "{content}\n**{author}** "
-                        "{dice}({roll}) bravely defeated **{negachar}** {dice}({versus}). "
-                        "You gain {xp_gain} xp."
-                    ).format(
-                        dice=self.emojis.dice,
-                        content=nega_msg.content,
-                        author=self.escape(ctx.author.display_name),
-                        roll=roll,
-                        negachar=negachar,
-                        versus=versus,
-                        xp_gain=humanize_number(xp_won),
-                    )
-                )
-                await self._add_rewards(ctx, ctx.message.author, xp_won, 0, False)
-            elif roll == versus:
-                ctx.command.reset_cooldown(ctx)
-                await nega_msg.edit(
-                    content=_(
-                        "{content}\n**{author}** "
-                        "{dice}({roll}) almost killed **{negachar}** {dice}({versus})."
-                    ).format(
-                        dice=self.emojis.dice,
-                        content=nega_msg.content,
-                        author=self.escape(ctx.author.display_name),
-                        roll=roll,
-                        negachar=negachar,
-                        versus=versus,
-                    )
-                )
-            else:
-                loss = round(bal / (random.randint(10, 25)))
-                try:
-                    await bank.withdraw_credits(ctx.author, loss)
-                    loss_msg = ""
-                except ValueError:
-                    await bank.set_balance(ctx.author, 0)
-                    loss = _("all of their")
-                loss_msg = _(
-                    ", losing {loss} {currency_name} as **{negachar}** looted their backpack"
+                loss_msg = ""
+                loss = humanize_number(loss)
+            except ValueError:
+                await bank.set_balance(ctx.author, 0)
+                loss = _("all of their")
+            loss_msg = _(
+                ", losing {loss} {currency_name} as **{negachar}** rifled through their belongings"
+            ).format(loss=loss, currency_name=currency_name, negachar=negachar)
+            await nega_msg.edit(
+                content=_(
+                    "{content}\n**{author}** fumbled and died to **{negachar}'s** savagery{loss_msg}."
                 ).format(
-                    loss=humanize_number(loss) if not isinstance(loss, str) else loss,
-                    currency_name=currency_name,
+                    content=nega_msg.content,
+                    author=self.escape(ctx.author.display_name),
                     negachar=negachar,
+                    loss_msg=loss_msg,
                 )
-                await nega_msg.edit(
-                    content=_(
-                        "**{author}** {dice}({roll}) was killed by **{negachar}** {dice}({versus}){loss_msg}."
-                    ).format(
-                        dice=self.emojis.dice,
-                        author=self.escape(ctx.author.display_name),
-                        roll=roll,
-                        negachar=negachar,
-                        versus=versus,
-                        loss_msg=loss_msg,
-                    )
+            )
+            ctx.command.reset_cooldown(ctx)
+        elif roll == 50 and versus < 50:
+            await nega_msg.edit(
+                content=_(
+                    "{content}\n**{author}** decapitated **{negachar}**. You gain {xp_gain} xp and take "
+                    "{offering} {currency_name} back from the shadowy corpse."
+                ).format(
+                    content=nega_msg.content,
+                    author=self.escape(ctx.author.display_name),
+                    negachar=negachar,
+                    xp_gain=humanize_number(xp_won),
+                    offering=humanize_number(offering),
+                    currency_name=currency_name,
                 )
-                ctx.command.reset_cooldown(ctx)
+            )
+            await self._add_rewards(ctx, ctx.message.author, xp_won, offering, False)
+        elif roll > versus:
+            await nega_msg.edit(
+                content=_(
+                    "{content}\n**{author}** "
+                    "{dice}({roll}) bravely defeated **{negachar}** {dice}({versus}). "
+                    "You gain {xp_gain} xp."
+                ).format(
+                    dice=self.emojis.dice,
+                    content=nega_msg.content,
+                    author=self.escape(ctx.author.display_name),
+                    roll=roll,
+                    negachar=negachar,
+                    versus=versus,
+                    xp_gain=humanize_number(xp_won),
+                )
+            )
+            await self._add_rewards(ctx, ctx.message.author, xp_won, 0, False)
+        elif roll == versus:
+            ctx.command.reset_cooldown(ctx)
+            await nega_msg.edit(
+                content=_(
+                    "{content}\n**{author}** "
+                    "{dice}({roll}) almost killed **{negachar}** {dice}({versus})."
+                ).format(
+                    dice=self.emojis.dice,
+                    content=nega_msg.content,
+                    author=self.escape(ctx.author.display_name),
+                    roll=roll,
+                    negachar=negachar,
+                    versus=versus,
+                )
+            )
+        else:
+            loss = round(bal / (random.randint(10, 25)))
+            try:
+                await bank.withdraw_credits(ctx.author, loss)
+                loss_msg = ""
+            except ValueError:
+                await bank.set_balance(ctx.author, 0)
+                loss = _("all of their")
+            loss_msg = _(
+                ", losing {loss} {currency_name} as **{negachar}** looted their backpack"
+            ).format(
+                loss=humanize_number(loss) if not isinstance(loss, str) else loss,
+                currency_name=currency_name,
+                negachar=negachar,
+            )
+            await nega_msg.edit(
+                content=_(
+                    "**{author}** {dice}({roll}) was killed by **{negachar}** {dice}({versus}){loss_msg}."
+                ).format(
+                    dice=self.emojis.dice,
+                    author=self.escape(ctx.author.display_name),
+                    roll=roll,
+                    negachar=negachar,
+                    versus=versus,
+                    loss_msg=loss_msg,
+                )
+            )
+            ctx.command.reset_cooldown(ctx)
 
     @commands.group(autohelp=False)
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
