@@ -193,7 +193,7 @@ class AdventureResults:
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.0.0"
+    __version__ = "3.1.1"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -1544,6 +1544,27 @@ class Adventure(BaseCog):
         await self.config.guild(ctx.guild).cartroom.set(room.id)
         await smart_embed(ctx, _("Done, carts will now show in {room.mention}").format(room=room))
 
+    @adventureset.group(name="locks")
+    @checks.admin_or_permissions(administrator=True)
+    async def adventureset_locks(self, ctx: Context):
+        """Reset Adventure locks"""
+
+    @adventureset_locks.command(name="user")
+    async def adventureset_locks_user(self, ctx: Context, user: discord.member):
+        """Reset the user lock"""
+        lock = self.get_lock(user)
+        with contextlib.suppress(Exception):
+            lock.release()
+        await ctx.tick()
+
+    @commands.guild_only()
+    @adventureset_locks.command(name="adventure")
+    async def adventureset_locks_adventure(self, ctx: Context):
+        """Reset the adventure lock"""
+        while ctx.guild.id in self._sessions:
+            del self._sessions[ctx.guild.id]
+        await ctx.tick()
+
     @adventureset.command()
     @checks.is_owner()
     async def restrict(self, ctx: Context):
@@ -2181,7 +2202,11 @@ class Adventure(BaseCog):
         newint = round((int(item1.int) + int(item2.int)) * modifier)
         newdex = round((int(item1.dex) + int(item2.dex)) * modifier)
         newluck = round((int(item1.luck) + int(item2.luck)) * modifier)
-        newslot = random.choice([item1.slot, item2.slot])
+        newslot = random.choice(ORDER)
+        if newslot == "two handed":
+            newslot = ["right", "left"]
+        else:
+            newslot = [newslot]
         if len(newslot) == 2:  # two handed weapons add their bonuses twice
             hand = "two handed"
         else:
@@ -2843,9 +2868,9 @@ class Adventure(BaseCog):
                     "You tried to teleport to another dimension but the monster ahead did not give you a chance."
                 ),
             )
+
         bal = await bank.get_balance(ctx.author)
         currency_name = await bank.get_currency_name(ctx.guild)
-
         if offering is None:
             ctx.command.reset_cooldown(ctx)
             return await smart_embed(
@@ -2860,184 +2885,198 @@ class Adventure(BaseCog):
             return await smart_embed(ctx, _("The gods refuse your pitiful offering."))
         if offering > bal:
             offering = bal
-        nv_msg = await ctx.send(
-            _(
-                "**{author}**, this will cost you at least {offer} {currency_name}.\n"
-                "You currently have {bal}. Do you want to proceed?"
-            ).format(
-                author=self.escape(ctx.author.display_name),
-                offer=humanize_number(offering),
-                currency_name=currency_name,
-                bal=humanize_number(bal),
-            )
-        )
-        start_adding_reactions(nv_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-        pred = ReactionPredicate.yes_or_no(nv_msg, ctx.author)
+        lock = self.get_lock(ctx.author)
+        await lock.acquire()
         try:
-            await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
-        except asyncio.TimeoutError:
-            ctx.command.reset_cooldown(ctx)
-            await self._clear_react(nv_msg)
-            return
-        if not pred.result:
-            with contextlib.suppress(discord.HTTPException):
-                ctx.command.reset_cooldown(ctx)
-                await nv_msg.edit(
-                    content=_(
-                        "**{}** decides against visiting the negaverse... for now."
-                    ).format(self.escape(ctx.author.display_name))
-                )
-                return await self._clear_react(nv_msg)
-
-        percentage_offered = (offering / bal) * 100
-        min_roll = int(percentage_offered / 10)
-        entry_roll = random.randint(max(1, min_roll), 20)
-        if entry_roll == 1:
-            tax_mod = random.randint(4, 8)
-            tax = round(bal / tax_mod)
-            if tax > offering:
-                loss = tax
-            else:
-                loss = offering
-            await bank.withdraw_credits(ctx.author, loss)
-            entry_msg = _(
-                "A swirling void slowly grows and you watch in horror as it rushes to "
-                "wash over you, leaving you cold... and your coin pouch significantly lighter. "
-                "The portal to the negaverse remains closed."
-            )
-            return await nv_msg.edit(content=entry_msg)
-        else:
-            entry_msg = _(
-                "Shadowy hands reach out to take your offering from you and a swirling "
-                "black void slowly grows and engulfs you, transporting you to the negaverse."
-            )
-            await nv_msg.edit(content=entry_msg)
-            await self._clear_react(nv_msg)
-            await bank.withdraw_credits(ctx.author, offering)
-
-        negachar = _("Nega-{c}").format(
-            c=self.escape(random.choice(ctx.message.guild.members).display_name)
-        )
-
-        nega_msg = await ctx.send(
-            _("**{author}** enters the negaverse and meets **{negachar}**.").format(
-                author=self.escape(ctx.author.display_name), negachar=negachar
-            )
-        )
-        roll = random.randint(max(1, min_roll * 2), 50)
-        versus = random.randint(10, 60)
-        xp_mod = random.randint(1, 10)
-        weekend = datetime.today().weekday() in [5, 6]
-        wedfriday = datetime.today().weekday() in [2, 4]
-        daymult = 2 if weekend else 1.5 if wedfriday else 1
-        xp_won = int((offering / xp_mod) * daymult)
-        try:
-            c = await Character.from_json(self.config, ctx.message.author)
-        except Exception as exc:
-            log.exception("Error with the new character sheet", exc_info=exc)
-            return
-        xp_to_max = int((c.maxlevel + 1) ** 3.5)
-        ten_percent = xp_to_max * 0.1
-        xp_won = ten_percent if xp_won > ten_percent else xp_won
-        xp_won = int(xp_won * (min(max(random.randint(0, c.rebirths), 1), 50) / 100 + 1))
-        if roll < 10:
-            loss = round(bal // 3)
-            try:
-                await bank.withdraw_credits(ctx.author, loss)
-                loss_msg = ""
-                loss = humanize_number(loss)
-            except ValueError:
-                await bank.set_balance(ctx.author, 0)
-                loss = _("all of their")
-            loss_msg = _(
-                ", losing {loss} {currency_name} as **{negachar}** rifled through their belongings"
-            ).format(loss=loss, currency_name=currency_name, negachar=negachar)
-            await nega_msg.edit(
-                content=_(
-                    "{content}\n**{author}** fumbled and died to **{negachar}'s** savagery{loss_msg}."
+            nv_msg = await ctx.send(
+                _(
+                    "**{author}**, this will cost you at least {offer} {currency_name}.\n"
+                    "You currently have {bal}. Do you want to proceed?"
                 ).format(
-                    content=nega_msg.content,
                     author=self.escape(ctx.author.display_name),
-                    negachar=negachar,
-                    loss_msg=loss_msg,
-                )
-            )
-            ctx.command.reset_cooldown(ctx)
-        elif roll == 50 and versus < 50:
-            await nega_msg.edit(
-                content=_(
-                    "{content}\n**{author}** decapitated **{negachar}**. You gain {xp_gain} xp and take "
-                    "{offering} {currency_name} back from the shadowy corpse."
-                ).format(
-                    content=nega_msg.content,
-                    author=self.escape(ctx.author.display_name),
-                    negachar=negachar,
-                    xp_gain=humanize_number(xp_won),
-                    offering=humanize_number(offering),
+                    offer=humanize_number(offering),
                     currency_name=currency_name,
+                    bal=humanize_number(bal),
                 )
             )
-            await self._add_rewards(ctx, ctx.message.author, xp_won, offering, False)
-        elif roll > versus:
-            await nega_msg.edit(
-                content=_(
-                    "{content}\n**{author}** "
-                    "{dice}({roll}) bravely defeated **{negachar}** {dice}({versus}). "
-                    "You gain {xp_gain} xp."
-                ).format(
-                    dice=self.emojis.dice,
-                    content=nega_msg.content,
-                    author=self.escape(ctx.author.display_name),
-                    roll=roll,
-                    negachar=negachar,
-                    versus=versus,
-                    xp_gain=humanize_number(xp_won),
-                )
-            )
-            await self._add_rewards(ctx, ctx.message.author, xp_won, 0, False)
-        elif roll == versus:
-            ctx.command.reset_cooldown(ctx)
-            await nega_msg.edit(
-                content=_(
-                    "{content}\n**{author}** "
-                    "{dice}({roll}) almost killed **{negachar}** {dice}({versus})."
-                ).format(
-                    dice=self.emojis.dice,
-                    content=nega_msg.content,
-                    author=self.escape(ctx.author.display_name),
-                    roll=roll,
-                    negachar=negachar,
-                    versus=versus,
-                )
-            )
-        else:
-            loss = round(bal / (random.randint(10, 25)))
+            start_adding_reactions(nv_msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+            pred = ReactionPredicate.yes_or_no(nv_msg, ctx.author)
             try:
+                await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
+            except asyncio.TimeoutError:
+                ctx.command.reset_cooldown(ctx)
+                await self._clear_react(nv_msg)
+                lock.release()
+                return
+            if not pred.result:
+                with contextlib.suppress(discord.HTTPException):
+                    ctx.command.reset_cooldown(ctx)
+                    await nv_msg.edit(
+                        content=_(
+                            "**{}** decides against visiting the negaverse... for now."
+                        ).format(self.escape(ctx.author.display_name))
+                    )
+                    lock.release()
+                    return await self._clear_react(nv_msg)
+
+            percentage_offered = (offering / bal) * 100
+            min_roll = int(percentage_offered / 10)
+            entry_roll = random.randint(max(1, min_roll), 20)
+            if entry_roll == 1:
+                tax_mod = random.randint(4, 8)
+                tax = round(bal / tax_mod)
+                if tax > offering:
+                    loss = tax
+                else:
+                    loss = offering
                 await bank.withdraw_credits(ctx.author, loss)
-                loss_msg = ""
-            except ValueError:
-                await bank.set_balance(ctx.author, 0)
-                loss = _("all of their")
-            loss_msg = _(
-                ", losing {loss} {currency_name} as **{negachar}** looted their backpack"
-            ).format(
-                loss=humanize_number(loss) if not isinstance(loss, str) else loss,
-                currency_name=currency_name,
-                negachar=negachar,
+                entry_msg = _(
+                    "A swirling void slowly grows and you watch in horror as it rushes to "
+                    "wash over you, leaving you cold... and your coin pouch significantly lighter. "
+                    "The portal to the negaverse remains closed."
+                )
+                lock.release()
+                return await nv_msg.edit(content=entry_msg)
+            else:
+                entry_msg = _(
+                    "Shadowy hands reach out to take your offering from you and a swirling "
+                    "black void slowly grows and engulfs you, transporting you to the negaverse."
+                )
+                await nv_msg.edit(content=entry_msg)
+                await self._clear_react(nv_msg)
+                await bank.withdraw_credits(ctx.author, offering)
+
+            negachar = _("Nega-{c}").format(
+                c=self.escape(random.choice(ctx.message.guild.members).display_name)
             )
-            await nega_msg.edit(
-                content=_(
-                    "**{author}** {dice}({roll}) was killed by **{negachar}** {dice}({versus}){loss_msg}."
-                ).format(
-                    dice=self.emojis.dice,
-                    author=self.escape(ctx.author.display_name),
-                    roll=roll,
-                    negachar=negachar,
-                    versus=versus,
-                    loss_msg=loss_msg,
+
+            nega_msg = await ctx.send(
+                _("**{author}** enters the negaverse and meets **{negachar}**.").format(
+                    author=self.escape(ctx.author.display_name), negachar=negachar
                 )
             )
-            ctx.command.reset_cooldown(ctx)
+
+            roll = random.randint(max(1, min_roll * 2), 50)
+            versus = random.randint(10, 60)
+            xp_mod = random.randint(1, 10)
+            weekend = datetime.today().weekday() in [5, 6]
+            wedfriday = datetime.today().weekday() in [2, 4]
+            daymult = 2 if weekend else 1.5 if wedfriday else 1
+            xp_won = int((offering / xp_mod) * daymult)
+            try:
+                c = await Character.from_json(self.config, ctx.message.author)
+            except Exception as exc:
+                log.exception("Error with the new character sheet", exc_info=exc)
+                lock.release()
+                return
+            xp_to_max = int((c.maxlevel + 1) ** 3.5)
+            ten_percent = xp_to_max * 0.1
+            xp_won = ten_percent if xp_won > ten_percent else xp_won
+            xp_won = int(xp_won * (min(max(random.randint(0, c.rebirths), 1), 50) / 100 + 1))
+            if roll < 10:
+                loss = round(bal // 3)
+                try:
+                    await bank.withdraw_credits(ctx.author, loss)
+                    loss = humanize_number(loss)
+                except ValueError:
+                    await bank.set_balance(ctx.author, 0)
+                    loss = _("all of their")
+                loss_msg = _(
+                    ", losing {loss} {currency_name} as **{negachar}** rifled through their belongings"
+                ).format(loss=loss, currency_name=currency_name, negachar=negachar)
+                await nega_msg.edit(
+                    content=_(
+                        "{content}\n**{author}** fumbled and died to **{negachar}'s** savagery{loss_msg}."
+                    ).format(
+                        content=nega_msg.content,
+                        author=self.escape(ctx.author.display_name),
+                        negachar=negachar,
+                        loss_msg=loss_msg,
+                    )
+                )
+                ctx.command.reset_cooldown(ctx)
+            elif roll == 50 and versus < 50:
+                await nega_msg.edit(
+                    content=_(
+                        "{content}\n**{author}** decapitated **{negachar}**. You gain {xp_gain} xp and take "
+                        "{offering} {currency_name} back from the shadowy corpse."
+                    ).format(
+                        content=nega_msg.content,
+                        author=self.escape(ctx.author.display_name),
+                        negachar=negachar,
+                        xp_gain=humanize_number(xp_won),
+                        offering=humanize_number(offering),
+                        currency_name=currency_name,
+                    )
+                )
+                with contextlib.suppress(Exception):
+                    lock.release()
+                await self._add_rewards(ctx, ctx.message.author, xp_won, offering, False)
+            elif roll > versus:
+                await nega_msg.edit(
+                    content=_(
+                        "{content}\n**{author}** "
+                        "{dice}({roll}) bravely defeated **{negachar}** {dice}({versus}). "
+                        "You gain {xp_gain} xp."
+                    ).format(
+                        dice=self.emojis.dice,
+                        content=nega_msg.content,
+                        author=self.escape(ctx.author.display_name),
+                        roll=roll,
+                        negachar=negachar,
+                        versus=versus,
+                        xp_gain=humanize_number(xp_won),
+                    )
+                )
+                with contextlib.suppress(Exception):
+                    lock.release()
+                await self._add_rewards(ctx, ctx.message.author, xp_won, 0, False)
+            elif roll == versus:
+                ctx.command.reset_cooldown(ctx)
+                await nega_msg.edit(
+                    content=_(
+                        "{content}\n**{author}** "
+                        "{dice}({roll}) almost killed **{negachar}** {dice}({versus})."
+                    ).format(
+                        dice=self.emojis.dice,
+                        content=nega_msg.content,
+                        author=self.escape(ctx.author.display_name),
+                        roll=roll,
+                        negachar=negachar,
+                        versus=versus,
+                    )
+                )
+            else:
+                loss = round(bal / (random.randint(10, 25)))
+                try:
+                    await bank.withdraw_credits(ctx.author, loss)
+                except ValueError:
+                    await bank.set_balance(ctx.author, 0)
+                    loss = _("all of their")
+                loss_msg = _(
+                    ", losing {loss} {currency_name} as **{negachar}** looted their backpack"
+                ).format(
+                    loss=humanize_number(loss) if not isinstance(loss, str) else loss,
+                    currency_name=currency_name,
+                    negachar=negachar,
+                )
+                await nega_msg.edit(
+                    content=_(
+                        "**{author}** {dice}({roll}) was killed by **{negachar}** {dice}({versus}){loss_msg}."
+                    ).format(
+                        dice=self.emojis.dice,
+                        author=self.escape(ctx.author.display_name),
+                        roll=roll,
+                        negachar=negachar,
+                        versus=versus,
+                        loss_msg=loss_msg,
+                    )
+                )
+                ctx.command.reset_cooldown(ctx)
+        finally:
+            lock = self.get_lock(ctx.author)
+            with contextlib.suppress(Exception):
+                lock.release()
 
     @commands.group(autohelp=False)
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
@@ -3821,6 +3860,8 @@ class Adventure(BaseCog):
             return
         if not reward and not participants:
             await self.config.guild(ctx.guild).cooldown.set(0)
+            while ctx.guild.id in self._sessions:
+                del self._sessions[ctx.guild.id]
             return
         reward_copy = reward.copy()
         for (userid, rewards) in reward_copy.items():
@@ -3899,29 +3940,41 @@ class Adventure(BaseCog):
 
     def _dynamic_monster_stats(self, choice: MutableMapping):
         stat_range = self._adv_results.get_stat_range()
-        maxstat = stat_range["max_stat"] or 100
-        minsta = stat_range["min_stat"] or 1
-        multiplier = minsta / maxstat
-        if bool(random.getrandbits(1)):  # Dynamically strength
-            choice["hp"] += choice["hp"] * multiplier
-        else:  # Dynamically Weaken
-            choice["hp"] -= choice["hp"] * multiplier
+        stat_type = stat_range["stat_type"]
+        monster_hp = choice["hp"]
+        monster_diplo = choice["dipl"]
 
-        if bool(random.getrandbits(1)):  # Dynamically strength
-            choice["dipl"] += choice["dipl"] * multiplier
-        else:  # Dynamically Weaken
-            choice["dipl"] -= choice["dipl"] * multiplier
+        monster_pdef = choice["pdef"]
+        monster_mdef = choice["mdef"]
 
-        if bool(random.getrandbits(1)):  # Dynamically strength
-            choice["pdef"] += choice["pdef"] * multiplier
-        else:  # Dynamically Weaken
-            choice["pdef"] -= choice["pdef"] * multiplier
+        if stat_type == "hp":
+            min_stat, max_stat = (
+                stat_range["min_stat"] or monster_hp,
+                stat_range["max_stat"] or monster_hp,
+            )
+            min_stat_percent = min(abs(min_stat / monster_hp), monster_hp)
+            max_stat_percent = max(abs(max_stat / monster_hp), monster_hp)
+            hp_range = [min_stat_percent * monster_hp, max_stat_percent * monster_hp]
+            diplo_range = [monster_diplo, monster_diplo]
+        else:
+            min_stat, max_stat = (
+                stat_range["min_stat"] or monster_diplo,
+                stat_range["max_stat"] or monster_diplo,
+            )
+            min_stat_percent = min(abs(min_stat / monster_diplo), monster_diplo)
+            max_stat_percent = max(abs(max_stat / monster_diplo), monster_diplo)
+            diplo_range = [min_stat_percent * monster_diplo, max_stat_percent * monster_diplo]
+            hp_range = [monster_hp, monster_hp]
 
-        if bool(random.getrandbits(1)):  # Dynamically strength
-            choice["mdef"] += choice["mdef"] * multiplier
-        else:  # Dynamically Weaken
-            choice["mdef"] -= choice["mdef"] * multiplier
-
+        new_hp = random.choice(hp_range)
+        new_diplo = random.choice(diplo_range)
+        new_pdef = monster_pdef + (monster_pdef * random.random())
+        new_mdef = monster_mdef + (monster_mdef * random.random())
+        choice["hp"] = new_hp
+        choice["dipl"] = new_diplo
+        choice["pdef"] = new_pdef
+        choice["mdef"] = new_mdef
+        print(choice)
         return choice
 
     async def update_monster_roster(self, user):
@@ -3930,21 +3983,12 @@ class Adventure(BaseCog):
             c = await Character.from_json(self.config, user)
         except Exception as exc:
             log.exception("Error with the new character sheet", exc_info=exc)
-            return (self.MONSTERS, 1)
-        else:
-            monster_stats = 1
+            return ({**self.MONSTERS, **self.AS_MONSTERS}, 1)
 
-        if c.rebirths >= 25:
-            monsters = self.AS_MONSTERS
-            monster_stats = 1 + max((c.rebirths // 25) - 1, 0)
-        elif c.rebirths >= 15:
-            monsters = {**self.AS_MONSTERS}
-        elif c.rebirths >= 10:
-            monsters = {**self.MONSTERS, **self.AS_MONSTERS}
-        else:
-            monster_stats = 1
-            monsters = self.MONSTERS
-
+        monster_stats = 1
+        monsters = {**self.MONSTERS, **self.AS_MONSTERS}
+        if c.rebirths >= 10:
+            monster_stats = 1 + max((c.rebirths // 10) - 1, 0) / 2
         return (monsters, monster_stats)
 
     async def _simple(
@@ -4616,7 +4660,7 @@ class Adventure(BaseCog):
                 )
                 text += await self._reward(
                     ctx,
-                    fight_list + magic_list + pray_list,
+                    [u for u in fight_list + magic_list + pray_list if u not in fumblelist],
                     amount,
                     round(((attack if group == fighters_final_string else magic) / hp) * 0.25),
                     treasure,
@@ -4627,7 +4671,11 @@ class Adventure(BaseCog):
                     "{b_talkers} almost died in battle, but confounded the {chall} in the last second."
                 ).format(b_talkers=talkers_final_string, chall=session.challenge)
                 text += await self._reward(
-                    ctx, talk_list + pray_list, amount, round((diplomacy / dipl) * 0.25), treasure
+                    ctx,
+                    [u for u in talk_list + pray_list if u not in fumblelist],
+                    amount,
+                    round((diplomacy / dipl) * 0.25),
+                    treasure,
                 )
 
             if not slain and not persuaded:
@@ -4742,7 +4790,11 @@ class Adventure(BaseCog):
                         )
                 text += await self._reward(
                     ctx,
-                    fight_list + magic_list + talk_list + pray_list,
+                    [
+                        u
+                        for u in fight_list + magic_list + pray_list + talk_list
+                        if u not in fumblelist
+                    ],
                     amount,
                     round(((dmg_dealt / hp) + (diplomacy / dipl)) * 0.25),
                     treasure,
@@ -4762,7 +4814,11 @@ class Adventure(BaseCog):
                         b_talkers=talkers_final_string, chall=session.challenge
                     )
                 text += await self._reward(
-                    ctx, talk_list + pray_list, amount, round((diplomacy / dipl) * 0.25), treasure
+                    ctx,
+                    [u for u in talk_list + pray_list if u not in fumblelist],
+                    amount,
+                    round((diplomacy / dipl) * 0.25),
+                    treasure,
                 )
 
             if slain and not persuaded:
@@ -4809,7 +4865,7 @@ class Adventure(BaseCog):
                         )
                 text += await self._reward(
                     ctx,
-                    fight_list + magic_list + pray_list,
+                    [u for u in fight_list + magic_list + pray_list if u not in fumblelist],
                     amount,
                     round((dmg_dealt / hp) * 0.25),
                     treasure,
@@ -4950,8 +5006,8 @@ class Adventure(BaseCog):
         fight_list = list(set(session.fight))
         magic_list = list(set(session.magic))
         attack_list = list(set(fight_list + magic_list))
-        pdef = max(session.monster_modified_stats["pdef"], 0.1)
-        mdef = max(session.monster_modified_stats["mdef"], 0.1)
+        pdef = max(session.monster_modified_stats["pdef"], 0.5)
+        mdef = max(session.monster_modified_stats["mdef"], 0.5)
 
         fumble_count = 0
         # make sure we pass this check first
@@ -4998,20 +5054,25 @@ class Adventure(BaseCog):
                 continue
             crit_mod = max(c.dex, c.luck) + (c.total_att // 20)  # Thanks GoaFan77
             mod = 0
+            max_roll = 50 if c.rebirths >= 15 else 20
             if crit_mod != 0:
                 mod = round(crit_mod / 10)
-            if (mod + 1) > 20:
-                mod = 19
-            roll = random.randint((1 + mod), 20)
+            if c.rebirths < 15 < mod:
+                mod = 15
+                max_roll = 20
+            elif (mod + 1) > 45:
+                mod = 45
+
+            roll = random.randint((1 + mod), max_roll)
             if c.heroclass.get("pet", {}).get("bonuses", {}).get("crit", False):
                 pet_crit = c.heroclass.get("pet", {}).get("bonuses", {}).get("crit", 0)
                 pet_crit = random.randint(pet_crit, 100)
                 if pet_crit == 100:
-                    roll = 20
-                elif roll <= 15 and pet_crit >= 95:
-                    roll = random.randint(15, 20)
-                elif roll > 15 and pet_crit >= 95:
-                    roll = random.randint(roll, 20)
+                    roll = max_roll
+                elif roll <= 25 and pet_crit >= 95:
+                    roll = random.randint(25, max_roll)
+                elif roll > 25 and pet_crit >= 95:
+                    roll = random.randint(roll, max_roll)
 
             att_value = c.total_att
             rebirths = c.rebirths * 3 if c.heroclass["name"] == "Berserker" else 0
@@ -5029,11 +5090,11 @@ class Adventure(BaseCog):
                     msg += _("**{}** fumbled the attack.\n").format(self.escape(user.display_name))
                     fumblelist.append(user)
                     fumble_count += 1
-            elif roll == 20 or c.heroclass["name"] == "Berserker":
+            elif roll == max_roll or c.heroclass["name"] == "Berserker":
                 crit_str = ""
                 crit_bonus = 0
                 base_bonus = random.randint(5, 10) + c.rebirths // 3 + rebirths
-                if roll == 20:
+                if roll == max_roll:
                     msg += _("**{}** landed a critical hit.\n").format(
                         self.escape(user.display_name)
                     )
@@ -5060,20 +5121,24 @@ class Adventure(BaseCog):
                 continue
             crit_mod = max(c.dex, c.luck) + (c.total_int // 20)
             mod = 0
+            max_roll = 50 if c.rebirths >= 15 else 20
             if crit_mod != 0:
                 mod = round(crit_mod / 10)
-            if (mod + 1) > 20:
-                mod = 19
-            roll = random.randint((1 + mod), 20)
+            if c.rebirths < 15 < mod:
+                mod = 15
+                max_roll = 20
+            elif (mod + 1) > 45:
+                mod = 45
+            roll = random.randint((1 + mod), max_roll)
             if c.heroclass.get("pet", {}).get("bonuses", {}).get("crit", False):
                 pet_crit = c.heroclass.get("pet", {}).get("bonuses", {}).get("crit", 0)
                 pet_crit = random.randint(pet_crit, 100)
                 if pet_crit == 100:
-                    roll = 20
-                elif roll <= 15 and pet_crit >= 95:
-                    roll = random.randint(15, 20)
-                elif roll > 15 and pet_crit >= 95:
-                    roll = random.randint(roll, 20)
+                    roll = max_roll
+                elif roll <= 25 and pet_crit >= 95:
+                    roll = random.randint(25, max_roll)
+                elif roll > 25 and pet_crit >= 95:
+                    roll = random.randint(roll, max_roll)
             int_value = c.total_int
             rebirths = c.rebirths * 3 if c.heroclass["name"] == "Wizard" else 0
             if roll == 1:
@@ -5091,7 +5156,7 @@ class Adventure(BaseCog):
                         f"**{self.escape(user.display_name)}**: "
                         f"{self.emojis.dice}({roll}) + {self.emojis.magic_crit}{humanize_number(bonus)} + {self.emojis.magic}{str(humanize_number(int_value))}\n"
                     )
-            elif roll == 20 or (c.heroclass["name"] == "Wizard"):
+            elif roll == max_roll or (c.heroclass["name"] == "Wizard"):
                 crit_str = ""
                 crit_bonus = 0
                 base_bonus = random.randint(5, 10) + c.rebirths // 3 + rebirths
@@ -5147,11 +5212,15 @@ class Adventure(BaseCog):
                 rebirths = c.rebirths * 3 if c.heroclass["name"] == "Cleric" else 0
                 crit_mod = max(c.dex, c.luck) + (c.total_int // 20)
                 mod = 0
+                max_roll = 50 if c.rebirths >= 15 else 20
                 if crit_mod != 0:
                     mod = round(crit_mod / 10)
-                if (mod + 1) > 20:
-                    mod = 19
-                roll = random.randint((1 + mod), 20)
+                if c.rebirths < 15 < mod:
+                    mod = 15
+                    max_roll = 20
+                elif (mod + 1) > 45:
+                    mod = 45
+                roll = random.randint((1 + mod), max_roll)
                 if len(fight_list + talk_list + magic_list) == 0:
                     msg += _(
                         "**{}** blessed like a madman but nobody was there to receive it.\n"
@@ -5187,7 +5256,7 @@ class Adventure(BaseCog):
                     )
 
                 else:
-                    mod = roll if not c.heroclass["ability"] else roll * 2
+                    mod = roll // 3 if not c.heroclass["ability"] else roll
                     pray_att_bonus = int(
                         (mod * len(fight_list))
                         + ((mod * len(fight_list)) * max(c.rebirths * 0.01, 1.5))
@@ -5207,7 +5276,7 @@ class Adventure(BaseCog):
                     )
                     magic -= pray_magic_bonus
 
-                    if roll == 20:
+                    if roll == 50:
                         roll_msg = _(
                             "{user} turned into an avatar of mighty {god}. "
                             "(+{len_f_list}{attack}/+{len_t_list}{talk}/+{len_m_list}{magic})\n"
@@ -5228,13 +5297,13 @@ class Adventure(BaseCog):
                         len_m_list=humanize_number(pray_magic_bonus),
                     )
             else:
-                roll = random.randint(1, 4)
+                roll = random.randint(1, 10)
                 if len(fight_list + talk_list + magic_list) == 0:
                     msg += _("**{}** prayed like a madman but nobody else helped them.\n").format(
                         self.escape(user.display_name)
                     )
 
-                elif roll == 4:
+                elif roll == 5:
                     attack += 10 * (len(fight_list) + c.rebirths // 15)
                     diplomacy += 10 * (len(talk_list) + c.rebirths // 15)
                     magic += 10 * (len(magic_list) + c.rebirths // 15)
@@ -5279,11 +5348,14 @@ class Adventure(BaseCog):
                 continue
             crit_mod = max(c.dex, c.luck) + (c.total_int // 50) + (c.total_cha // 20)
             mod = 0
+            max_roll = 50 if c.rebirths >= 15 else 20
             if crit_mod != 0:
                 mod = round(crit_mod / 10)
-            if (mod + 1) > 20:
-                mod = 19
-            roll = random.randint((1 + mod), 20)
+            if c.rebirths < 15 < mod:
+                mod = 15
+            elif (mod + 1) > 45:
+                mod = 45
+            roll = random.randint((1 + mod), max_roll)
             dipl_value = c.total_cha
             rebirths = c.rebirths * 3 if c.heroclass["name"] == "Bard" else 0
             if roll == 1:
@@ -5300,7 +5372,7 @@ class Adventure(BaseCog):
                     )
                     fumblelist.append(user)
                     fumble_count += 1
-            elif roll == 20 or c.heroclass["name"] == "Bard":
+            elif roll == max_roll or c.heroclass["name"] == "Bard":
                 crit_str = ""
                 crit_bonus = 0
                 base_bonus = random.randint(5, 10) + c.rebirths // 3 + rebirths
@@ -5374,12 +5446,16 @@ class Adventure(BaseCog):
         return failed
 
     async def _add_rewards(self, ctx: Context, user, exp, cp, special):
-        async with self.get_lock(user):
-            try:
-                c = await Character.from_json(self.config, user)
-            except Exception as exc:
-                log.exception("Error with the new character sheet", exc_info=exc)
-                return
+        lock = self.get_lock(user)
+        if not lock.locked():
+            await lock.acquire()
+        try:
+            c = await Character.from_json(self.config, user)
+        except Exception as exc:
+            log.exception("Error with the new character sheet", exc_info=exc)
+            lock.release()
+            return
+        else:
             c.exp += exp
             member = ctx.guild.get_member(user.id)
             cp = max(cp, 0)
@@ -5443,6 +5519,10 @@ class Adventure(BaseCog):
             if special is not False:
                 c.treasure = [sum(x) for x in zip(c.treasure, special)]
             await self.config.user(user).set(c.to_json())
+        finally:
+            lock = self.get_lock(user)
+            with contextlib.suppress(Exception):
+                lock.release()
 
     async def _adv_countdown(self, ctx: Context, seconds, title) -> asyncio.Task:
         await self._data_check(ctx)
