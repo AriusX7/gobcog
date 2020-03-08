@@ -5969,7 +5969,7 @@ class Adventure(BaseCog):
             except Exception as exc:
                 log.exception("Error with the new character sheet", exc_info=exc)
                 continue
-            userxp = int(xp + (xp * 0.1 * c.rebirths))
+            userxp = int(xp + (xp * 0.5 * c.rebirths) + (xp * 0.1 * min(250, c.total_int/10)))
             # This got exponentially out of control before checking 1 skill
             # To the point where you can spec into only INT and
             # Reach level 1000 in a matter of days
