@@ -3815,7 +3815,7 @@ class Adventure(BaseCog):
 
         if ctx.guild.id in self._sessions:
             adventure_obj = self._sessions[ctx.guild.id]
-            link = f"https://discordapp.com/channels/{ctx.guild.id}/{adventure_obj.message.channel.id}/{adventure_obj.message.id}"
+            link = adventure_obj.message.jump_url
 
             return await smart_embed(
                 ctx, _(f"There's already another adventure going on in this server.\n{link}")
@@ -4027,21 +4027,21 @@ class Adventure(BaseCog):
     ):
         self.bot.dispatch("adventure", ctx)
         text = ""
-        monster_roaster, monster_stats = await self.update_monster_roster(ctx.author)
-        if challenge and challenge.title() in list(monster_roaster.keys()):
+        monster_roster, monster_stats = await self.update_monster_roster(ctx.author)
+        if challenge and challenge.title() in list(monster_roster.keys()):
             challenge = challenge.title()
         else:
-            challenge = await self.get_challenge(ctx, monster_roaster)
+            challenge = await self.get_challenge(ctx, monster_roster)
         if attribute and attribute.lower() in list(self.ATTRIBS.keys()):
             attribute = attribute.lower()
         else:
             attribute = random.choice(list(self.ATTRIBS.keys()))
 
-        if monster_roaster[challenge]["boss"]:
+        if monster_roster[challenge]["boss"]:
             timer = 60 * 5
             text = box(_("\n [{} Alarm!]").format(challenge), lang="css")
             self.bot.dispatch("adventure_boss", ctx)  # dispatches an event on bosses
-        elif monster_roaster[challenge]["miniboss"]:
+        elif monster_roster[challenge]["miniboss"]:
             timer = 60 * 3
             self.bot.dispatch("adventure_miniboss", ctx)
         else:
@@ -4051,14 +4051,14 @@ class Adventure(BaseCog):
             challenge=challenge,
             attribute=attribute,
             guild=ctx.guild,
-            boss=monster_roaster[challenge]["boss"],
-            miniboss=monster_roaster[challenge]["miniboss"],
+            boss=monster_roster[challenge]["boss"],
+            miniboss=monster_roster[challenge]["miniboss"],
             timer=timer,
-            monster=monster_roaster[challenge],
-            monsters=monster_roaster,
+            monster=monster_roster[challenge],
+            monsters=monster_roster,
             monster_stats=monster_stats,
             message=ctx.message,
-            monster_modified_stats=self._dynamic_monster_stats(ctx, monster_roaster[challenge]),
+            monster_modified_stats=self._dynamic_monster_stats(ctx, monster_roster[challenge]),
         )
         adventure_msg = (
             f"{adventure_msg}{text}\n{random.choice(self.LOCATIONS)}\n"
@@ -5969,14 +5969,17 @@ class Adventure(BaseCog):
             except Exception as exc:
                 log.exception("Error with the new character sheet", exc_info=exc)
                 continue
-            userxp = int(xp + (xp * 0.1 * c.total_int))
+            userxp = int(xp + (xp * 0.5 * c.rebirths) + (xp * 0.1 * min(250, c.total_int/10)))
+            # This got exponentially out of control before checking 1 skill
+            # To the point where you can spec into only INT and
+            # Reach level 1000 in a matter of days
             usercp = int(cp + (cp * c.luck) // 2)
             userxp = int(userxp * c.gear_set_bonus.get("xpmult", 1))
             usercp = int(usercp * c.gear_set_bonus.get("cpmult", 1))
             newxp += userxp
             newcp += usercp
             roll = random.randint(1, 5)
-            if c.heroclass.get("pet", {}).get("bonuses", {}).get("crit", False):
+            if c.heroclass.get("pet", {}).get("bonuses", {}).get("always", False):
                 roll = 5
             if roll == 5 and c.heroclass["name"] == "Ranger" and c.heroclass["pet"]:
                 petxp = int(userxp * c.heroclass["pet"]["bonus"])
