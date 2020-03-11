@@ -3809,6 +3809,26 @@ class Adventure(BaseCog):
                     ),
                 )
 
+    @commands.command(name="adventurestats")
+    @commands.is_owner()
+    async def _adventurestats(self, ctx: Context):
+        """[Owner] Show all current adventures."""
+        msg = "**Active Adventures**\n"
+        embed_list = []
+
+        if len(self._sessions) > 0:
+            for server_id, adventure in self._sessions.items():
+                msg += f"{self.bot.get_guild(server_id).name} - [{adventure.challenge}]({adventure.message.jump_url})\n"
+        else:
+            msg += "None."
+        for page in pagify(msg, delims=["\n"], page_length=1000):
+            embed = discord.Embed(description=page)
+            embed_list.append(embed)
+        if len(embed_list) > 1:
+            await menu(ctx, embed_list, DEFAULT_CONTROLS)
+        else:
+            await ctx.send(embed=embed_list[0])
+
     @commands.command(name="devcooldown")
     @commands.is_owner()
     async def _devcooldown(self, ctx: Context):
