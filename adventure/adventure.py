@@ -3849,7 +3849,7 @@ class Adventure(BaseCog):
             link = adventure_obj.message.jump_url
 
             return await smart_embed(
-                ctx, _(f"There's already another adventure going on in this server.\n{link}")
+                ctx, _(f"There's already another adventure going on in this server.\nCurrently fighting: [{adventure_obj.challenge}]({link})")
             )
 
         if not await has_funds(ctx.author, 250):
