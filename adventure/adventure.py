@@ -4392,7 +4392,7 @@ class Adventure(BaseCog):
                     return
                 item = items["item"]
                 item.owned = pred.result
-                c.add_to_backpack(item, number=pred.result)
+                await c.add_to_backpack(item, number=pred.result)
                 await self.config.user(user).set(c.to_json())
                 with contextlib.suppress(discord.HTTPException):
                     await to_delete.delete()
