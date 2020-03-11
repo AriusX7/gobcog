@@ -142,10 +142,10 @@ class Item:
         self.luck: int = kwargs.pop("luck")
         self.owned: int = kwargs.pop("owned")
         self.set: bool = kwargs.pop("set", False)
+        self.parts: int = kwargs.pop("parts")
         self.total_stats: int = self.att + self.int + self.cha + self.dex + self.luck
         self.max_main_stat = max(self.att, self.int, self.cha, 1)
         self.lvl: int = self.get_equip_level()
-        self.parts: int = kwargs.pop("parts")
         self.degrade = kwargs.pop("degrade", 5)
 
     def __str__(self):
@@ -760,10 +760,10 @@ class Character(Item):
             setattr(self, slot, item)
         return self
 
-    async def add_to_backpack(self, item: Item):
+    async def add_to_backpack(self, item: Item, number: int = 1):
         if item:
             if item.name in self.backpack:
-                self.backpack[item.name].owned += 1
+                self.backpack[item.name].owned += number
             else:
                 self.backpack[item.name] = item
 
@@ -779,7 +779,7 @@ class Character(Item):
                 continue
             if current and current.name != name_unformatted:
                 await self.unequip_item(current)
-            if name_unformatted not in self.backpack:
+            if name not in self.backpack:
                 setattr(self, slot, None)
             else:
                 equiplevel = max((item.get("lvl", 1) - min(max(self.rebirths // 2 - 1, 0), 50)), 1)
@@ -935,14 +935,21 @@ class Character(Item):
     def to_json(self) -> dict:
         backpack = {}
         for (k, v) in self.backpack.items():
+            if v.rarity == "set":
+                updated_set = TR_GEAR_SET.get("{" + f"Gear_Set:'{v.name}'" + "}")
+                if updated_set:
+                    v.att = updated_set.pop("att", v.att)
+                    v.int = updated_set.pop("int", v.int)
+                    v.cha = updated_set.pop("cha", v.cha)
+                    v.dex = updated_set.pop("dex", v.dex)
+                    v.luck = updated_set.pop("luck", v.luck)
+                    v.set = updated_set.pop("set", v.set)
+                    v.parts = updated_set.pop("parts", v.parts)
             for (n, i) in v.to_json().items():
                 backpack[n] = i
 
-        if self.heroclass["name"] == "Ranger":
-            if self.heroclass.get("pet"):
-                self.heroclass["pet"] = PETS.get(
-                    self.heroclass["pet"]["name"], self.heroclass["pet"]
-                )
+        if self.heroclass["name"] == "Ranger" and self.heroclass.get("pet"):
+            self.heroclass["pet"] = PETS.get(self.heroclass["pet"]["name"], self.heroclass["pet"])
 
         return {
             "adventures": self.adventures,

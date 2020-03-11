@@ -9,3 +9,6 @@
 .idea/sonarlint/
 .idea/vcs.xml
 venv/
+!/adventure/data/default/gen.py
+.idea/pylint.xml
+!/adventure/data/default/temp.json

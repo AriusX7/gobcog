@@ -130,3 +130,5 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+!/data/default/gen.py
+!/data/default/temp.json

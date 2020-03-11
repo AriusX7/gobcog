@@ -8,7 +8,11 @@
     "Slobberknocker": [{"parts": 7, "att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1.1, "xpmult": 1.5, "cpmult": 1.3}],
     "The Groovinator": [{"parts": 2, "att": 0, "cha": 30, "int": 0, "dex": 0, "luck": 0, "statmult": 1.1, "xpmult": 1.1, "cpmult": 1.1}],
     "The Paninator": [{"parts": 11, "att": 1, "cha": 1, "int": 1, "dex": 1, "luck": 1, "statmult": 1, "xpmult": 1.5, "cpmult": 1.3}],
-    "Unholy Seasoning": [{"parts": 4, "att": 150, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1, "xpmult": 0.1, "cpmult": 0}],
+    "Unholy Seasoning": [{"parts": 4, "att": 150, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 1, "xpmult": 0.5, "cpmult": 0}],
     "Mad Mook": [{"parts": 8, "att": 21, "cha": 0, "int": 21, "dex": 0, "luck": 3, "statmult": 1.1, "xpmult": 1.3, "cpmult": 1.2}],
-    "Badass Bop": [{"parts": 2,"att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 0, "xpmult": 0, "cpmult": 0}]
+    "Badass Bop": [{"parts": 2,"att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0, "statmult": 0, "xpmult": 0, "cpmult": 0}],
+    "Dreadnaughts Battlegear": [{"parts": 9, "att": 25, "cha": 0, "int": 100, "dex": 0, "luck": 0, "statmult": 1.05, "xpmult": 1.15, "cpmult": 1.35}],
+    "Fangs of the Father": [{"parts": 2, "att": 10, "cha": 10, "int": 5, "dex": 100, "luck": 50, "statmult": 1, "xpmult": 1.2, "cpmult": 1.4}],
+    "Titanic Empowerment": [{"parts": 2, "att": 80, "int": -20, "dex": 80, "statmult": 1.1, "xpmult": 1.2, "cpmult": 1}],
+    "Demonbane Armor": [{"parts": 6, "att": -100, "cha": 50, "int": 25, "dex": 25, "luck": 25, "statmult": 1.15, "xpmult": 1.2, "cpmult": 1.5}]
 }

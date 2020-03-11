@@ -82,5 +82,28 @@
     "{Gear_Set:'Ancient Obsidium Shoes'}": {"slot": ["boots"], "set": "Mad Mook", "parts": 8, "int": -1, "dex": 8, "luck": 15},
 
     "{Gear_Set:'Shiny Dragonplate Gauntlets'}": {"slot": ["gloves"], "set": "Badass Bop", "parts": 2, "cha": 1, "int": 4, "dex": 12, "luck": 1},
-    "{Gear_Set:'Shiny Dragonplate Sling'}": {"slot": ["left"], "set": "Badass Bop", "parts": 2, "att": 20, "dex": 8, "luck": -39}
-    }
+    "{Gear_Set:'Shiny Dragonplate Sling'}": {"slot": ["left"], "set": "Badass Bop", "parts": 2, "att": 20, "dex": 8, "luck": -39},
+
+    "{Gear_Set:'Dreadnaught Gauntlets'}": {"slot": ["gloves"], "set": "Dreadnaughts Battlegear", "parts": 9, "att": 15, "cha": 0, "int": 23, "dex": 0, "luck": 0},
+    "{Gear_Set:'War Axe of the Dreadnaught'}": {"slot": ["left", "right"], "set": "Dreadnaughts Battlegear", "parts": 9, "att": 15, "cha": 0, "int": 23, "dex": 0, "luck": 0},
+    "{Gear_Set:'Dreadnaught Helmet'}": {"slot": ["head"], "set": "Dreadnaughts Battlegear", "parts": 9, "att": 15, "cha": 0, "int": 23, "dex": 0, "luck": 0},
+    "{Gear_Set:'Dreadnaught Breastplate'}": {"slot": ["chest"], "set": "Dreadnaughts Battlegear", "parts": 9, "att": 15, "cha": 0, "int": 23, "dex": 0, "luck": 0},
+    "{Gear_Set:'Dreadnaught Sabatons'}": {"slot": ["boots"], "set": "Dreadnaughts Battlegear", "parts": 9, "att": 15, "cha": 0, "int": 23, "dex": 0, "luck": 0},
+    "{Gear_Set:'Dreadnaught Waistguard'}": {"slot": ["legs"], "set": "Dreadnaughts Battlegear", "parts": 9, "att": 15, "cha": 0, "int": 23, "dex": 0, "luck": 0},
+    "{Gear_Set:'Dreadnaught Legplates'}": {"slot": ["belt"], "set": "Dreadnaughts Battlegear", "parts": 9, "att": 15, "cha": 0, "int": 23, "dex": 0, "luck": 0},
+    "{Gear_Set:'Necklace of the Dreadnaught'}": {"slot": ["neck"], "set": "Dreadnaughts Battlegear", "parts": 9, "att": 15, "cha": 0, "int": 23, "dex": 0, "luck": 0},
+    "{Gear_Set:'Ring of the Dreadnaught'}": {"slot": ["ring"], "set": "Dreadnaughts Battlegear", "parts": 9, "att": 15, "cha": 0, "int": 23, "dex": 0, "luck": 0},
+
+    "{Gear_Set:'Golad, Twilight of Aspects'}": {"slot": ["left"], "set": "Fangs of the Father", "parts": 2, "att": 0, "cha": 90, "int": 0, "dex": 25, "luck": 0},
+    "{Gear_Set:'Tiriosh, Nightmare of Ages'}": {"slot": ["right"], "set": "Fangs of the Father", "parts": 2, "att": 0, "cha": 90, "int": 0, "dex": 25, "luck": 0},
+
+    "{Gear_Set:'Vita-Charged Titanshard'}": {"slot": ["charm"], "set": "Titanic Empowerment", "parts": 2, "att": 60, "cha": 0, "int": 0, "dex": 0, "luck": 0},
+    "{Gear_Set:'Void-Twisted Titanshard'}": {"slot": ["ring"], "set": "Titanic Empowerment", "parts": 2, "att": 60, "cha": 0, "int": 0, "dex": 0, "luck": 0},
+
+    "{Gear_Set:'Demonbane Necklace'}": {"slot": ["neck"], "set": "Demonbane Armor", "parts": 6, "att": 15, "cha": 0, "int": 0, "dex": 0, "luck": 12},
+    "{Gear_Set:'Demonbane Katana'}": {"slot": ["left", "right"], "set": "Demonbane Armor", "parts": 6, "att": 20, "cha": 0, "int": 0, "dex": 0, "luck": 12},
+    "{Gear_Set:'Demonbane Sabatons'}": {"slot": ["boots"], "set": "Demonbane Armor", "parts": 6, "att": 25, "cha": 0, "int": 0, "dex": 0, "luck": 12},
+    "{Gear_Set:'Demonbane Charm'}": {"slot": ["charm"], "set": "Demonbane Armor", "parts": 6, "att": 30, "cha": 0, "int": 0, "dex": 0, "luck": 12},
+    "{Gear_Set:'Demonbane Leggings'}": {"slot": ["legs"], "set": "Demonbane Armor", "parts": 6, "att": 35, "cha": 0, "int": 0, "dex": 0, "luck": 12},
+    "{Gear_Set:'Ring of Demonbane'}": {"slot": ["ring"], "set": "Demonbane Armor", "parts": 6, "att": 40, "cha": 0, "int": 0, "dex": 0, "luck": 12}
+}
