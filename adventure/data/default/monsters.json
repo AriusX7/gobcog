@@ -93,7 +93,7 @@
     "Golden Draconid": {"hp": 250, "pdef": 1.1, "mdef": 1.2, "dipl": 245, "image": "https://cdn.pixabay.com/photo/2018/05/18/22/52/dragon-3412281_960_720.png", "boss": true, "miniboss": {}, "color":""},
     "Golden Dragon": {"hp": 320, "pdef": 0.8, "mdef": 1, "dipl": 350, "image": "https://cdn.pixabay.com/photo/2014/01/05/01/19/dragon-238931_960_720.jpg", "boss": true, "miniboss": {}, "color":""},
     "Golden Guardian Wyrm": {"hp": 530, "pdef": 1.1, "mdef": 1.2, "dipl": 520, "image": "https://cdn.pixabay.com/photo/2013/10/19/05/21/sculpture-197772_960_720.jpg", "boss": true, "miniboss": {}, "color":""},
-    "Golden Wyrm": {"hp": 280, "pdef": 1.25, "mdef": 1.25, "dipl": 280, "image": "http://i156.photobucket.com/albums/t37/elmarjem/Dragonlance_detail.jpg", "boss": true, "miniboss": {}, "color":""},
+    "Golden Wyrm": {"hp": 280, "pdef": 1.25, "mdef": 1.25, "dipl": 280, "image": "https://i.imgur.com/zOd2s9R.jpg", "boss": true, "miniboss": {}, "color":""},
     "Goose": {"hp": 39, "pdef": 1.1, "mdef": 1.1, "dipl": 44, "image": "https://cdn.pixabay.com/photo/2017/04/25/21/30/wild-goose-2260866_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
     "Guardian Statue": {"hp": 180, "pdef": 1.3, "mdef": 0.9, "dipl": 200, "image": "https://cdn.pixabay.com/photo/2019/04/12/09/13/fantasy-4121663_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
     "Harpy Matriarch": {"hp": 150, "pdef": 1, "mdef": 0.75, "dipl": 180, "image": "https://cdn.pixabay.com/photo/2017/07/10/22/17/harpy-2491774_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
