@@ -877,16 +877,6 @@ class Adventure(BaseCog):
                     lang="css",
                 )
             )
-        elif item.rarity == "set":
-            ctx.command.reset_cooldown(ctx)
-            return await ctx.send(
-                box(
-                    _(
-                        "\n{author}, you are not able to sell Set items as they are bound to your soul."
-                    ).format(author=self.escape(ctx.author.display_name)),
-                    lang="css",
-                )
-            )
 
         lock = self.get_lock(ctx.author)
         await lock.acquire()

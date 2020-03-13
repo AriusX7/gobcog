@@ -130,23 +130,23 @@ class Item:
 
     def __init__(self, **kwargs):
         if kwargs.get("rarity") in ["set", "legendary"]:
-            self.name: str = kwargs.pop("name").title()
+            self.name: str = kwargs.get("name").title()
         else:
-            self.name: str = kwargs.pop("name").lower()
-        self.slot: List[str] = kwargs.pop("slot")
-        self.att: int = kwargs.pop("att")
-        self.int: int = kwargs.pop("int")
-        self.cha: int = kwargs.pop("cha")
-        self.rarity: str = kwargs.pop("rarity")
-        self.dex: int = kwargs.pop("dex")
-        self.luck: int = kwargs.pop("luck")
-        self.owned: int = kwargs.pop("owned")
-        self.set: bool = kwargs.pop("set", False)
-        self.parts: int = kwargs.pop("parts")
+            self.name: str = kwargs.get("name").lower()
+        self.slot: List[str] = kwargs.get("slot")
+        self.att: int = kwargs.get("att")
+        self.int: int = kwargs.get("int")
+        self.cha: int = kwargs.get("cha")
+        self.rarity: str = kwargs.get("rarity")
+        self.dex: int = kwargs.get("dex")
+        self.luck: int = kwargs.get("luck")
+        self.owned: int = kwargs.get("owned")
+        self.set: bool = kwargs.get("set", False)
+        self.parts: int = kwargs.get("parts")
         self.total_stats: int = self.att + self.int + self.cha + self.dex + self.luck
         self.max_main_stat = max(self.att, self.int, self.cha, 1)
         self.lvl: int = self.get_equip_level()
-        self.degrade = kwargs.pop("degrade", 5)
+        self.degrade = kwargs.get("degrade", 5)
 
     def __str__(self):
         if self.rarity == "normal":
@@ -252,16 +252,17 @@ class Item:
         degrade = data["degrade"] if "degrade" in data else 3
         parts = data["parts"] if "parts" in data else 0
         db = get_item_db(rarity)
-        if db:
-            item = db.get(f"{get_true_name(rarity, name)}", {})
-            parts = item.get("parts", parts)
-            _set = item.get("set", _set)
-            att = item.get("att", att)
-            inter = item.get("int", inter)
-            cha = item.get("cha", cha)
-            dex = item.get("dex", dex)
-            luck = item.get("luck", luck)
-            slots = item.get("slot", slots)
+        if db and rarity == "set":
+            item = db.get(name, {})
+            if item:
+                parts = item.get("parts", parts)
+                _set = item.get("set", _set)
+                att = item.get("att", att)
+                inter = item.get("int", inter)
+                cha = item.get("cha", cha)
+                dex = item.get("dex", dex)
+                luck = item.get("luck", luck)
+                slots = item.get("slot", slots)
 
         item_data = {
             "name": name,
@@ -282,16 +283,16 @@ class Item:
 
     def to_json(self) -> dict:
         db = get_item_db(self.rarity)
-        if db:
-            item = db.get(f"{str(self)}", {})
-            self.parts = item.get("parts", self.parts)
-            self.set = item.get("set", self.set)
-            self.att = item.get("att", self.att)
-            self.int = item.get("int", self.int)
-            self.cha = item.get("cha", self.cha)
-            self.dex = item.get("dex", self.dex)
-            self.luck = item.get("luck", self.luck)
-
+        if db and self.rarity == "set":
+            updated_set = db.get(self.name)
+            if updated_set:
+                self.att = updated_set.get("att", self.att)
+                self.int = updated_set.get("int", self.int)
+                self.cha = updated_set.get("cha", self.cha)
+                self.dex = updated_set.get("dex", self.dex)
+                self.luck = updated_set.get("luck", self.luck)
+                self.set = updated_set.get("set", self.set)
+                self.parts = updated_set.get("parts", self.parts)
         data = {
             self.name: {
                 "slot": self.slot,
@@ -309,6 +310,13 @@ class Item:
         if self.rarity == "set":
             data[self.name]["parts"] = self.parts
             data[self.name]["set"] = self.set
+            data[self.name].pop("att", None)
+            data[self.name].pop("int", None)
+            data[self.name].pop("cha", None)
+            data[self.name].pop("dex", None)
+            data[self.name].pop("luck", None)
+
+
 
         return data
 
@@ -935,16 +943,6 @@ class Character(Item):
     def to_json(self) -> dict:
         backpack = {}
         for (k, v) in self.backpack.items():
-            if v.rarity == "set":
-                updated_set = TR_GEAR_SET.get("{" + f"Gear_Set:'{v.name}'" + "}")
-                if updated_set:
-                    v.att = updated_set.pop("att", v.att)
-                    v.int = updated_set.pop("int", v.int)
-                    v.cha = updated_set.pop("cha", v.cha)
-                    v.dex = updated_set.pop("dex", v.dex)
-                    v.luck = updated_set.pop("luck", v.luck)
-                    v.set = updated_set.pop("set", v.set)
-                    v.parts = updated_set.pop("parts", v.parts)
             for (n, i) in v.to_json().items():
                 backpack[n] = i
 
