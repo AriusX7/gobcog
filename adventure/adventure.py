@@ -8,7 +8,6 @@ import random
 import re
 import time
 from collections import namedtuple
-from copy import copy
 from datetime import date, datetime
 from types import SimpleNamespace
 from typing import List, Optional, Union, MutableMapping
@@ -50,6 +49,8 @@ from .charsheet import (
     DEV_LIST,
     RARITIES,
     ORDER,
+    RarityConverter,
+    SlotConverter,
 )
 
 try:
@@ -202,7 +203,7 @@ class AdventureResults:
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.1.2"
+    __version__ = "3.1.3"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -713,13 +714,25 @@ class Adventure(BaseCog):
         await ctx.tick()
 
     @commands.group(name="backpack", autohelp=False)
-    async def _backpack(self, ctx: Context):
+    async def _backpack(
+        self,
+        ctx: Context,
+        rarity: Optional[RarityConverter] = None,
+        *,
+        slot: Optional[SlotConverter] = None,
+    ):
         """This shows the contents of your backpack.
-        Selling: `[p]backpack sell item_name`
-        Trading: `[p]backpack trade @user price item_name`
-        Equip:   `[p]backpack equip item_name`
-        or respond with the item name to the backpack command output.
+
+        Give it a rarity and/or slot to filter what backpack items to show.
+
+        Selling:     `[p]backpack sell item_name`
+        Trading:     `[p]backpack trade @user price item_name`
+        Equip:       `[p]backpack equip item_name`
+        Sell All:    `[p]backpack sellall rarity slot`
+        Disassemble: `[p]backpack disassemble item_name`
         """
+        assert isinstance(rarity, str) or rarity is None
+        assert isinstance(slot, str) or slot is None
         if not await self.allow_in_dm(ctx):
             return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
         if not ctx.invoked_subcommand:
@@ -728,8 +741,28 @@ class Adventure(BaseCog):
             except Exception as exc:
                 log.exception("Error with the new character sheet", exc_info=exc)
                 return
+            if rarity:
+                rarity = rarity.lower()
+                if rarity not in RARITIES:
+                    return await smart_embed(
+                        ctx,
+                        _("{} is not a valid rarity, select one of {}").format(
+                            rarity, humanize_list(RARITIES)
+                        ),
+                    )
+            if slot:
+                slot = slot.lower()
+                if slot not in ORDER:
+                    return await smart_embed(
+                        ctx,
+                        _("{} is not a valid slot, select one of {}").format(
+                            slot, humanize_list(ORDER)
+                        ),
+                    )
+
             backpack_contents = _("[{author}'s backpack] \n\n{backpack}\n").format(
-                author=self.escape(ctx.author.display_name), backpack=c.get_backpack()
+                author=self.escape(ctx.author.display_name),
+                backpack=c.get_backpack(rarity=rarity, slot=slot),
             )
             msgs = []
             for page in pagify(backpack_contents, delims=["\n"], shorten_by=20, page_length=1900):
@@ -739,6 +772,7 @@ class Adventure(BaseCog):
     @_backpack.command(name="equip")
     async def backpack_equip(self, ctx: Context, *, equip_item: ItemConverter):
         """Equip an item from your backpack."""
+        assert isinstance(equip_item, Item)
         if self.in_adventure(ctx):
             return await smart_embed(
                 ctx,
@@ -792,9 +826,73 @@ class Adventure(BaseCog):
                 c = await c.equip_item(equip, True, self.is_dev(ctx.author))  # FIXME:
                 await self.config.user(ctx.author).set(c.to_json())
 
+    @_backpack.command(name="disassemble")
+    async def backpack_disassemble(self, ctx: Context, *, backpack_item: ItemConverter):
+        """Disassemble a set item from your backpack."""
+        assert isinstance(backpack_item, Item)
+        if self.in_adventure(ctx):
+            return await smart_embed(
+                ctx,
+                _(
+                    "You tried to disassemble an item but the "
+                    "monster ahead of you commands your attention."
+                ),
+            )
+        async with self.get_lock(ctx.author):
+            try:
+                character = await Character.from_json(self.config, ctx.author)
+            except Exception as exc:
+                log.exception("Error with the new character sheet", exc_info=exc)
+                return
+
+            try:
+                item = character.backpack[backpack_item.name]
+            except KeyError:
+                return
+
+            if item.rarity != "set":
+                return await smart_embed(ctx, _("You can only disassemble set items."))
+            if character.heroclass["name"] != "Tinkerer":
+                roll = random.randint(0, 1)
+            else:
+                roll = random.randint(0, 3)
+
+            if roll == 0:
+                item.owned -= 1
+                if item.owned <= 0:
+                    del character.backpack[item.name]
+                await self.config.user(ctx.author).set(character.to_json())
+                return await smart_embed(
+                    ctx,
+                    _("Your attempt at disassembling {} failed and it has been destroyed.").format(
+                        item.name
+                    ),
+                )
+            else:
+                item.owned -= 1
+                if item.owned <= 0:
+                    del character.backpack[item.name]
+                character.treasure[3] += roll
+                await self.config.user(ctx.author).set(character.to_json())
+                return await smart_embed(
+                    ctx,
+                    _(
+                        "Your attempt at disassembling {} was successful "
+                        "and you have received {} legendary {}."
+                    ).format(item.name, roll, _("chests") if roll > 1 else _("chest")),
+                )
+
     @_backpack.command(name="sellall")
-    async def backpack_sellall(self, ctx: Context, rarity: str = None):
-        """Sell all items in your backpack."""
+    async def backpack_sellall(
+        self,
+        ctx: Context,
+        rarity: Optional[RarityConverter] = None,
+        *,
+        slot: Optional[SlotConverter] = None,
+    ):
+        """Sell all items in your backpack. Optionally specify rarity or slot."""
+        assert isinstance(rarity, str) or rarity is None
+        assert isinstance(slot, str) or slot is None
         if self.in_adventure(ctx):
             return await smart_embed(
                 ctx,
@@ -802,14 +900,29 @@ class Adventure(BaseCog):
                     "You tried to go sell your items but the monster ahead is not allowing you to leave."
                 ),
             )
-        if rarity and rarity.lower() not in RARITIES:
-            return await smart_embed(
-                ctx, _("I've never heard of `{rarity}` rarity items before.").format(rarity=rarity)
-            )
-        elif rarity and rarity.lower() in ["set", "forged"]:
-            return await smart_embed(
-                ctx, _("You cannot sell `{rarity}` rarity items.").format(rarity=rarity)
-            )
+        if rarity:
+            rarity = rarity.lower()
+            if rarity not in RARITIES:
+                return await smart_embed(
+                    ctx,
+                    _("{} is not a valid rarity, select one of {}").format(
+                        rarity, humanize_list(RARITIES)
+                    ),
+                )
+            if rarity.lower() in ["set", "forged"]:
+                return await smart_embed(
+                    ctx, _("You cannot sell `{rarity}` rarity items.").format(rarity=rarity)
+                )
+        if slot:
+            slot = slot.lower()
+            if slot not in ORDER:
+                return await smart_embed(
+                    ctx,
+                    _("{} is not a valid slot, select one of {}").format(
+                        slot, humanize_list(ORDER)
+                    ),
+                )
+
         async with self.get_lock(ctx.author):
             msg = ""
             try:
@@ -821,27 +934,32 @@ class Adventure(BaseCog):
             items = [i for n, i in c.backpack.items() if i.rarity not in ["forged", "set"]]
             count = 0
             for item in items:
-                if not rarity or item.rarity == rarity:
-                    item_price = 0
-                    old_owned = item.owned
-                    for x in range(0, item.owned):
-                        item.owned -= 1
-                        item_price += self._sell(c, item)
-                        if item.owned <= 0:
-                            del c.backpack[item.name]
-                        if not count % 10:
-                            await asyncio.sleep(0.1)
-                        count += 1
-                    msg += _("{old_item} sold for {price}.\n").format(
-                        old_item=str(old_owned) + " " + str(item),
-                        price=humanize_number(item_price),
-                    )
-                    total_price += item_price
-                    await asyncio.sleep(0.1)
-                    item_price = max(item_price, 0)
-                    if item_price > 0:
-                        with contextlib.suppress(BalanceTooHigh):
-                            await bank.deposit_credits(ctx.author, item_price)
+                if rarity and item.rarity != rarity:
+                    continue
+                if slot:
+                    if len(item.slot) == 1 and slot != item.slot[0]:
+                        continue
+                    elif len(item.slot) == 2 and slot != "two handed":
+                        continue
+                item_price = 0
+                old_owned = item.owned
+                for x in range(0, item.owned):
+                    item.owned -= 1
+                    item_price += self._sell(c, item)
+                    if item.owned <= 0:
+                        del c.backpack[item.name]
+                    if not count % 10:
+                        await asyncio.sleep(0.1)
+                    count += 1
+                msg += _("{old_item} sold for {price}.\n").format(
+                    old_item=str(old_owned) + " " + str(item), price=humanize_number(item_price)
+                )
+                total_price += item_price
+                await asyncio.sleep(0.1)
+                item_price = max(item_price, 0)
+                if item_price > 0:
+                    with contextlib.suppress(BalanceTooHigh):
+                        await bank.deposit_credits(ctx.author, item_price)
             await self.config.user(ctx.author).set(c.to_json())
         msg_list = []
         new_msg = _("{author} sold all their{rarity} items for {price}.\n\n{items}").format(
@@ -1991,7 +2109,7 @@ class Adventure(BaseCog):
         """
         if self.in_adventure(ctx):
             return await smart_embed(
-                ctx, _("You tried to forge an item but there were no forges nearby."),
+                ctx, _("You tried to forge an item but there were no forges nearby.")
             )
         if not await self.allow_in_dm(ctx):
             return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
@@ -2446,7 +2564,7 @@ class Adventure(BaseCog):
             )
 
     @commands.command(cooldown_after_parsing=True)
-    @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=7200, type=commands.BucketType.user)
     async def heroclass(self, ctx: Context, clz: str = None, action: str = None):
         """Allows you to select a class if you are level 10 or above.
 
@@ -3839,7 +3957,10 @@ class Adventure(BaseCog):
             link = adventure_obj.message.jump_url
 
             return await smart_embed(
-                ctx, _(f"There's already another adventure going on in this server.\nCurrently fighting: [{adventure_obj.challenge}]({link})")
+                ctx,
+                _(
+                    f"There's already another adventure going on in this server.\nCurrently fighting: [{adventure_obj.challenge}]({link})"
+                ),
             )
 
         if not await has_funds(ctx.author, 250):
@@ -4549,8 +4670,12 @@ class Adventure(BaseCog):
             if session.boss:  # rewards 60:30:10 Epic Legendary Gear Set items
                 avaliable_loot = [[0, 0, 3, 1, 0], [0, 0, 1, 2, 0], [0, 0, 0, 3, 0]]
                 if "Ascended" in session.challenge:
-                    avaliable_loot = [[0, 0, 1, 5, 1], [0, 0, 1, 3, 1], [0, 0, 1, 1, 1],
-                                      [0, 0, 0, 0, 1]]
+                    avaliable_loot = [
+                        [0, 0, 1, 5, 1],
+                        [0, 0, 1, 3, 1],
+                        [0, 0, 1, 1, 1],
+                        [0, 0, 0, 0, 1],
+                    ]
                 treasure = random.choice(avaliable_loot)
             elif (
                 session.miniboss
@@ -5264,17 +5389,23 @@ class Adventure(BaseCog):
                     ).format(self.escape(user.display_name))
 
                 if roll == 1:
-                    pray_att_bonus = (5 * len(fight_list)) - (
-                        (5 * len(fight_list)) * max(c.rebirths * 0.01, 1.5)
-                    )
+                    pray_att_bonus = 0
+                    pray_diplo_bonus = 0
+                    pray_magic_bonus = 0
+                    if fight_list:
+                        pray_att_bonus = (5 * len(fight_list)) - (
+                            (5 * len(fight_list)) * max(c.rebirths * 0.01, 1.5)
+                        )
+                    if talk_list:
+                        pray_diplo_bonus = (5 * len(talk_list)) - (
+                            (5 * len(talk_list)) * max(c.rebirths * 0.01, 1.5)
+                        )
+                    if magic_list:
+                        pray_magic_bonus = (5 * len(magic_list)) - (
+                            (5 * len(magic_list)) * max(c.rebirths * 0.01, 1.5)
+                        )
                     attack -= pray_att_bonus
-                    pray_diplo_bonus = (5 * len(talk_list)) - (
-                        (5 * len(talk_list)) * max(c.rebirths * 0.01, 1.5)
-                    )
                     diplomacy -= pray_diplo_bonus
-                    pray_magic_bonus = (5 * len(magic_list)) - (
-                        (5 * len(magic_list)) * max(c.rebirths * 0.01, 1.5)
-                    )
                     magic -= pray_magic_bonus
                     fumblelist.append(user)
                     msg += _(
@@ -5294,25 +5425,28 @@ class Adventure(BaseCog):
 
                 else:
                     mod = roll // 3 if not c.heroclass["ability"] else roll
-                    pray_att_bonus = int(
-                        (mod * len(fight_list))
-                        + ((mod * len(fight_list)) * max(c.rebirths * 0.01, 1.5))
-                    )
-                    attack += pray_att_bonus
-                    pray_diplo_bonus = int(
-                        (mod * (len(talk_list) + c.rebirths // 5))
-                        + (
-                            (mod * (len(talk_list) + c.rebirths // 5))
-                            * max(c.rebirths * 0.01, 1.5)
-                        )
-                    )
-                    diplomacy += pray_diplo_bonus
-                    pray_magic_bonus = int(
-                        (mod * len(magic_list))
-                        + ((mod * len(magic_list)) * max(c.rebirths * 0.01, 1.5))
-                    )
-                    magic += pray_magic_bonus
+                    pray_att_bonus = 0
+                    pray_diplo_bonus = 0
+                    pray_magic_bonus = 0
 
+                    if fight_list:
+                        pray_att_bonus = int(
+                            (mod * len(fight_list))
+                            + ((mod * len(fight_list)) * max(c.rebirths * 0.01, 1.5))
+                        )
+                    if talk_list:
+                        pray_diplo_bonus = int(
+                            (mod * len(talk_list))
+                            + ((mod * len(talk_list)) * max(c.rebirths * 0.01, 1.5))
+                        )
+                    if magic_list:
+                        pray_magic_bonus = int(
+                            (mod * len(magic_list))
+                            + ((mod * len(magic_list)) * max(c.rebirths * 0.01, 1.5))
+                        )
+                    attack += pray_att_bonus
+                    magic += pray_magic_bonus
+                    diplomacy += pray_diplo_bonus
                     if roll == 50:
                         roll_msg = _(
                             "{user} turned into an avatar of mighty {god}. "
@@ -5341,9 +5475,19 @@ class Adventure(BaseCog):
                     )
 
                 elif roll == 5:
-                    attack += 10 * (len(fight_list) + c.rebirths // 15)
-                    diplomacy += 10 * (len(talk_list) + c.rebirths // 15)
-                    magic += 10 * (len(magic_list) + c.rebirths // 15)
+                    attack_buff = 0
+                    talk_buff = 0
+                    magic_buff = 0
+                    if fight_list:
+                        attack_buff = 10 * (len(fight_list) + c.rebirths // 15)
+                    if talk_list:
+                        talk_buff = 10 * (len(talk_list) + c.rebirths // 15)
+                    if magic_list:
+                        magic_buff = 10 * (len(magic_list) + c.rebirths // 15)
+
+                    attack += attack_buff
+                    magic += magic_buff
+                    diplomacy += talk_buff
                     msg += _(
                         "**{user}'s** prayer called upon the mighty {god} to help you. "
                         "(+{len_f_list}{attack}/+{len_t_list}{talk}/+{len_m_list}{magic})\n"
@@ -5353,9 +5497,9 @@ class Adventure(BaseCog):
                         attack=self.emojis.attack,
                         talk=self.emojis.talk,
                         magic=self.emojis.magic,
-                        len_f_list=humanize_number(10 * len(fight_list)),
-                        len_t_list=humanize_number(10 * len(talk_list)),
-                        len_m_list=humanize_number(10 * len(magic_list)),
+                        len_f_list=humanize_number(attack_buff),
+                        len_t_list=humanize_number(talk_buff),
+                        len_m_list=humanize_number(magic_buff),
                     )
                 else:
                     fumblelist.append(user)
@@ -5976,7 +6120,7 @@ class Adventure(BaseCog):
             except Exception as exc:
                 log.exception("Error with the new character sheet", exc_info=exc)
                 continue
-            userxp = int(xp + (xp * 0.5 * c.rebirths) + (xp * 0.1 * min(250, c.total_int/10)))
+            userxp = int(xp + (xp * 0.5 * c.rebirths) + (xp * 0.1 * min(250, c.total_int / 10)))
             # This got exponentially out of control before checking 1 skill
             # To the point where you can spec into only INT and
             # Reach level 1000 in a matter of days

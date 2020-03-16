@@ -28,9 +28,16 @@ To view your stats and equipment do `[p]stats` and `[p]backpack`.
 You can use earned credits to enter the negaverse and fight a nega version of someone on this server to earn more experience points and level up faster using `[p]negaverse <number_of_credits>`.
 
 ```css
+{Set:''Set items look like this''}
+{.:'Forged items look like this':.}
+{Legendary:'Legendary items look like this'}
 [epic items look like this]
 .rare_items_look_like_this
 normal items look like this
 ```
 
 Note: some commands can be done in DM with the bot instead if the bot has a global bank and you want to take your time reviewing your stats/equipment or open loot chests.
+
+## Change logs
+- [3.1.3 Update](change_logs/3.1.3.md)
+- [3.0.0 Update](change_logs/3.0.0.md)
