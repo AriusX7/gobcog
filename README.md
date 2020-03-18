@@ -39,5 +39,6 @@ normal items look like this
 Note: some commands can be done in DM with the bot instead if the bot has a global bank and you want to take your time reviewing your stats/equipment or open loot chests.
 
 ## Change logs
+- [Changes between version bumps](change_logs/3.x.x.md)
 - [3.1.3 Update](change_logs/3.1.3.md)
 - [3.0.0 Update](change_logs/3.0.0.md)

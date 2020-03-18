@@ -183,12 +183,12 @@ class AdventureResults:
 
         # return main stat and range
         min_stat = avg_amount * 0.75
-        max_stat = avg_amount * 1.5
+        max_stat = avg_amount * 2
         # want win % to be at least 50%, even when solo
         # if win % is below 50%, scale back min/max for easier mons
         if win_percent < 0.5:
             min_stat = avg_amount * win_percent
-            max_stat = avg_amount * 1.25
+            max_stat = avg_amount * 1.5
 
         stats_dict = {}
         for var in ("stat_type", "min_stat", "max_stat", "win_percent"):
@@ -4062,7 +4062,7 @@ class Adventure(BaseCog):
             appropriate_range = max(stats["hp"], stats["dipl"]) <= (max(c.att, c.int, c.cha) * 3)
             if stat_range["max_stat"] > 0:
                 main_stat = stats["hp"] if (stat_range["stat_type"] == "attack") else stats["dipl"]
-                appropriate_range = stat_range["min_stat"] <= main_stat <= stat_range["max_stat"]
+                appropriate_range = main_stat <= stat_range["max_stat"]
             if not appropriate_range:
                 continue
             if not stats["boss"] and not stats["miniboss"]:
