@@ -13,7 +13,7 @@ from discord.ext.commands.errors import BadArgument
 
 from redbot.core import Config, bank, commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import box, humanize_list
+from redbot.core.utils.chat_formatting import box
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import ReactionPredicate
 
@@ -468,8 +468,7 @@ class Character(Item):
             except Exception as exc:
                 log.error(f"error calculating {stat}", exc_info=exc)
         return (
-            int(stats * self.gear_set_bonus.get("statmult", 1))
-            + self.gear_set_bonus.get(stats, 0),
+            int(stats * self.gear_set_bonus.get("statmult", 1)) + self.gear_set_bonus.get(stat, 0),
             stats,
         )
 
@@ -520,7 +519,7 @@ class Character(Item):
                         if value > 1:
                             base[key] += value
                         elif value >= 0:
-                            base[key] -= (1 - value)
+                            base[key] -= 1 - value
 
         self.gear_set_bonus = base
 
@@ -607,35 +606,30 @@ class Character(Item):
                     (item.att * 2 if slot_name == "two handed" else item.att)
                     * self.gear_set_bonus.get("statmult", 1)
                 )
-                + self.gear_set_bonus.get("att", 0)
             )
             inter = int(
                 (
                     (item.int * 2 if slot_name == "two handed" else item.int)
                     * self.gear_set_bonus.get("statmult", 1)
                 )
-                + self.gear_set_bonus.get("int", 0)
             )
             cha = int(
                 (
                     (item.cha * 2 if slot_name == "two handed" else item.cha)
                     * self.gear_set_bonus.get("statmult", 1)
                 )
-                + self.gear_set_bonus.get("cha", 0)
             )
             dex = int(
                 (
                     (item.dex * 2 if slot_name == "two handed" else item.dex)
                     * self.gear_set_bonus.get("statmult", 1)
                 )
-                + self.gear_set_bonus.get("dex", 0)
             )
             luck = int(
                 (
                     (item.luck * 2 if slot_name == "two handed" else item.luck)
                     * self.gear_set_bonus.get("statmult", 1)
                 )
-                + self.gear_set_bonus.get("luck", 0)
             )
             att_space = " " if len(str(att)) == 1 else ""
             cha_space = " " if len(str(cha)) == 1 else ""
@@ -883,7 +877,11 @@ class Character(Item):
 
         if heroclass["name"] == "Ranger":
             if heroclass.get("pet"):
-                heroclass["pet"] = PETS.get(heroclass["pet"]["name"], heroclass["pet"])
+                theme = await config.theme()
+                extra_pets = await config.themes.all()
+                extra_pets = extra_pets.get(theme, {}).get("pets", {})
+                pet_list = {**PETS, **extra_pets}
+                heroclass["pet"] = pet_list.get(heroclass["pet"]["name"], heroclass["pet"])
         if "adventures" in data:
             adventures = data["adventures"]
         else:
@@ -946,14 +944,20 @@ class Character(Item):
                     count_set += 1
         return count_set
 
-    def to_json(self) -> dict:
+    async def to_json(self, config) -> dict:
         backpack = {}
         for (k, v) in self.backpack.items():
             for (n, i) in v.to_json().items():
                 backpack[n] = i
 
         if self.heroclass["name"] == "Ranger" and self.heroclass.get("pet"):
-            self.heroclass["pet"] = PETS.get(self.heroclass["pet"]["name"], self.heroclass["pet"])
+            theme = await config.theme()
+            extra_pets = await config.themes.all()
+            extra_pets = extra_pets.get(theme, {}).get("pets", {})
+            pet_list = {**PETS, **extra_pets}
+            self.heroclass["pet"] = pet_list.get(
+                self.heroclass["pet"]["name"], self.heroclass["pet"]
+            )
 
         return {
             "adventures": self.adventures,
@@ -1164,6 +1168,71 @@ class EquipmentConverter(Converter):
             except asyncio.TimeoutError:
                 raise BadArgument(_("Alright then."))
             return lookup[pred.result]
+
+
+class ThemeSetMonterConverter(Converter):
+    async def convert(self, ctx, argument) -> MutableMapping:
+        arguments = list(map(str.strip, argument.split("++")))
+        try:
+            theme = arguments[0]
+            name = arguments[1]
+            hp = float(arguments[2])
+            dipl = float(arguments[3])
+            pdef = float(arguments[4])
+            mdef = float(arguments[5])
+            if any([i < 0 for i in [hp, dipl, pdef, mdef]]):
+                raise BadArgument(
+                    "HP, Charisma, Magical defence and Physical defence cannot be negative."
+                )
+
+            image = arguments[7]
+            boss = True if arguments[6].lower() == "true" else False
+            if not image:
+                raise Exception
+        except Exception:
+            raise BadArgument(
+                "Invalid format, Excepted:\n`theme++name++hp++dipl++pdef++mdef++boss++image`"
+            )
+        return {
+            "theme": theme,
+            "name": name,
+            "hp": hp,
+            "pdef": pdef,
+            "mdef": mdef,
+            "dipl": dipl,
+            "image": image,
+            "boss": boss,
+            "miniboss": {},
+        }
+
+
+class ThemeSetPetConverter(Converter):
+    async def convert(self, ctx, argument) -> MutableMapping:
+        arguments = list(map(str.strip, argument.split("++")))
+        try:
+            theme = arguments[0]
+            name = arguments[1]
+            bonus = float(arguments[2])
+            cha = int(arguments[3])
+            crit = int(arguments[4])
+            if not (0 <= crit <= 100):
+                raise BadArgument("Critical chance needs to be between 0 and 100")
+            if not arguments[5]:
+                raise Exception
+            always = True if arguments[5].lower() == "true" else False
+        except BadArgument:
+            raise
+        except Exception:
+            raise BadArgument(
+                "Invalid format, Excepted:\n`theme++name++bonus_multiplier++required_cha++crit_chance++always_crit`"
+            )
+        return {
+            "theme": theme,
+            "name": name,
+            "bonus": bonus,
+            "cha": cha,
+            "bonuses": {"crit": crit, "always": always},
+        }
 
 
 class SlotConverter(Converter):
