@@ -1175,7 +1175,7 @@ class ThemeSetMonterConverter(Converter):
         arguments = list(map(str.strip, argument.split("++")))
         try:
             theme = arguments[0]
-            name = arguments[1]
+            name = arguments[1].title()
             hp = float(arguments[2])
             dipl = float(arguments[3])
             pdef = float(arguments[4])
@@ -1189,6 +1189,8 @@ class ThemeSetMonterConverter(Converter):
             boss = True if arguments[6].lower() == "true" else False
             if not image:
                 raise Exception
+        except BadArgument:
+            raise
         except Exception:
             raise BadArgument(
                 "Invalid format, Excepted:\n`theme++name++hp++dipl++pdef++mdef++boss++image`"

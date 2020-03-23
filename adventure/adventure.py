@@ -1902,7 +1902,10 @@ class Adventure(BaseCog):
 
     @themeset_add.command(name="monster")
     async def themeset_add_monster(self, ctx: Context, *, theme_data: ThemeSetMonterConverter):
-        """[Owner] Add/Update a monster object in the specified theme."""
+        """[Owner] Add/Update a monster object in the specified theme.
+
+        Usage: `[p]themeset add monster theme++name++hp++dipl++pdef++mdef++boss++image`
+        """
         assert isinstance(theme_data, dict)
         theme = theme_data.pop("theme", None)
         if theme != "default" and theme not in os.listdir(cog_data_path(self)):
@@ -1940,7 +1943,10 @@ class Adventure(BaseCog):
 
     @themeset_add.command(name="pet")
     async def themeset_add_pet(self, ctx: Context, *, pet_data: ThemeSetPetConverter):
-        """[Owner] Add/Update a pet object in the specified theme."""
+        """[Owner] Add/Update a pet object in the specified theme.
+
+        Usage: `[p]themeset add pet theme++name++bonus_multiplier++required_cha++crit_chance++always_crit`
+        """
         assert isinstance(pet_data, dict)
         theme = pet_data.pop("theme", None)
         if theme != "default" and theme not in os.listdir(cog_data_path(self)):
