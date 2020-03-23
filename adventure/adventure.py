@@ -1892,10 +1892,11 @@ class Adventure(BaseCog):
 
     @commands.group()
     @commands.guild_only()
-    @checks.is_owner()
+    @checks.admin_or_permissions(administrator=True)
     async def themeset(self, ctx: Context):
-        """[Owner] Modify themes."""
+        """[Admin] Modify themes."""
 
+    @checks.is_owner()
     @themeset.group(name="add")
     async def themeset_add(self, ctx: Context):
         """[Owner] Add/Update objects in the specified theme."""
@@ -1982,6 +1983,7 @@ class Adventure(BaseCog):
         embed = discord.Embed(description=text, colour=await ctx.embed_colour())
         await ctx.send(embed=embed)
 
+    @checks.is_owner()
     @themeset.group(name="delete", aliases=["del", "rem", "remove"])
     async def themeset_delete(self, ctx: Context):
         """[Owner] Remove objects in the specified theme."""
@@ -2038,11 +2040,11 @@ class Adventure(BaseCog):
 
     @themeset.group(name="list", aliases=["show"])
     async def themeset_list(self, ctx: Context):
-        """[Owner] Show custom objects in the specified theme."""
+        """[Admin] Show custom objects in the specified theme."""
 
     @themeset_list.command(name="monster")
     async def themeset_list_monster(self, ctx: Context, *, theme: str):
-        """[Owner] Show monster objects in the specified theme."""
+        """[Admin] Show monster objects in the specified theme."""
         if theme != "default" and theme not in os.listdir(cog_data_path(self)):
             await smart_embed(ctx, _("That theme pack does not exist!"))
             return
@@ -2069,7 +2071,7 @@ class Adventure(BaseCog):
 
     @themeset_list.command(name="pet")
     async def themeset_list_pet(self, ctx: Context, *, theme: str):
-        """[Owner] Show pet objects in the specified theme."""
+        """[Admin] Show pet objects in the specified theme."""
         if theme != "default" and theme not in os.listdir(cog_data_path(self)):
             await smart_embed(ctx, _("That theme pack does not exist!"))
             return
@@ -4444,11 +4446,10 @@ class Adventure(BaseCog):
         self.bot.dispatch("adventure", ctx)
         text = ""
         monster_roster, monster_stats = await self.update_monster_roster(ctx.author)
-        if challenge and challenge.title() in list(monster_roster.keys()):
-            challenge = challenge.title()
-        else:
+        if not challenge or challenge not in monster_roster:
             challenge = await self.get_challenge(ctx, monster_roster)
-        if attribute and attribute.lower() in list(self.ATTRIBS.keys()):
+
+        if attribute and attribute.lower() in self.ATTRIBS:
             attribute = attribute.lower()
         else:
             attribute = random.choice(list(self.ATTRIBS.keys()))

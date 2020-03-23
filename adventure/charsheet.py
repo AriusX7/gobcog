@@ -1175,7 +1175,7 @@ class ThemeSetMonterConverter(Converter):
         arguments = list(map(str.strip, argument.split("++")))
         try:
             theme = arguments[0]
-            name = arguments[1].title()
+            name = arguments[1]
             hp = float(arguments[2])
             dipl = float(arguments[3])
             pdef = float(arguments[4])
