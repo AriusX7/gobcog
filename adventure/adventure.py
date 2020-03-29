@@ -73,12 +73,6 @@ except ImportError:
     async def get_max_balance(guild: discord.Guild = None) -> int:
         return MAX_BALANCE
 
-try:
-    from redbot.cogs.bank import check_global_setting_admin as bank_check
-except ImportError:
-    from redbot.cogs.bank import is_owner_if_bank_global as bank_check
-
-
 BaseCog = getattr(commands, "Cog", object)
 
 _ = Translator("Adventure", __file__)
@@ -108,6 +102,33 @@ async def smart_embed(ctx, message, success=None):
         else:
             return await ctx.send(message)
     return await ctx.send(message)
+
+
+def check_global_setting_admin():
+    """
+    Command decorator. If the bank is not global, it checks if the author is
+     either a bot admin or has the manage_guild permission.
+    """
+
+    async def pred(ctx: commands.Context):
+        author = ctx.author
+        if not await bank.is_global():
+            if not isinstance(ctx.channel, discord.abc.GuildChannel):
+                return False
+            if await ctx.bot.is_owner(author):
+                return True
+            if author == ctx.guild.owner:
+                return True
+            if ctx.channel.permissions_for(author).manage_guild:
+                return True
+            admin_role_ids = await ctx.bot.get_admin_role_ids(ctx.guild.id)
+            for role in author.roles:
+                if role.id in admin_role_ids:
+                    return True
+        else:
+            return await ctx.bot.is_owner(author)
+
+    return commands.check(pred)
 
 
 class AdventureResults:
@@ -210,7 +231,7 @@ class AdventureResults:
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.1.5"
+    __version__ = "3.1.6"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -1652,7 +1673,7 @@ class Adventure(BaseCog):
         """Setup various adventure settings."""
 
     @adventureset.command()
-    @bank_check()
+    @check_global_setting_admin()
     async def rebirthcost(self, ctx: Context, percentage: float):
         """[Admin] Set what percentage of the user balance to charge for rebirths.
 
@@ -2690,7 +2711,7 @@ class Adventure(BaseCog):
         """[Admin] Commands to add things to players' inventories."""
 
     @give.command(name="funds")
-    @bank_check()
+    @check_global_setting_admin()
     async def _give_funds(self, ctx: Context, amount: int = 1, *, to: discord.Member = None):
         """[Admin] Adds currency to a specified member's balance."""
         if to is None:
