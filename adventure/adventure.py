@@ -15,7 +15,6 @@ from typing import List, Optional, Union, MutableMapping
 import discord
 from discord.ext.commands import CheckFailure
 from discord.ext.commands.errors import BadArgument
-from redbot.cogs.bank import check_global_setting_admin
 from redbot.core import Config, bank, checks, commands
 from redbot.core.bot import Red
 from redbot.core.commands import Context
@@ -73,6 +72,11 @@ except ImportError:
 
     async def get_max_balance(guild: discord.Guild = None) -> int:
         return MAX_BALANCE
+
+try:
+    from redbot.cogs.bank import check_global_setting_admin as bank_check
+except ImportError:
+    from redbot.cogs.bank import is_owner_if_bank_global as bank_check
 
 
 BaseCog = getattr(commands, "Cog", object)
@@ -206,7 +210,7 @@ class AdventureResults:
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.1.4"
+    __version__ = "3.1.5"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -1648,7 +1652,7 @@ class Adventure(BaseCog):
         """Setup various adventure settings."""
 
     @adventureset.command()
-    @check_global_setting_admin()
+    @bank_check()
     async def rebirthcost(self, ctx: Context, percentage: float):
         """[Admin] Set what percentage of the user balance to charge for rebirths.
 
@@ -2686,7 +2690,7 @@ class Adventure(BaseCog):
         """[Admin] Commands to add things to players' inventories."""
 
     @give.command(name="funds")
-    @check_global_setting_admin()
+    @bank_check()
     async def _give_funds(self, ctx: Context, amount: int = 1, *, to: discord.Member = None):
         """[Admin] Adds currency to a specified member's balance."""
         if to is None:
