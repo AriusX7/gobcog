@@ -1719,7 +1719,7 @@ class Adventure(BaseCog):
         """[Admin] Reset Adventure locks."""
 
     @adventureset_locks.command(name="user")
-    async def adventureset_locks_user(self, ctx: Context, user: discord.member):
+    async def adventureset_locks_user(self, ctx: Context, user: discord.Member):
         """[Admin] Reset a guild member's user lock."""
         lock = self.get_lock(user)
         with contextlib.suppress(Exception):
