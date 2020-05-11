@@ -13,6 +13,7 @@ from discord.ext.commands.errors import BadArgument
 
 from redbot.core import Config, bank, commands
 from redbot.core.i18n import Translator
+from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import box
 from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import ReactionPredicate
@@ -29,7 +30,7 @@ except ImportError:
         return "{:,}".format(val)
 
 
-DEV_LIST = []
+DEV_LIST = [208903205982044161, 154497072148643840, 218773382617890828]
 
 ORDER = [
     "head",
@@ -352,7 +353,7 @@ class GameSession:
         self.monsters: Mapping[str, Mapping] = kwargs.pop("monsters", [])
         self.monster_stats: int = kwargs.pop("monster_stats", 1)
         self.monster_modified_stats = kwargs.pop(
-            "monster_modified_stats", self.monsters[self.challenge]
+            "monster_modified_stats", self.monster
         )
         self.message = kwargs.pop("message", 1)
         self.message_id: int = 0
@@ -416,7 +417,7 @@ class Character(Item):
         self.total_int = self.int + self.skill["int"]
         self.total_cha = self.cha + self.skill["cha"]
         self.total_stats = self.total_att + self.total_int + self.total_cha + self.dex + self.luck
-
+        self.remove_restrictions()
         self.adventures: dict = kwargs.pop("adventures")
         self.weekly_score: dict = kwargs.pop("weekly_score")
         self.pieces_to_keep: dict = {
@@ -434,25 +435,33 @@ class Character(Item):
         }
         self.last_skill_reset: int = kwargs.pop("last_skill_reset", 0)
 
+    def remove_restrictions(self):
+        if self.heroclass["name"] == "Ranger" and self.heroclass["pet"]:
+            requriements = PETS[self.heroclass["pet"]["name"]].get("bonuses", {}).get("req", {})
+            if requriements:
+                if (
+                    requriements.get("set")
+                    and requriements.get("set") not in self.sets
+                ):
+                    self.heroclass["pet"] = {}
+            if self.heroclass["pet"]["cha"] < self.total_cha:
+                self.heroclass["pet"] = {}
+
     def get_stat_value(self, stat: str):
         """Calculates the stats dynamically for each slot of equipment."""
         extrapoints = 0
         rebirths = copy(self.rebirths)
-
         extrapoints += rebirths // 10 * 5
 
-        while rebirths >= 30:
-            extrapoints += 3
-            rebirths -= 1
-
-        while rebirths >= 20:
-            extrapoints += 5
-            rebirths -= 1
-        while rebirths >= 10:
-            extrapoints += 1
-            rebirths -= 1
-        while 0 < rebirths < 10:
-            extrapoints += 2
+        for rc in range(rebirths):
+            if rebirths >= 30:
+                extrapoints += 3
+            elif rebirths >= 20:
+                extrapoints += 5
+            elif rebirths >= 10:
+                extrapoints += 1
+            elif rebirths < 10:
+                extrapoints += 2
             rebirths -= 1
 
         extrapoints = int(extrapoints)
@@ -661,21 +670,19 @@ class Character(Item):
         else:
             maxlevel = REBIRTH_LVL
 
-        while rebirths >= 20:
-            maxlevel += REBIRTH_STEP
+        for rc in range(rebirths):
+            if rebirths >= 20:
+                maxlevel += REBIRTH_STEP
+            elif rebirths >= 10:
+                maxlevel += 10
+            elif rebirths < 10:
+                maxlevel += 5
             rebirths -= 1
-        while rebirths >= 10:
-            maxlevel += 10
-            rebirths -= 1
-        while 1 < rebirths < 10:
-            rebirths -= 1
-            maxlevel += 5
-
-        return min(maxlevel, 1000)
+        return min(maxlevel, 10000)
 
     @staticmethod
     def get_item_rarity(item):
-        if item[0][0] == "{" and item[0][5] == "_":  # Set
+        if item[0][0] == "{" and item[0][1:4] == "Set":  # Set
             return 0
         elif item[0][0] == "{":  # legendary
             return 1
@@ -686,9 +693,9 @@ class Character(Item):
         else:
             return 4  # common / normal
 
-    def get_sorted_backpack(self, backpack: dict):
+    async def get_sorted_backpack(self, backpack: dict):
         tmp = {}
-        for item in backpack:
+        async for item in AsyncIter(backpack, steps=5):
             slots = backpack[item].slot
             slot_name = slots[0]
             if len(slots) > 1:
@@ -699,7 +706,7 @@ class Character(Item):
             tmp[slot_name].append((item, backpack[item]))
 
         final = []
-        for (idx, slot_name) in enumerate(tmp.keys()):
+        async for (idx, slot_name) in AsyncIter(tmp.keys()).enumerate():
             final.append(sorted(tmp[slot_name], key=self.get_item_rarity))
 
         final.sort(
@@ -709,20 +716,20 @@ class Character(Item):
         )
         return final
 
-    def get_backpack(self, forging: bool = False, consumed=None, rarity=None, slot=None):
+    async def get_backpack(self, forging: bool = False, consumed=None, rarity=None, slot=None):
         if consumed is None:
             consumed = []
-        bkpk = self.get_sorted_backpack(self.backpack)
+        bkpk = await self.get_sorted_backpack(self.backpack)
         form_string = _(
             "Items in Backpack: \n( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | OWNED | SET (SET PIECES)"
         )
         consumed_list = [i for i in consumed]
         rjust = max([len(str(i[1])) + 3 for slot_group in bkpk for i in slot_group] or [1, 3])
-        for slot_group in bkpk:
+        async for slot_group in AsyncIter(bkpk):
             slot_name_org = slot_group[0][1].slot
             slot_name = slot_name_org[0] if len(slot_name_org) < 2 else "two handed"
             form_string += f"\n\n {slot_name.title()} slot\n"
-            for item in slot_group:
+            async for item in AsyncIter(slot_group):
                 if forging and (item[1].rarity in ["forged", "set"] or item[1] in consumed_list):
                     continue
                 if rarity is not None and rarity != item[1].rarity:
@@ -882,6 +889,7 @@ class Character(Item):
                 extra_pets = extra_pets.get(theme, {}).get("pets", {})
                 pet_list = {**PETS, **extra_pets}
                 heroclass["pet"] = pet_list.get(heroclass["pet"]["name"], heroclass["pet"])
+
         if "adventures" in data:
             adventures = data["adventures"]
         else:
@@ -1195,6 +1203,8 @@ class ThemeSetMonterConverter(Converter):
             raise BadArgument(
                 "Invalid format, Excepted:\n`theme++name++hp++dipl++pdef++mdef++boss++image`"
             )
+        if "transcended" in name.lower() or "ascended" in name.lower():
+            raise BadArgument("You are not worthy.")
         return {
             "theme": theme,
             "name": name,
@@ -1226,8 +1236,16 @@ class ThemeSetPetConverter(Converter):
             raise
         except Exception:
             raise BadArgument(
-                "Invalid format, Excepted:\n`theme++name++bonus_multiplier++required_cha++crit_chance++always_crit`"
+                "Invalid format, Excepted:\n`theme++name++bonus_multiplier"
+                "++required_cha++crit_chance++always_crit`"
             )
+        if not ctx.cog.is_dev(ctx.author):
+            if bonus > 2:
+                raise BadArgument("Pet bonus is too high.")
+            if always and cha < 500:
+                raise BadArgument("Charisma is too low for such a strong pet.")
+            if crit > 85 and cha < 500:
+                raise BadArgument("Charisma is too low for such a strong pet.")
         return {
             "theme": theme,
             "name": name,
@@ -1265,20 +1283,18 @@ def can_equip(char: Character, item: Item):
     return char.lvl >= equip_level(char, item)
 
 
-def calculate_sp(lvl_end: int, c: Character):
+async def calculate_sp(lvl_end: int, c: Character):
     points = c.rebirths * 10
-
-    while lvl_end >= 200:
+    async for rc in AsyncIter(range(lvl_end)):
+        if lvl_end >= 300:
+            points += 1
+        elif lvl_end >= 200:
+            points += 5
+        elif lvl_end >= 100:
+            points += 1
+        elif lvl_end >= 0:
+            points += 0.5
         lvl_end -= 1
-        points += 5
-
-    while lvl_end >= 100:
-        lvl_end -= 1
-        points += 1
-
-    while lvl_end > 0:
-        lvl_end -= 1
-        points += 0.5
 
     return int(points)
 
