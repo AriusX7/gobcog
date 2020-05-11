@@ -214,7 +214,7 @@ class AdventureResults:
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.2.0"
+    __version__ = "3.2.1"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -962,6 +962,10 @@ class Adventure(BaseCog):
                 await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
             except asyncio.TimeoutError:
                 await self._clear_react(msg)
+                return
+
+            if not pred.result:
+                await ctx.send("Not selling those items.")
                 return
 
             msg = ""
