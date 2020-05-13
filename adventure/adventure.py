@@ -214,7 +214,7 @@ class AdventureResults:
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.2.2"
+    __version__ = "3.2.4"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -4510,7 +4510,12 @@ class Adventure(BaseCog):
             attribute = attribute.lower()
         else:
             attribute = random.choice(list(self.ATTRIBS.keys()))
-
+        if "Ascended" in challenge:
+            self.bot.dispatch("adventure_ascended", ctx)
+        if attribute == "n immortal":
+            self.bot.dispatch("adventure_immortal", ctx)
+        if attribute == " possessed":
+            self.bot.dispatch("adventure_possessed", ctx)
         if monster_roster[challenge]["boss"]:
             timer = 60 * 5
             text = box(_("\n [{} Alarm!]").format(challenge), lang="css")
@@ -4522,6 +4527,7 @@ class Adventure(BaseCog):
             timer = 60 * 2
         if transcended:
             new_challenge = challenge.replace("Ascended", "Transcended")
+            self.bot.dispatch("adventure_transcended", ctx)
         else:
             new_challenge = challenge
 
