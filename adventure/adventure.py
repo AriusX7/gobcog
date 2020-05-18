@@ -2221,14 +2221,14 @@ class Adventure(BaseCog):
                 return await smart_embed(
                     ctx,
                     (
-                        "**{}**, You need to have {} or more rebirths to convert rare treasure chests."
+                        "**{}**, you need to have {} or more rebirths to convert rare treasure chests."
                     ).format(self.escape(ctx.author.display_name), rebirth_rare),
                 )
             elif box_rarity.lower() == "epic" and c.rebirths < rebirth_epic:
                 return await smart_embed(
                     ctx,
                     (
-                        "**{}**, You need to have {} or more rebirths to convert epic treasure chests."
+                        "**{}**, you need to have {} or more rebirths to convert epic treasure chests."
                     ).format(self.escape(ctx.author.display_name), rebirth_epic),
                 )
             elif c.rebirths < 2:
@@ -2496,8 +2496,8 @@ class Adventure(BaseCog):
                                 item = None
                         if item and consumed[0].owned <= 1 and str(consumed[0]) == str(item):
                             wrong_item = _(
-                                "**{c}**, You only own 1 copy of this item and "
-                                "you already selected it."
+                                "**{c}**, you only own 1 copy of this item and "
+                                "you've already selected it."
                             ).format(c=self.escape(ctx.author.display_name))
                             await smart_embed(ctx, wrong_item)
                             item = None
@@ -5987,7 +5987,7 @@ class Adventure(BaseCog):
             levelup_emoji = self.emojis.level_up
             rebirth_emoji = self.emojis.rebirth
             if lvl_end >= c.maxlevel:
-                rebirthextra = _("{} You can now Rebirth {}").format(rebirth_emoji, user.mention)
+                rebirthextra = _("{} You can now rebirth {}").format(rebirth_emoji, user.mention)
             if lvl_start < lvl_end:
                 # recalculate free skillpoint pool based on new level and already spent points.
                 c.lvl = lvl_end
@@ -6376,7 +6376,7 @@ class Adventure(BaseCog):
                 await self.config.user(ctx.author).set(await character.to_json(self.config))
                 return await smart_embed(
                     ctx,
-                    f"**{self.escape(ctx.author.display_name)}**, You need to be level `{equiplevel}` to equip this item, I've put it in your backpack",
+                    f"**{self.escape(ctx.author.display_name)}**, you need to be level `{equiplevel}` to equip this item. I've put it in your backpack.",
                 )
             if not getattr(character, item.slot[0]):
                 equip_msg = box(
