@@ -2827,7 +2827,7 @@ class Adventure(BaseCog):
             return await smart_embed(
                 ctx,
                 (
-                    "Valid loot types: `normal`, `rare`, `epic` or `legendary`: "
+                    "Valid loot types: `normal`, `rare`, `epic`, `legendary`, or `set`: "
                     "ex. `{}give loot normal @locastan` "
                 ).format(ctx.prefix),
             )
