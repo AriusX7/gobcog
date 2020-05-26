@@ -439,9 +439,10 @@ class Character(Item):
 
     def remove_restrictions(self):
         if self.heroclass["name"] == "Ranger" and self.heroclass["pet"]:
-            requirements = PETS.get(self.heroclass["pet"]["name"], {}).get("bonuses", {}).get("req", {})
-            if self.heroclass["pet"]["cha"] < (self.total_cha + (self.total_int // 3) + (self.luck // 2)):
+            if self.heroclass["pet"]["cha"] > (self.total_cha + (self.total_int // 3) + (self.luck // 2)):
                 self.heroclass["pet"] = {}
+                return
+            requirements = PETS.get(self.heroclass["pet"]["name"], {}).get("bonuses", {}).get("req", {})
             if requirements:
                 if (
                     requirements.get("set")
@@ -544,9 +545,9 @@ class Character(Item):
             class_desc = self.heroclass["name"] + "\n\n" + self.heroclass["desc"]
             if self.heroclass["name"] == "Ranger":
                 if not self.heroclass["pet"]:
-                    class_desc += _("\n\n- Current pet: None")
+                    class_desc += _("\n\n- Current pet: [None]")
                 elif self.heroclass["pet"]:
-                    class_desc += _("\n\n- Current pet: {}").format(self.heroclass["pet"]["name"])
+                    class_desc += _("\n\n- Current pet: [{}]").format(self.heroclass["pet"]["name"])
         else:
             class_desc = _("Hero.")
         legend = _("( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | OWNED | SET (SET PIECES)")

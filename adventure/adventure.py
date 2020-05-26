@@ -9,6 +9,7 @@ import re
 import time
 from collections import namedtuple
 from datetime import date, datetime
+from operator import itemgetter
 from types import SimpleNamespace
 from typing import List, Optional, Union, MutableMapping
 
@@ -3615,7 +3616,7 @@ class Adventure(BaseCog):
                     elif roll in [50, 25]:
                         bonus = _("They happen to have its favorite food.")
                     if dipl_value > self.PETS[pet]["cha"] and roll > 1 and can_catch:
-                        roll = random.randint(0, 0 if roll in [50, 25] else 3)
+                        roll = random.randint(0, 2 if roll in [50, 25] else 5)
                         if roll == 0:
                             pet_msg3 = box(
                                 _("{bonus}\nThey successfully tamed the {pet}.").format(
@@ -4081,6 +4082,88 @@ class Adventure(BaseCog):
                         author=self.escape(ctx.author.display_name), spend=spend, amount=amount
                     ),
                 )
+
+    @commands.command(name="setinfo")
+    @commands.bot_has_permissions(add_reactions=True, embed_links=True)
+    async def set_show(self, ctx: Context, *, set_name: str):
+        """Show set bonuses for the specified set."""
+
+        sets = self.SET_BONUSES.get(set_name)
+        if sets is None:
+            return await smart_embed(
+                ctx,
+                _("`{input}` is not a valid set.\nPlease use one of the following: {sets}").format(
+                    input=set_name, sets=humanize_list([f"`{i}`" for i in self.SET_BONUSES.keys()])
+                ),
+            )
+        bonus_list = sorted(sets, key=itemgetter("parts"))
+        embed_list = []
+        for bonus in bonus_list:
+            parts = bonus.get("parts", 0)
+            attack = bonus.get("att", 0)
+            charisma = bonus.get("cha", 0)
+            intelligence = bonus.get("int", 0)
+            dexterity = bonus.get("dex", 0)
+            luck = bonus.get("luck", 0)
+
+            attack = f"+{attack}" if attack >= 0 else f"{attack}"
+            charisma = f"+{charisma}" if charisma >= 0 else f"{charisma}"
+            intelligence = f"+{intelligence}" if intelligence >= 0 else f"{intelligence}"
+            dexterity = f"+{dexterity}" if dexterity >= 0 else f"{dexterity}"
+            luck = f"+{luck}" if luck >= 0 else f"{luck}"
+            statmult = bonus.get("statmult", 0)
+            xpmult = bonus.get("xpmult", 0)
+            cpmult = bonus.get("cpmult", 0)
+            if statmult >= 1:
+                statmult -= 1
+            if xpmult >= 1:
+                xpmult -= 1
+            if cpmult >= 1:
+                cpmult -= 1
+            if statmult >= 0:
+                statmult = f"+{statmult*100:.2f}%"
+            else:
+                statmult = f"{statmult*100:.2f}%"
+            if xpmult >= 0:
+                xpmult = f"+{xpmult*100:.2f}%"
+            else:
+                xpmult = f"{xpmult*100:.2f}%"
+            if cpmult >= 0:
+                cpmult = f"+{cpmult*100:.2f}%"
+            else:
+                cpmult = f"{cpmult*100:.2f}%"
+
+            breakdown = _(
+                "Attack:           [{attack}]\n"
+                "Charisma:         [{charisma}]\n"
+                "Intelligence:     [{intelligence}]\n"
+                "Dexterity:        [{dexterity}]\n"
+                "Luck:             [{luck}]\n"
+                "Stat Bonus:       [{statmult}]\n"
+                "XP Bonus:         [{xpmult}]\n"
+                "Currency Bonus:   [{cpmult}]\n"
+            ).format(
+                attack=attack,
+                charisma=charisma,
+                intelligence=intelligence,
+                dexterity=dexterity,
+                luck=luck,
+                statmult=statmult,
+                xpmult=xpmult,
+                cpmult=cpmult,
+            )
+            embed = discord.Embed(
+                title=_("{set_name} {part_val} Part Bonus").format(
+                    set_name=set_name, part_val=parts
+                ),
+                description=box(breakdown, lang="ini"),
+                colour=await ctx.embed_colour(),
+            )
+            embed_list.append(embed)
+        if len(embed_list) > 1:
+            await menu(ctx, pages=embed_list, controls=DEFAULT_CONTROLS)
+        elif embed_list:
+            await ctx.send(embed=embed_list[0])
 
     @commands.command()
     @commands.bot_has_permissions(add_reactions=True)
@@ -5006,7 +5089,7 @@ class Adventure(BaseCog):
                     [0, 0, 0, 0, 1],
                 ]
                 treasure = random.choice(avaliable_loot)
-            if session.boss:  # rewards 60:30:10 Epic Legendary Gear Set items
+            elif session.boss:  # rewards 60:30:10 Epic Legendary Gear Set items
                 avaliable_loot = [[0, 0, 3, 1, 0], [0, 0, 1, 2, 0], [0, 0, 0, 3, 0]]
                 treasure = random.choice(avaliable_loot)
             elif (
@@ -5054,7 +5137,7 @@ class Adventure(BaseCog):
                 except Exception as exc:
                     log.exception("Error with the new character sheet", exc_info=exc)
                     continue
-                multiplier = 0.1
+                multiplier = 0.2
                 if c.dex != 0:
                     if c.dex < 0:
                         dex = min(1 / abs(c.dex), 1)
@@ -5106,7 +5189,7 @@ class Adventure(BaseCog):
                 except Exception as exc:
                     log.exception("Error with the new character sheet", exc_info=exc)
                     continue
-                multiplier = 0.1
+                multiplier = 0.2
                 if c.dex != 0:
                     if c.dex < 0:
                         dex = min(1 / abs(c.dex), 1)
@@ -5181,7 +5264,7 @@ class Adventure(BaseCog):
                     except Exception as exc:
                         log.exception("Error with the new character sheet", exc_info=exc)
                         continue
-                    multiplier = 0.1
+                    multiplier = 0.2
                     if c.dex != 0:
                         if c.dex < 0:
                             dex = min(1 / abs(c.dex), 1)
@@ -5374,7 +5457,7 @@ class Adventure(BaseCog):
                     except Exception as exc:
                         log.exception("Error with the new character sheet", exc_info=exc)
                         continue
-                    multiplier = 0.1
+                    multiplier = 0.2
                     if c.dex != 0:
                         if c.dex < 0:
                             dex = min(1 / abs(c.dex), 1)
@@ -5401,7 +5484,7 @@ class Adventure(BaseCog):
                         except Exception as exc:
                             log.exception("Error with the new character sheet", exc_info=exc)
                             continue
-                        multiplier = 0.05
+                        multiplier = 0.2
                         if c.dex != 0:
                             if c.dex < 0:
                                 dex = min(1 / abs(c.dex), 1)
