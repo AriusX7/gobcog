@@ -3581,11 +3581,12 @@ class Adventure(BaseCog):
                     dipl_value += extra_dipl
                     pet_reqs = pet_list[pet].get("bonuses", {}).get("req", {})
                     pet_msg4 = ""
-                    can_catch = False
+                    can_catch = True
                     if pet_reqs.get("set", False):
                         if pet_reqs.get("set", None) in c.sets:
                             can_catch = True
                         else:
+                            can_catch = False
                             dipl_value = -100000000
                             pet_msg4 = _(
                                 "\nPerhaps you're missing some requirements to tame {pet}."
@@ -3615,11 +3616,11 @@ class Adventure(BaseCog):
                     bonus = ""
                     if roll == 1:
                         bonus = _("But they stepped on a twig and scared it away.")
-                    elif roll == 50:
+                    elif roll in [50, 25]:
                         bonus = _("They happen to have its favorite food.")
                         dipl_value += 10
                     if dipl_value > self.PETS[pet]["cha"] and roll > 1 and can_catch:
-                        roll = random.randint(0, 3 if roll == 50 else 5)
+                        roll = random.randint(0, 0 if roll in [50, 25] else 3)
                         if roll == 0:
                             pet_msg3 = box(
                                 _("{bonus}\nThey successfully tamed the {pet}.").format(
@@ -4527,7 +4528,8 @@ class Adventure(BaseCog):
             timer = 60 * 2
         if transcended:
             new_challenge = challenge.replace("Ascended", "Transcended")
-            self.bot.dispatch("adventure_transcended", ctx)
+            if "Transcended" in new_challenge:
+                self.bot.dispatch("adventure_transcended", ctx)
         else:
             new_challenge = challenge
 
@@ -4930,10 +4932,10 @@ class Adventure(BaseCog):
             * session.monster_stats
         )
 
-        dmg_dealt = round(attack + magic)
-        diplomacy = round(diplomacy)
-        slain = dmg_dealt >= round(hp)
-        persuaded = diplomacy >= round(dipl)
+        dmg_dealt = int(attack + magic)
+        diplomacy = int(diplomacy)
+        slain = dmg_dealt >= int(hp)
+        persuaded = diplomacy >= int(dipl)
         damage_str = ""
         diplo_str = ""
         if dmg_dealt > 0:
@@ -4941,7 +4943,7 @@ class Adventure(BaseCog):
                 status=_("hit the") if failed or not slain else _("killed the"),
                 challenge=challenge,
                 result=humanize_number(dmg_dealt),
-                int_hp=humanize_number(int(hp)),
+                int_hp=humanize_number(hp),
             )
         if diplomacy > 0:
             diplo_str = _(
@@ -4951,7 +4953,7 @@ class Adventure(BaseCog):
                 challenge=challenge,
                 how=_("flattery") if failed or not persuaded else _("insults"),
                 diplomacy=humanize_number(diplomacy),
-                int_dipl=humanize_number(int(dipl)),
+                int_dipl=humanize_number(dipl),
             )
         if dmg_dealt >= diplomacy:
             self._adv_results.add_result(ctx, "attack", dmg_dealt, people, slain)
