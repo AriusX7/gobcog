@@ -215,7 +215,7 @@ class AdventureResults:
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.2.7"
+    __version__ = "3.2.8"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -1003,8 +1003,10 @@ class Adventure(BaseCog):
                 await asyncio.sleep(0.1)
                 item_price = max(item_price, 0)
                 if item_price > 0:
-                    with contextlib.suppress(BalanceTooHigh):
+                    try:
                         await bank.deposit_credits(ctx.author, item_price)
+                    except BalanceTooHigh as e:
+                        await bank.set_balance(ctx.author, e.max_balance)
             await self.config.user(ctx.author).set(await c.to_json(self.config))
         msg_list = []
         new_msg = _("{author} sold all their{rarity} items for {price}.\n\n{items}").format(
@@ -1109,8 +1111,10 @@ class Adventure(BaseCog):
                     del character.backpack[item.name]
                 price = max(price, 0)
                 if price > 0:
-                    with contextlib.suppress(BalanceTooHigh):
+                    try:
                         await bank.deposit_credits(ctx.author, price)
+                    except BalanceTooHigh as e:
+                        await bank.set_balance(ctx.author, e.max_balance)
             elif (
                 emoji == "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS}"
             ):  # user wants to sell all owned.
@@ -1136,8 +1140,10 @@ class Adventure(BaseCog):
                 )
                 price = max(price, 0)
                 if price > 0:
-                    with contextlib.suppress(BalanceTooHigh):
+                    try:
                         await bank.deposit_credits(ctx.author, price)
+                    except BalanceTooHigh as e:
+                        await bank.set_balance(ctx.author, e.max_balance)
             elif (
                 emoji
                 == "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS WITH CIRCLED ONE OVERLAY}"
@@ -1165,8 +1171,10 @@ class Adventure(BaseCog):
                     )
                     price = max(price, 0)
                     if price > 0:
-                        with contextlib.suppress(BalanceTooHigh):
+                        try:
                             await bank.deposit_credits(ctx.author, price)
+                        except BalanceTooHigh as e:
+                            await bank.set_balance(ctx.author, e.max_balance)
             else:  # user doesn't want to sell those items.
                 msg = _("Not selling those items.")
         finally:
@@ -6057,8 +6065,10 @@ class Adventure(BaseCog):
             member = ctx.guild.get_member(user.id)
             cp = max(cp, 0)
             if cp > 0:
-                with contextlib.suppress(BalanceTooHigh):
+                try:
                     await bank.deposit_credits(member, cp)
+                except BalanceTooHigh as e:
+                    await bank.set_balance(member, e.max_balance)
             extra = ""
             rebirthextra = ""
             lvl_start = c.lvl
@@ -6426,8 +6436,10 @@ class Adventure(BaseCog):
             price = self._sell(character, item)
             price = max(price, 0)
             if price > 0:
-                with contextlib.suppress(BalanceTooHigh):
+                try:
                     await bank.deposit_credits(ctx.author, price)
+                except BalanceTooHigh as e:
+                    await bank.set_balance(ctx.author, e.max_balance)
             currency_name = await bank.get_currency_name(ctx.guild)
             if str(currency_name).startswith("<"):
                 currency_name = "credits"
