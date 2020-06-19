@@ -215,7 +215,7 @@ class AdventureResults:
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.2.8"
+    __version__ = "3.2.9"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -1308,7 +1308,11 @@ class Adventure(BaseCog):
                                         "You can only trade with people the same rebirth level or higher than yours."
                                     ),
                                 )
-                            await bank.transfer_credits(buyer, ctx.author, asking)
+                            try:
+                                await bank.transfer_credits(buyer, ctx.author, asking)
+                            except BalanceTooHigh as e:
+                                await bank.withdraw_credits(buyer, asking)
+                                await bank.set_balance(ctx.author, e.max_balance)
                             c.backpack[item.name].owned -= 1
                             if c.backpack[item.name].owned <= 0:
                                 del c.backpack[item.name]
