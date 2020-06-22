@@ -1843,7 +1843,12 @@ class Adventure(BaseCog):
     @adventureset.command()
     @checks.admin_or_permissions(administrator=True)
     async def carttime(self, ctx: Context, *, time: str):
-        """[Admin] Set the cooldown of the cart."""
+        """
+        [Admin] Set the cooldown of the cart.
+        Time can be in seconds, minutes, hours, or days.
+        Examples: `1h 30m`, `2 days`, `300` 
+        The bot assumes seconds if no units are given.
+        """
         time_delta = parse_timedelta(time)
         if time_delta is None:
             return await smart_embed(
