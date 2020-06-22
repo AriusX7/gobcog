@@ -794,8 +794,6 @@ class Character(Item):
     async def equip_loadout(self, loadout_name):
         loadout = self.loadouts[loadout_name]
         for (slot, item) in loadout.items():
-            if not item:
-                continue
             name_unformatted = "".join(item.keys())
             name = Item.remove_markdowns(name_unformatted)
             current = getattr(self, slot)
@@ -807,7 +805,7 @@ class Character(Item):
                 setattr(self, slot, None)
             else:
                 equiplevel = max((item.get("lvl", 1) - min(max(self.rebirths // 2 - 1, 0), 50)), 1)
-                if equiplevel < self.lvl:
+                if equiplevel > self.lvl:
                     continue
 
                 await self.equip_item(self.backpack[name], True)
