@@ -846,7 +846,11 @@ class Adventure(BaseCog):
 
     @_backpack.command(name="disassemble")
     async def backpack_disassemble(self, ctx: Context, *, backpack_item: ItemConverter):
-        """Disassemble a set item from your backpack."""
+        """
+        Disassemble a set item from your backpack.
+        This will provide a chance for a chest,
+        or the item might break while you are handling it...
+        """
         assert isinstance(backpack_item, Item)
         if self.in_adventure(ctx):
             return await smart_embed(
