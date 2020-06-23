@@ -215,7 +215,7 @@ class AdventureResults:
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.2.10"
+    __version__ = "3.2.11"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -4356,6 +4356,7 @@ class Adventure(BaseCog):
         await self.config.guild(ctx.guild).cooldown.set(0)
         await ctx.tick()
 
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
     @commands.command(name="adventure", aliases=["a"])
     @commands.bot_has_permissions(add_reactions=True)
     @commands.guild_only()
