@@ -215,7 +215,7 @@ class AdventureResults:
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.2.13"
+    __version__ = "3.2.14"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -1224,6 +1224,13 @@ class Adventure(BaseCog):
         item: ItemConverter,
     ):
         """Trade an item from your backpack to another user."""
+        if ctx.author == buyer:
+            return await smart_embed(
+                ctx,
+                _(
+                    "You take the item and pass it from one hand to the other. Congratulations, you traded yourself."
+                ),
+            )
         if self.in_adventure(ctx):
             return await smart_embed(
                 ctx,
