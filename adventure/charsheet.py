@@ -578,9 +578,6 @@ class Character(Item):
                     )
         else:
             class_desc = _("Hero.")
-        legend = _(
-            "( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | [DEGRADE#] | OWNED | SET (SET PIECES)"
-        )
         weekend = datetime.today().weekday() in [5, 6]
         wedfriday = datetime.today().weekday() in [2, 4]
         daymult = 1 if weekend else 0.5 if wedfriday else 0
@@ -600,8 +597,9 @@ class Character(Item):
             "Currency: {bal} \n- "
             "Experience: {xp}/{next_lvl} \n- "
             "Unspent skillpoints: {skill_points}\n\n"
-            # "Active bonus: {set_bonus}\n\n"
-            "Items Equipped:\n{legend}{equip}"
+            "Active bonus: {set_bonus}\n"
+            "{daily}\n\n"
+            "React to 'G' to see your equipped gear"
         ).format(
             user=self.user.display_name,
             rebirths=self.rebirths,
@@ -627,18 +625,17 @@ class Character(Item):
             if self.lvl < self.maxlevel
             else humanize_number(max_level_xp),
             skill_points=0 if self.skill["pool"] < 0 else self.skill["pool"],
-            legend=legend,
-            equip=self.get_equipment(),
-            # set_bonus=(
-            #     f"( {self.gear_set_bonus.get('att')} | "
-            #     f"{self.gear_set_bonus.get('cha')} | "
-            #     f"{self.gear_set_bonus.get('int')} | "
-            #     f"{self.gear_set_bonus.get('dex')} | "
-            #     f"{self.gear_set_bonus.get('luck')} ) "
-            #     f"Stats: {round(statmult * 100)}% | "
-            #     f"EXP: {round(xpmult * 100)}% | "
-            #     f"Credits: {round(cpmult * 100)}%"
-            # ),
+            set_bonus=(
+                f"( {self.gear_set_bonus.get('att')} | "
+                f"{self.gear_set_bonus.get('cha')} | "
+                f"{self.gear_set_bonus.get('int')} | "
+                f"{self.gear_set_bonus.get('dex')} | "
+                f"{self.gear_set_bonus.get('luck')} ) "
+                f"Stats: {round(statmult * 100)}% | "
+                f"EXP: {round(xpmult * 100)}% | "
+                f"Credits: {round(cpmult * 100)}%"
+            ),
+            daily="" if daymult == 0 else _("* Daily bonus active"),
         )
 
     def get_equipment(self):
