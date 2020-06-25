@@ -4,7 +4,7 @@ import logging
 import operator
 import re
 from copy import copy
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from typing import Dict, List, Mapping, Optional, Set, MutableMapping
 
 import discord
@@ -554,11 +554,13 @@ class Character(Item):
                         base[key] += value
                     elif key in ["cpmult", "xpmult", "statmult"]:
                         if value > 1:
-                            base[key] += value
+                            base[key] += value - 1
                         elif value >= 0:
                             base[key] -= 1 - value
-
         self.gear_set_bonus = base
+        self.gear_set_bonus["cpmult"] = max(0, self.gear_set_bonus["cpmult"])
+        self.gear_set_bonus["xpmult"] = max(0, self.gear_set_bonus["xpmult"])
+        self.gear_set_bonus["statmult"] = max(-0.25, self.gear_set_bonus["statmult"])
 
     def __str__(self):
         """Define str to be our default look for the character sheet :thinkies:"""
@@ -579,6 +581,12 @@ class Character(Item):
         legend = _(
             "( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | [DEGRADE#] | OWNED | SET (SET PIECES)"
         )
+        weekend = datetime.today().weekday() in [5, 6]
+        wedfriday = datetime.today().weekday() in [2, 4]
+        daymult = 1 if weekend else 0.5 if wedfriday else 0
+        statmult = self.gear_set_bonus.get("statmult") - 1
+        xpmult = (self.gear_set_bonus.get("xpmult") + daymult) - 1
+        cpmult = (self.gear_set_bonus.get("cpmult") + daymult) - 1
         return _(
             "[{user}'s Character Sheet]\n\n"
             "{{Rebirths: {rebirths}, \n Max Level: {maxlevel}}}\n"
@@ -592,6 +600,7 @@ class Character(Item):
             "Currency: {bal} \n- "
             "Experience: {xp}/{next_lvl} \n- "
             "Unspent skillpoints: {skill_points}\n\n"
+            "Active bonus: {set_bonus}\n\n"
             "Items Equipped:\n{legend}{equip}"
         ).format(
             user=self.user.display_name,
@@ -620,6 +629,16 @@ class Character(Item):
             skill_points=0 if self.skill["pool"] < 0 else self.skill["pool"],
             legend=legend,
             equip=self.get_equipment(),
+            set_bonus=(
+                f"( {self.gear_set_bonus.get('att')} | "
+                f"{self.gear_set_bonus.get('cha')} | "
+                f"{self.gear_set_bonus.get('int')} | "
+                f"{self.gear_set_bonus.get('dex')} | "
+                f"{self.gear_set_bonus.get('luck')} ) "
+                f"Stats: {round(statmult * 100)}% | "
+                f"EXP: {round(xpmult * 100)}% | "
+                f"Credits: {round(cpmult * 100)}%"
+            ),
         )
 
     def get_equipment(self):

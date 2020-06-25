@@ -215,7 +215,7 @@ class AdventureResults:
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.2.15"
+    __version__ = "3.2.16"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -3449,7 +3449,7 @@ class Adventure(BaseCog):
             xp_mod = random.randint(1, 10)
             weekend = datetime.today().weekday() in [5, 6]
             wedfriday = datetime.today().weekday() in [2, 4]
-            daymult = 2 if weekend else 1.5 if wedfriday else 1
+            daymult = 1 if weekend else 0.5 if wedfriday else 0
             xp_won = int((offering / xp_mod))
             try:
                 c = await Character.from_json(self.config, ctx.message.author)
@@ -4180,26 +4180,19 @@ class Adventure(BaseCog):
             dexterity = bonus.get("dex", 0)
             luck = bonus.get("luck", 0)
 
-            attack = f"+{attack}" if attack >= 0 else f"{attack}"
-            charisma = f"+{charisma}" if charisma >= 0 else f"{charisma}"
-            intelligence = f"+{intelligence}" if intelligence >= 0 else f"{intelligence}"
-            dexterity = f"+{dexterity}" if dexterity >= 0 else f"{dexterity}"
-            luck = f"+{luck}" if luck >= 0 else f"{luck}"
-            statmult = bonus.get("statmult", 0)
-            xpmult = bonus.get("xpmult", 0)
-            cpmult = bonus.get("cpmult", 0)
-            if statmult >= 0:
-                statmult = f"{round(statmult*100)}%"
-            else:
-                statmult = f"{round(statmult*100)}%"
-            if xpmult >= 0:
-                xpmult = f"{round(xpmult*100)}%"
-            else:
-                xpmult = f"{round(xpmult*100)}%"
-            if cpmult >= 0:
-                cpmult = f"{round(cpmult*100)}%"
-            else:
-                cpmult = f"{round(cpmult*100)}%"
+            attack = f"+{attack}" if attack > 0 else f"{attack}"
+            charisma = f"+{charisma}" if charisma > 0 else f"{charisma}"
+            intelligence = f"+{intelligence}" if intelligence > 0 else f"{intelligence}"
+            dexterity = f"+{dexterity}" if dexterity > 0 else f"{dexterity}"
+            luck = f"+{luck}" if luck > 0 else f"{luck}"
+
+            statmult = round((bonus.get("statmult", 1) - 1) * 100)
+            xpmult = round((bonus.get("xpmult", 1) - 1) * 100)
+            cpmult = round((bonus.get("cpmult", 1) - 1) * 100)
+
+            statmult = f"+{statmult}%" if statmult > 0 else f"{statmult}%"
+            xpmult = f"+{xpmult}%" if xpmult > 0 else f"{xpmult}%"
+            cpmult = f"+{cpmult}%" if cpmult > 0 else f"{cpmult}%"
 
             breakdown = _(
                 "Attack:                [{attack}]\n"
@@ -4228,9 +4221,6 @@ class Adventure(BaseCog):
                 colour=await ctx.embed_colour(),
             )
             footer_text = (
-                "Multiplier percentage is based on 100% being the full normal value.\n"
-                "0% would be nothing, 50% would be half the value.\n"
-                "A number like 150% means that it is 1.5x the value.\n"
                 "Multiple complete set bonuses stack.\n"
                 "\n"
                 "Use the information button below to display set piece details."
@@ -6653,7 +6643,7 @@ class Adventure(BaseCog):
             modif = 0.5
         weekend = datetime.today().weekday() in [5, 6]
         wedfriday = datetime.today().weekday() in [2, 4]
-        daymult = 3 if weekend else 2 if wedfriday else 1
+        daymult = 1 if weekend else 0.5 if wedfriday else 0
         xp = max(1, round(amount))
         cp = max(1, round(amount))
         newxp = 0
