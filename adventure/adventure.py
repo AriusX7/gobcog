@@ -215,7 +215,7 @@ class AdventureResults:
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.2.19"
+    __version__ = "3.2.20"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -4288,29 +4288,15 @@ class Adventure(BaseCog):
             log.exception("Error with the new character sheet")
             return
 
-        controls = {}
-
-        async def _gear_info(
-            ctx: commands.Context,
-            pages: list,
-            controls: MutableMapping,
-            message: discord.Message,
-            page: int,
-            timeout: float,
-            emoji: str,
-        ):
-            if message:
-                legend = _(
-                    "( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | [DEGRADE#] | OWNED | SET (SET PIECES)"
-                )
-                msg = _("[{user}'s Character Sheet]\n\nItems Equipped:\n{legend}{equip}").format(
-                    legend=legend, equip=c.get_equipment(), user=c.user.display_name
-                )
-                await ctx.send(box(msg, lang="css"))
-                return None
-
-        controls["\N{REGIONAL INDICATOR SYMBOL LETTER G}"] = _gear_info
-        await menu(ctx, pages=[box(c, lang="css")], controls=controls)
+        legend = _(
+            "( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | [DEGRADE#] | OWNED | SET (SET PIECES)"
+        )
+        equipped_gear_msg = _("[{user}'s Character Sheet]\n\nItems Equipped:\n{legend}{equip}").format(
+            legend=legend, equip=c.get_equipment(), user=c.user.display_name
+        )
+        await menu(
+            ctx, pages=[box(c, lang="css"), box(equipped_gear_msg, lang="css")], controls=DEFAULT_CONTROLS
+        )
 
     async def _build_loadout_display(self, userdata, loadout=True):
         form_string = _("( ATT  |  CHA  |  INT  |  DEX  |  LUCK)")

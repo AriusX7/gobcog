@@ -598,8 +598,7 @@ class Character(Item):
             "Experience: {xp}/{next_lvl} \n- "
             "Unspent skillpoints: {skill_points}\n\n"
             "Active bonus: {set_bonus}\n"
-            "{daily}\n\n"
-            "React to 'G' to see your equipped gear"
+            "{daily}"
         ).format(
             user=self.user.display_name,
             rebirths=self.rebirths,
@@ -735,7 +734,7 @@ class Character(Item):
     def get_item_rarity(item):
         item_obj = item[1]
         if item_obj.rarity == "event":
-            return 1
+            return 0
         elif item_obj.rarity == "forged":
             return 1
         elif item_obj.rarity == "set":
