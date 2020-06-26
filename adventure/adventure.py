@@ -2880,7 +2880,7 @@ class Adventure(BaseCog):
     async def _give_loot(
         self, ctx: Context, loot_type: str, user: discord.Member = None, number: int = 1
     ):
-        """[Admin] Give treasure chest(s) to a specified member."""
+        """[Owner] Give treasure chest(s) to a specified member."""
 
         if user is None:
             user = ctx.author
