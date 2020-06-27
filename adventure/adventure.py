@@ -8,7 +8,7 @@ import random
 import re
 import time
 from collections import namedtuple
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from operator import itemgetter
 from types import SimpleNamespace
 from typing import List, Optional, Union, MutableMapping
@@ -164,43 +164,42 @@ class AdventureResults:
         num_talk = 0
         talk_amount = 0
         num_wins = 0
-        raids = self._last_raids.get(ctx.guild.id, [])
-        raid_count = len(raids)
-        for raid in raids:
-            if raid["main_action"] == "attack":
-                num_attack += 1
-                dmg_amount += raid["amount"]
-                if raid["num_ppl"] == 1:
-                    dmg_amount += raid["amount"] * SOLO_RAID_SCALE
-            else:
-                num_talk += 1
-                talk_amount += raid["amount"]
-                if raid["num_ppl"] == 1:
-                    talk_amount += raid["amount"] * SOLO_RAID_SCALE
-            log.debug(f"raid dmg: {raid['amount']}")
-            if raid["success"]:
-                num_wins += 1
-
-        # calculate relevant stats
-        if num_wins == 0:
-            num_wins = self._num_raids // 2
-        win_percent = num_wins / raid_count if raid_count else self._num_raids
         stat_type = "hp"
         avg_amount = 0
-        if num_attack > 0:
-            avg_amount = dmg_amount / num_attack
-        if dmg_amount < talk_amount:
-            stat_type = "dipl"
-            avg_amount = talk_amount / num_talk
-
-        # return main stat and range
-        min_stat = avg_amount * 0.75
-        max_stat = avg_amount * 2
-        # want win % to be at least 50%, even when solo
-        # if win % is below 50%, scale back min/max for easier mons
-        if win_percent < 0.5:
-            min_stat = avg_amount * win_percent
-            max_stat = avg_amount * 1.5
+        raids = self._last_raids.get(ctx.guild.id, [])
+        raid_count = len(raids)
+        if raid_count == 0:
+            num_wins = self._num_raids // 2
+            raid_count = self._num_raids
+            win_percent = 0.5
+        else:
+            for raid in raids:
+                if raid["main_action"] == "attack":
+                    num_attack += 1
+                    dmg_amount += raid["amount"]
+                    if raid["num_ppl"] == 1:
+                        dmg_amount += raid["amount"] * SOLO_RAID_SCALE
+                else:
+                    num_talk += 1
+                    talk_amount += raid["amount"]
+                    if raid["num_ppl"] == 1:
+                        talk_amount += raid["amount"] * SOLO_RAID_SCALE
+                log.debug(f"raid dmg: {raid['amount']}")
+                if raid["success"]:
+                    num_wins += 1
+            if num_attack > 0:
+                avg_amount = dmg_amount / num_attack
+            if dmg_amount < talk_amount:
+                stat_type = "dipl"
+                avg_amount = talk_amount / num_talk
+            win_percent = num_wins / raid_count
+            min_stat = avg_amount * 0.75
+            max_stat = avg_amount * 2
+            # want win % to be at least 50%, even when solo
+            # if win % is below 50%, scale back min/max for easier mons
+            if win_percent < 0.5:
+                min_stat = avg_amount * win_percent
+                max_stat = avg_amount * 1.5
 
         stats_dict = {}
         for var in ("stat_type", "min_stat", "max_stat", "win_percent"):
@@ -215,7 +214,7 @@ class AdventureResults:
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.2.21"
+    __version__ = "3.2.22"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -292,6 +291,7 @@ class Adventure(BaseCog):
         self._react_messaged = []
         self.tasks = {}
         self.locks: MutableMapping[int, asyncio.Lock] = {}
+        self.gb_task = None
 
         self.config = Config.get_conf(self, 2_710_801_001, force_registration=True)
 
@@ -479,6 +479,7 @@ class Adventure(BaseCog):
             log.exception("There was an error starting up the cog", exc_info=err)
         else:
             self._ready_event.set()
+            self.gb_task = self.bot.loop.create_task(self._garbage_collection)
 
     async def cleanup_tasks(self):
         await self._ready_event.wait()
@@ -1807,6 +1808,17 @@ class Adventure(BaseCog):
         while ctx.guild.id in self._sessions:
             del self._sessions[ctx.guild.id]
         await ctx.tick()
+
+    async def _garbage_collection(self):
+        await self.bot.wait_until_red_ready()
+        delta = timedelta(minutes=6)
+        with contextlib.suppress(asyncio.CancelledError):
+            while True:
+                async for guild_id, session in AsyncIter(self._sessions.copy(), steps=5):
+                    if session.start_time + delta > datetime.now():
+                        if guild_id in self._sessions:
+                            del self._sessions[guild_id]
+                await asyncio.sleep(5)
 
     @adventureset.command()
     @checks.is_owner()
@@ -6977,6 +6989,8 @@ class Adventure(BaseCog):
             self.cleanup_loop.cancel()
         if self._init_task:
             self._init_task.cancel()
+        if self.gb_task:
+            self.gb_task.cancel()
 
         for (msg_id, task) in self.tasks.items():
             task.cancel()
