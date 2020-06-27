@@ -215,7 +215,7 @@ class AdventureResults:
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.2.20"
+    __version__ = "3.2.21"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -1775,6 +1775,7 @@ class Adventure(BaseCog):
     async def cartroom(self, ctx: Context, room: discord.TextChannel = None):
         """[Admin] Lock carts to a specific text channel."""
         if room is None:
+            await self.config.guild(ctx.guild).cartroom.set(None)
             return await smart_embed(
                 ctx, _("Done, carts will be able to appear in any text channel the bot can see.")
             )
@@ -2203,8 +2204,8 @@ class Adventure(BaseCog):
     async def cart(self, ctx: Context, *, channel: discord.TextChannel = None):
         """[Admin] Add or remove a text channel that the Trader cart can appear in.
 
-        If the channel is already in the list, it will be removed. Use `[p]adventureset cart` with
-        no arguments to show the channel list.
+        If the channel is already in the list, it will be removed. 
+        Use `[p]adventureset cart` with no arguments to show the channel list.
         """
 
         channel_list = await self.config.guild(ctx.guild).cart_channels()
@@ -2233,6 +2234,84 @@ class Adventure(BaseCog):
                 ctx, _("The {} channel has been added to the cart delivery list.").format(channel)
             )
             await self.config.guild(ctx.guild).cart_channels.set(channel_list)
+
+    @commands.command()
+    @commands.cooldown(rate=1, per=4, type=commands.BucketType.guild)
+    async def adventuresettings(self, ctx: Context):
+        """Display current settings."""
+        global_data = await self.config.all()
+        guild_data = await self.config.guild(ctx.guild).all()
+
+        theme = global_data["theme"]
+        god_name = (
+            global_data["god_name"] if not guild_data["god_name"] else guild_data["god_name"]
+        )
+        cart_trader_name = (
+            global_data["cart_name"] if not guild_data["cart_name"] else guild_data["cart_name"]
+        )
+
+        cart_channel_ids = guild_data["cart_channels"]
+        if cart_channel_ids:
+            cart_channels = humanize_list(
+                [f"{self.bot.get_channel(x).name}" for x in cart_channel_ids]
+            )
+        else:
+            cart_channels = _("None")
+
+        cart_channel_lock_override_id = guild_data["cartroom"]
+        if cart_channel_lock_override_id:
+            cclo_channel_obj = self.bot.get_channel(cart_channel_lock_override_id)
+            cart_channel_lock_override = f"{cclo_channel_obj.name}"
+        else:
+            cart_channel_lock_override = _("No channel lock present.")
+
+        cart_timeout = parse_timedelta(f"{guild_data['cart_timeout']} seconds")
+        lootbox_in_carts = _("Allowed") if global_data["enable_chests"] else _("Not allowed")
+
+        if not await bank.is_global():
+            rebirth_cost = guild_data["rebirth_cost"]
+        else:
+            rebirth_cost = global_data["rebirth_cost"]
+        rebirth_cost = _("{0:.0%} of bank balance").format(rebirth_cost / 100)
+
+        single_adventure_restrict = _("Restricted") if global_data["restrict"] else _("Unlimited")
+        adventure_in_embed = _("Allow embeds") if guild_data["embed"] else _("No embeds")
+        time_after_adventure = parse_timedelta(f"{guild_data['cooldown_timer_manual']} seconds")
+
+        msg = _("Adventure Settings\n\n")
+        msg += _("# Main Settings\n")
+        msg += _("[Theme]:                                {theme}\n").format(theme=theme)
+        msg += _("[God name]:                             {god_name}\n").format(god_name=god_name)
+        msg += _("[Base rebirth cost]:                    {rebirth_cost}\n").format(
+            rebirth_cost=rebirth_cost
+        )
+        msg += _("[Adventure message style]:              {adventure_in_embed}\n").format(
+            adventure_in_embed=adventure_in_embed
+        )
+        msg += _("[Multi-adventure restriction]:          {single_adventure_restrict}\n").format(
+            single_adventure_restrict=single_adventure_restrict
+        )
+        msg += _("[Post-adventure cooldown (hh:mm:ss)]:   {time_after_adventure}\n\n").format(
+            time_after_adventure=time_after_adventure
+        )
+        msg += _("# Cart Settings\n")
+        msg += _("[Cart trader name]:                     {cart_trader_name}\n").format(
+            cart_trader_name=cart_trader_name
+        )
+        msg += _("[Cart delivery channels]:               {cart_channels}\n").format(
+            cart_channels=cart_channels
+        )
+        msg += _("[Cart channel lock override]:           {cart_channel_lock_override}\n").format(
+            cart_channel_lock_override=cart_channel_lock_override
+        )
+        msg += _("[Cart timeout (hh:mm:ss)]:              {cart_timeout}\n").format(
+            cart_timeout=cart_timeout
+        )
+        msg += _("[Lootboxes in carts]:                   {lootbox_in_carts}\n").format(
+            lootbox_in_carts=lootbox_in_carts
+        )
+
+        await ctx.send(box(msg, lang="ini"))
 
     @commands.command()
     @commands.cooldown(rate=1, per=4, type=commands.BucketType.guild)
@@ -4291,11 +4370,13 @@ class Adventure(BaseCog):
         legend = _(
             "( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | [DEGRADE#] | OWNED | SET (SET PIECES)"
         )
-        equipped_gear_msg = _("[{user}'s Character Sheet]\n\nItems Equipped:\n{legend}{equip}").format(
-            legend=legend, equip=c.get_equipment(), user=c.user.display_name
-        )
+        equipped_gear_msg = _(
+            "[{user}'s Character Sheet]\n\nItems Equipped:\n{legend}{equip}"
+        ).format(legend=legend, equip=c.get_equipment(), user=c.user.display_name)
         await menu(
-            ctx, pages=[box(c, lang="css"), box(equipped_gear_msg, lang="css")], controls=DEFAULT_CONTROLS
+            ctx,
+            pages=[box(c, lang="css"), box(equipped_gear_msg, lang="css")],
+            controls=DEFAULT_CONTROLS,
         )
 
     async def _build_loadout_display(self, userdata, loadout=True):
@@ -4474,7 +4555,6 @@ class Adventure(BaseCog):
         cooldown = guild_settings["cooldown"]
 
         cooldown_time = guild_settings["cooldown_timer_manual"]
-        cooldown_time = cooldown_time
 
         if cooldown + cooldown_time > time.time():
             cooldown_time = cooldown + cooldown_time - time.time()
