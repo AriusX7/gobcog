@@ -836,10 +836,14 @@ class Character(Item):
         equiplevel = equip_level(self, item)
         if equiplevel > self.lvl:
             if not dev:
-                await self.add_to_backpack(item)
+                if not from_backpack:
+                    await self.add_to_backpack(item)
                 return self
         if from_backpack and item.name in self.backpack:
-            del self.backpack[item.name]
+            if self.backpack[item.name].owned > 1:
+                self.backpack[item.name].owned -= 1
+            else:
+                del self.backpack[item.name]
         for slot in item.slot:
             current = getattr(self, slot)
             if current:
@@ -1183,6 +1187,17 @@ class ItemConverter(Converter):
         no_markdown = Item.remove_markdowns(argument)
         lookup = list(i for x, i in c.backpack.items() if no_markdown.lower() in x.lower())
         lookup_m = list(i for x, i in c.backpack.items() if argument.lower() == str(i).lower())
+        lookup_e = list(i for x, i in c.backpack.items() if argument == str(i))
+        _temp_items = set()
+        for i in lookup:
+            _temp_items.add(str(i))
+        for i in lookup_m:
+            _temp_items.add(str(i))
+        for i in lookup_e:
+            _temp_items.add(str(i))
+
+        if len(lookup_e) == 1:
+            return lookup_e[0]
         if len(lookup) == 1:
             return lookup[0]
         elif len(lookup_m) == 1:
@@ -1190,6 +1205,7 @@ class ItemConverter(Converter):
         elif len(lookup) == 0 and len(lookup_m) == 0:
             raise BadArgument(_("`{}` doesn't seem to match any items you own.").format(argument))
         else:
+            lookup = list(i for x, i in c.backpack.items() if str(i) in _temp_items)
             if len(lookup) > 10:
                 raise BadArgument(
                     _(
