@@ -2273,6 +2273,7 @@ class Adventure(BaseCog):
             )
             await self.config.guild(ctx.guild).cart_channels.set(channel_list)
 
+    @commands.guild_only()
     @commands.command()
     @commands.cooldown(rate=1, per=4, type=commands.BucketType.guild)
     async def adventuresettings(self, ctx: Context):
