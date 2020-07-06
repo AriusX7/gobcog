@@ -214,7 +214,7 @@ class AdventureResults:
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.2.25"
+    __version__ = "3.2.26"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -4411,7 +4411,7 @@ class Adventure(BaseCog):
             return
 
         legend = _(
-            "( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | [DEGRADE#] | OWNED | SET (SET PIECES)"
+            "( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | [DEGRADE#] | SET (SET PIECES)"
         )
         equipped_gear_msg = _(
             "[{user}'s Character Sheet]\n\nItems Equipped:\n{legend}{equip}"
