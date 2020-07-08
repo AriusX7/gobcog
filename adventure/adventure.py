@@ -68,7 +68,7 @@ log = logging.getLogger("red.cogs.adventure")
 
 REBIRTH_LVL = 20
 REBIRTH_STEP = 10
-_SCHEMA_VERSION = 3
+_SCHEMA_VERSION = 4
 _config: Config = None
 
 
@@ -216,7 +216,7 @@ class AdventureResults:
 class Adventure(BaseCog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.2.27"
+    __version__ = "3.2.28"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -578,6 +578,40 @@ class Adventure(BaseCog):
                         adventurers_data[user]["loadouts"] = {}
             await self.config.schema_version.set(3)
 
+        if from_version < 4 <= to_version:
+            group = self.config._get_base_group(self.config.USER)
+            accounts = await group.all()
+            tmp = accounts.copy()
+            async with group.all() as adventurers_data:
+                async for user in AsyncIter(tmp, steps=10):
+                    equipped = tmp[user]["items"]
+                    for slot, item in equipped.items():
+                        for item_name, item_data in item.items():
+                            if "King Solomos" in item_name:
+                                del adventurers_data[user]["items"][slot][item_name]
+                                item_name = item_name.replace("Solomos", "Solomons")
+                                adventurers_data[user]["items"][slot][item_name] = item_data
+                    loadout = tmp[user]["loadouts"]
+                    for loadout_name, loadout_data in loadout.items():
+                        for slot, item in equipped.items():
+                            for item_name, item_data in item.items():
+                                if "King Solomos" in item_name:
+                                    del adventurers_data[user]["loadouts"][loadout_name][slot][
+                                        item_name
+                                    ]
+                                    item_name = item_name.replace("Solomos", "Solomons")
+                                    adventurers_data[user]["loadouts"][loadout_name][slot][
+                                        item_name
+                                    ] = item_data
+
+                    backpack = tmp[user]["backpack"]
+                    async for item_name, item_data in AsyncIter(backpack.items(), steps=25):
+                        if "King Solomos" in item_name:
+                            del adventurers_data[user]["backpack"][item_name]
+                            item_name = item_name.replace("Solomos", "Solomons")
+                            adventurers_data[user]["backpack"][item_name] = item_data
+            await self.config.schema_version.set(4)
+
     def _convert_item_migration(self, item_name, item_dict):
         new_name = item_name
         if "name" in item_dict:
@@ -770,6 +804,7 @@ class Adventure(BaseCog):
     async def _backpack(
         self,
         ctx: Context,
+        show_diff: Optional[bool] = False,
         rarity: Optional[RarityConverter] = None,
         *,
         slot: Optional[SlotConverter] = None,
@@ -817,7 +852,7 @@ class Adventure(BaseCog):
 
             backpack_contents = _("[{author}'s backpack] \n\n{backpack}\n").format(
                 author=self.escape(ctx.author.display_name),
-                backpack=await c.get_backpack(rarity=rarity, slot=slot),
+                backpack=await c.get_backpack(rarity=rarity, slot=slot, show_delta=show_diff),
             )
             msgs = []
             async for page in AsyncIter(
@@ -872,7 +907,8 @@ class Adventure(BaseCog):
                         level=equiplevel
                     ),
                 )
-            equip = c.backpack[equip_item.name]
+
+            equip = c.backpack.get(equip_item.name)
             if equip:
                 slot = equip.slot[0]
                 if len(equip.slot) > 1:
@@ -3454,11 +3490,11 @@ class Adventure(BaseCog):
                     rjust = max([len(str(i)) for i in items.values()])
                     async for item in AsyncIter(items.values()):
                         settext = ""
-                        att_space = " " if len(str(item.att)) == 1 else ""
-                        cha_space = " " if len(str(item.cha)) == 1 else ""
-                        int_space = " " if len(str(item.int)) == 1 else ""
-                        dex_space = " " if len(str(item.dex)) == 1 else ""
-                        luck_space = " " if len(str(item.luck)) == 1 else ""
+                        att_space = " " if len(str(item.att)) >= 1 else ""
+                        cha_space = " " if len(str(item.cha)) >= 1 else ""
+                        int_space = " " if len(str(item.int)) >= 1 else ""
+                        dex_space = " " if len(str(item.dex)) >= 1 else ""
+                        luck_space = " " if len(str(item.luck)) >= 1 else ""
                         owned = f" | {item.owned}"
                         if item.set:
                             settext += f" | Set `{item.set}` ({item.parts}pcs)"
@@ -3788,7 +3824,20 @@ class Adventure(BaseCog):
                     pet_reqs = pet_list[pet].get("bonuses", {}).get("req", {})
                     pet_msg4 = ""
                     can_catch = True
-                    if pet_reqs.get("set", False):
+                    force_catch = False
+                    if "Ainz Ooal Gown" in c.sets:
+                        can_catch = True
+                        pet = random.choice(
+                            [
+                                "Albedo",
+                                "Rubedo",
+                                "Guardians of Nazarick",
+                                *random.choices(pet_choices, k=10),
+                            ]
+                        )
+                        if pet in ["Albedo", "Rubedo", "Guardians of Nazarick"]:
+                            force_catch = True
+                    elif pet_reqs.get("bonuses", {}).get("req"):
                         if pet_reqs.get("set", None) in c.sets:
                             can_catch = True
                         else:
@@ -3796,7 +3845,6 @@ class Adventure(BaseCog):
                             pet_msg4 = _(
                                 "\nPerhaps you're missing some requirements to tame {pet}."
                             ).format(pet=pet)
-
                     pet_msg = box(
                         _("{c} is trying to tame a pet.").format(
                             c=self.escape(ctx.author.display_name)
@@ -3823,17 +3871,40 @@ class Adventure(BaseCog):
                         bonus = _("But they stepped on a twig and scared it away.")
                     elif roll in [50, 25]:
                         bonus = _("They happen to have its favorite food.")
-                    if dipl_value > self.PETS[pet]["cha"] and roll > 1 and can_catch:
-                        roll = random.randint(0, 2 if roll in [50, 25] else 5)
+                    if force_catch is True or (
+                        dipl_value > pet_list[pet]["cha"] and roll > 1 and can_catch
+                    ):
+                        if force_catch:
+                            roll = 0
+                        else:
+                            roll = random.randint(0, 2 if roll in [50, 25] else 5)
                         if roll == 0:
-                            pet_msg3 = box(
-                                _("{bonus}\nThey successfully tamed the {pet}.").format(
-                                    bonus=bonus, pet=pet
-                                ),
-                                lang="css",
-                            )
+                            if force_catch and "Ainz Ooal Gown" in c.sets:
+                                msg = random.choice(
+                                    [
+                                        _("{author} commands {pet} into submission.").format(
+                                            pet=pet, author=self.escape(ctx.author.display_name)
+                                        ),
+                                        _("{pet} swears allegiance to the Supreme One.").format(
+                                            pet=pet, author=self.escape(ctx.author.display_name)
+                                        ),
+                                        _(
+                                            "{pet} takes an Oath of Allegiance to the Supreme One."
+                                        ).format(
+                                            pet=pet, author=self.escape(ctx.author.display_name)
+                                        ),
+                                    ]
+                                )
+                                pet_msg3 = box(msg, lang="css",)
+                            else:
+                                pet_msg3 = box(
+                                    _("{bonus}\nThey successfully tamed the {pet}.").format(
+                                        bonus=bonus, pet=pet
+                                    ),
+                                    lang="css",
+                                )
                             await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}")
-                            c.heroclass["pet"] = self.PETS[pet]
+                            c.heroclass["pet"] = pet_list[pet]
                             c.heroclass["catch_cooldown"] = time.time()
                             await self.config.user(ctx.author).set(await c.to_json(self.config))
                         elif roll == 1:
@@ -6397,14 +6468,19 @@ class Adventure(BaseCog):
             adv_end = await self._get_epoch(secondint)
             timer, done, sremain = await self._remaining(adv_end)
             message_adv = await ctx.send(f"⏳ [{title}] {timer}s")
+            deleted = False
             while not done:
                 timer, done, sremain = await self._remaining(adv_end)
                 self._adventure_countdown[ctx.guild.id] = (timer, done, sremain)
                 if done:
-                    await message_adv.delete()
+                    if not deleted:
+                        await message_adv.delete()
                     break
-                elif int(sremain) % 5 == 0:
-                    await message_adv.edit(content=f"⏳ [{title}] {timer}s")
+                elif not deleted and int(sremain) % 5 == 0:
+                    try:
+                        await message_adv.edit(content=f"⏳ [{title}] {timer}s")
+                    except discord.NotFound:
+                        deleted = True
                 await asyncio.sleep(1)
             log.debug("Timer countdown done.")
 
@@ -6419,14 +6495,19 @@ class Adventure(BaseCog):
             cart_end = await self._get_epoch(secondint)
             timer, done, sremain = await self._remaining(cart_end)
             message_cart = await room.send(f"⏳ [{title}] {timer}s")
+            deleted = False
             while not done:
                 timer, done, sremain = await self._remaining(cart_end)
                 self._trader_countdown[ctx.guild.id] = (timer, done, sremain)
                 if done:
-                    await message_cart.delete()
+                    if not deleted:
+                        await message_cart.delete()
                     break
-                if int(sremain) % 5 == 0:
-                    await message_cart.edit(content=f"⏳ [{title}] {timer}s")
+                if not deleted and int(sremain) % 5 == 0:
+                    try:
+                        await message_cart.edit(content=f"⏳ [{title}] {timer}s")
+                    except discord.NotFound:
+                        deleted = True
                 await asyncio.sleep(1)
 
         return ctx.bot.loop.create_task(cart_countdown())
