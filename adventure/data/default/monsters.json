@@ -134,7 +134,7 @@
     "Peacock Spirit": {"hp": 195, "pdef": 1.2, "mdef": 1.1, "dipl": 210, "image": "https://cdn.pixabay.com/photo/2017/10/25/12/53/peacock-2887882_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
     "Petty Thief": {"hp": 28, "pdef": 1, "mdef": 1, "dipl": 28, "image": "https://cdn.pixabay.com/photo/2013/07/13/10/24/burglar-157142_960_720.png", "boss": false, "miniboss": {}, "color":""},
     "Plagued Deer": {"hp": 35, "pdef": 0.8, "mdef": 1, "dipl": 30, "image": "https://cdn.pixabay.com/photo/2018/03/11/16/38/hirsch-3217239_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
-    "Posessed Sword": {"hp": 74, "pdef": 1.1, "mdef": 1.3, "dipl": 90, "image": "https://cdn.pixabay.com/photo/2015/09/02/12/35/sword-918542_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
+    "Possessed Sword": {"hp": 74, "pdef": 1.1, "mdef": 1.3, "dipl": 90, "image": "https://cdn.pixabay.com/photo/2015/09/02/12/35/sword-918542_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
     "Possessed Tome": {"hp": 96, "pdef": 1, "mdef": 1, "dipl": 90, "image": "https://cdn.pixabay.com/photo/2016/10/25/18/18/book-1769625_960_720.png", "boss": false, "miniboss": {}, "color":""},
     "Primal Forest Elemental": {"hp": 380, "pdef": 1, "mdef": 1.2, "dipl": 420, "image": "https://cdn.pixabay.com/photo/2019/03/09/02/12/eyes-4043559_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
     "Primal Light Elemental": {"hp": 380, "pdef": 1, "mdef": 1.2, "dipl": 420, "image": "https://cdn.pixabay.com/photo/2018/01/22/12/19/travel-3098815_960_720.jpg", "boss": false, "miniboss": {}, "color":""},
