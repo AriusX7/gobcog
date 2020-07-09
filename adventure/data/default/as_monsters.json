@@ -1678,7 +1678,7 @@
         "pdef": 1.2,
         "mdef": 1.52,
         "dipl": 919.0,
-        "image": "http://mythicalarchive.com/wp-content/uploads/2015/12/basilisk_by_wretchedspawn2012-d8sc6ps-1024x921.jpg",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/7/70/Wenceslas_Hollar_-_The_basilisk_and_the_weasel.jpg",
         "boss": false,
         "miniboss": {
             "requirements": [".mirror_shield", "left"],
