@@ -896,7 +896,10 @@ class Character(Item):
         return form_string + "\n"
 
     def get_equipped_delta(self, equiped: Item, to_compare: Item, stat_name: str) -> str:
-        if (equiped and len(equiped.slot) != 2) and (to_compare and len(to_compare.slot) == 2):
+        if (equiped and len(equiped.slot) == 2) and (to_compare and len(to_compare.slot) == 2):
+            equipped_stat = getattr(equiped, stat_name, 0) * 2
+            comparing_to_stat = getattr(to_compare, stat_name, 0) * 2
+        elif to_compare and len(to_compare.slot) == 2:
             equipped_left_stat = getattr(self.left, stat_name, 0)
             equipped_right_stat = getattr(self.right, stat_name, 0)
             equipped_stat = equipped_left_stat + equipped_right_stat
@@ -904,9 +907,6 @@ class Character(Item):
         elif (equiped and len(equiped.slot) == 2) and (to_compare and len(to_compare.slot) != 2):
             equipped_stat = getattr(equiped, stat_name, 0) * 2
             comparing_to_stat = getattr(to_compare, stat_name, 0)
-        elif (equiped and len(equiped.slot) == 2) and (to_compare and len(to_compare.slot) == 2):
-            equipped_stat = getattr(equiped, stat_name, 0) * 2
-            comparing_to_stat = getattr(to_compare, stat_name, 0) * 2
         else:
             equipped_stat = getattr(equiped, stat_name, 0)
             comparing_to_stat = getattr(to_compare, stat_name, 0)
@@ -987,7 +987,7 @@ class Character(Item):
             "charm": char.charm.to_json() if char.charm else {},
         }
 
-    def get_current_equipment(self):
+    def get_current_equipment(self) -> List[Item]:
         """returns a list of Items currently equipped."""
         equipped = []
         for slot in ORDER:
@@ -1273,6 +1273,68 @@ class ItemConverter(Converter):
         except Exception as exc:
             log.exception("Error with the new character sheet", exc_info=exc)
             raise BadArgument
+        no_markdown = Item.remove_markdowns(argument)
+        lookup = list(i for x, i in c.backpack.items() if no_markdown.lower() in x.lower())
+        lookup_m = list(
+            i for x, i in c.backpack.items() if argument.lower() == str(i).lower() and str(i)
+        )
+        lookup_e = list(i for x, i in c.backpack.items() if argument == str(i))
+
+        _temp_items = set()
+        for i in lookup:
+            _temp_items.add(str(i))
+        for i in lookup_m:
+            _temp_items.add(str(i))
+        for i in lookup_e:
+            _temp_items.add(str(i))
+
+        if len(lookup_e) == 1:
+            return lookup_e[0]
+        if len(lookup) == 1:
+            return lookup[0]
+        elif len(lookup_m) == 1:
+            return lookup_m[0]
+        elif len(lookup) == 0 and len(lookup_m) == 0:
+            raise BadArgument(_("`{}` doesn't seem to match any items you own.").format(argument))
+        else:
+            lookup = list(i for x, i in c.backpack.items() if str(i) in _temp_items)
+            if len(lookup) > 10:
+                raise BadArgument(
+                    _(
+                        "You have too many items matching the name `{}`,"
+                        " please be more specific."
+                    ).format(argument)
+                )
+            items = ""
+            for (number, item) in enumerate(lookup):
+                items += f"{number}. {str(item)} (owned {item.owned})\n"
+
+            msg = await ctx.send(
+                _("Multiple items share that name, which one would you like?\n{items}").format(
+                    items=box(items, lang="css")
+                )
+            )
+            emojis = ReactionPredicate.NUMBER_EMOJIS[: len(lookup)]
+            start_adding_reactions(msg, emojis)
+            pred = ReactionPredicate.with_emojis(emojis, msg, user=ctx.author)
+            try:
+                await ctx.bot.wait_for("reaction_add", check=pred, timeout=30)
+            except asyncio.TimeoutError:
+                raise BadArgument(_("Alright then."))
+            return lookup[pred.result]
+
+
+class EquipableItemConverter(Converter):
+    async def convert(self, ctx, argument) -> Item:
+        try:
+            c = await Character.from_json(
+                ctx.bot.get_cog("Adventure").config,
+                ctx.author,
+                ctx.bot.get_cog("Adventure")._daily_bonus,
+            )
+        except Exception as exc:
+            log.exception("Error with the new character sheet", exc_info=exc)
+            raise BadArgument
         equipped_items = set()
         for slots in ORDER:
             if slots == "two handed":
@@ -1350,14 +1412,29 @@ class EquipmentConverter(Converter):
         except Exception as exc:
             log.exception("Error with the new character sheet", exc_info=exc)
             raise BadArgument
-        lookup = list(i for i in c.get_current_equipment() if argument.lower() in str(i).lower())
-        lookup_m = list(i for i in c.get_current_equipment() if argument.lower() == str(i).lower())
+        matched = set()
+        lookup = list(
+            i
+            for i in c.get_current_equipment()
+            if argument.lower() in str(i).lower()
+            if len(i.slot) != 2 or (str(i) not in matched and not matched.add(str(i)))
+        )
+        matched = set()
+        lookup_m = list(
+            i
+            for i in c.get_current_equipment()
+            if argument.lower() == str(i).lower()
+            if len(i.slot) != 2 or (str(i) not in matched and not matched.add(str(i)))
+        )
+
         if len(lookup) == 1:
             return lookup[0]
         elif len(lookup_m) == 1:
             return lookup_m[0]
         elif len(lookup) == 0 and len(lookup_m) == 0:
-            raise BadArgument(_("`{}` doesn't seem to match any items you own.").format(argument))
+            raise BadArgument(
+                _("`{}` doesn't seem to match any items you have equipped.").format(argument)
+            )
         else:
             if len(lookup) > 10:
                 raise BadArgument(
