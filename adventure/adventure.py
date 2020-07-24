@@ -853,7 +853,7 @@ class Adventure(BaseCog):
                         ),
                     )
 
-            backpack_contents = _("[{author}'s backpack] \n\n{backpack}\n").format(
+            backpack_contents = _("{author}'s backpack \n\n{backpack}\n").format(
                 author=self.escape(ctx.author.display_name),
                 backpack=await c.get_backpack(rarity=rarity, slot=slot, show_delta=show_diff),
             )
@@ -4542,7 +4542,7 @@ class Adventure(BaseCog):
 
         legend = _("( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | [DEGRADE#] | SET (SET PIECES)")
         equipped_gear_msg = _(
-            "[{user}'s Character Sheet]\n\nItems Equipped:\n{legend}{equip}"
+            "{user}'s Character Sheet\n\nItems Equipped:\n{legend}{equip}"
         ).format(legend=legend, equip=c.get_equipment(), user=c.user.display_name)
         await menu(
             ctx,
