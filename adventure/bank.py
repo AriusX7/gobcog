@@ -490,7 +490,7 @@ async def get_account(
     return AdventureAccount(**acc_data)
 
 
-async def is_global(_forced: bool= False) -> bool:
+async def is_global(_forced: bool = False) -> bool:
     """Determine if the bank is currently global.
     Returns
     -------

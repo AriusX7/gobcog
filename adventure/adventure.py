@@ -7079,7 +7079,7 @@ class Adventure(commands.Cog):
                 ),
             )
             return
-        if not bank.can_spend(ctx.author, amount=amount, _forced=True):
+        if not await bank.can_spend(ctx.author, amount=amount, _forced=True):
             await smart_embed(
                 ctx,
                 _("{author.mention} You don't have enough {name}.").format(
@@ -7182,7 +7182,7 @@ class Adventure(commands.Cog):
             )
             return
         currency = await bank.get_currency_name(ctx.guild)
-        if not bank.can_spend(member=ctx.author, amount=amount):
+        if not await bank.can_spend(member=ctx.author, amount=amount):
             return await smart_embed(
                 ctx,
                 _("{author.mention} you don't have enough {name}.").format(
