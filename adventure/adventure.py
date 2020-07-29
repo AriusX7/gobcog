@@ -7014,29 +7014,26 @@ class Adventure(commands.Cog):
 
     @commands.command(name="apayday")
     @has_separated_economy()
+    @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
     async def commands_apayday(self, ctx: commands.Context):
         """Get some free gold."""
         author = ctx.author
-        cur_time = calendar.timegm(ctx.message.created_at.utctimetuple())
         adventure_credits_name = await bank.get_currency_name(ctx.guild)
-        next_payday = await bank.get_next_payday(author) + 600  # Make customizable? hard coded to every 10 mins
         amount = 500  # Make Customizable?
-        if cur_time >= next_payday:
-            try:
-                await bank.deposit_credits(author, amount)
-            except BalanceTooHigh as exc:
-                await bank.set_balance(author, exc.max_balance)
-                await smart_embed(
-                    ctx,
-                    _(
-                        "You're struggling to move under the weight of all your {currency}!"
-                        "Please spend some more \N{GRIMACING FACE}\n\n"
-                        "You currently have {new_balance} {currency}."
-                    ).format(currency=adventure_credits_name, new_balance=humanize_number(exc.max_balance)),
-                )
-                return
-            # Sets the current time as the latest payday
-            await bank.set_next_payday(author, cur_time)
+        try:
+            await bank.deposit_credits(author, amount)
+        except BalanceTooHigh as exc:
+            await bank.set_balance(author, exc.max_balance)
+            await smart_embed(
+                ctx,
+                _(
+                    "You're struggling to move under the weight of all your {currency}!"
+                    "Please spend some more \N{GRIMACING FACE}\n\n"
+                    "You currently have {new_balance} {currency}."
+                ).format(currency=adventure_credits_name, new_balance=humanize_number(exc.max_balance)),
+            )
+            return
+        else:
             await smart_embed(
                 ctx,
                 _(
@@ -7049,14 +7046,6 @@ class Adventure(commands.Cog):
                     currency=adventure_credits_name,
                     amount=humanize_number(amount),  # Make customizable?
                     new_balance=humanize_number(await bank.get_balance(author)),
-                ),
-            )
-        else:
-            dtime = humanize_timedelta(seconds=next_payday - cur_time) or _("one second")
-            await smart_embed(
-                ctx,
-                _("{author.mention}, you haven't gained any interest on your savings yet. Try again in {time}.").format(
-                    author=author, time=dtime
                 ),
             )
 
