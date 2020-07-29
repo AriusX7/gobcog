@@ -490,14 +490,14 @@ async def get_account(
     return AdventureAccount(**acc_data)
 
 
-async def is_global() -> bool:
+async def is_global(_forced: bool= False) -> bool:
     """Determine if the bank is currently global.
     Returns
     -------
     bool
         :code:`True` if the bank is global, otherwise :code:`False`.
     """
-    if (cog := _bot.get_cog("Adventure")) is None or not cog._separate_economy:
+    if _forced or (cog := _bot.get_cog("Adventure")) is None or not cog._separate_economy:
         return await bank.is_global()
     return True
 
