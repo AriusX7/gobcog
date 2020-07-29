@@ -231,7 +231,7 @@ class AdventureResults:
 class Adventure(commands.Cog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.3.0"
+    __version__ = "3.3.1"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -1913,7 +1913,7 @@ class Adventure(commands.Cog):
         """[Admin] Set how much players are allowed to withdraw."""
         if amount < 0:
             return await smart_embed(ctx, _("You are evil ... please DM me your phone number we need to hangout."))
-        if bank.is_global(_forced=True):
+        if await bank.is_global(_forced=True):
             await self.config.max_allowed_withdraw.set(amount)
         else:
             await self.config.guild(ctx.guild).max_allowed_withdraw.set(amount)
@@ -1928,7 +1928,7 @@ class Adventure(commands.Cog):
     async def commands_adventureset_economy_withdraw(self, ctx: Context):
         """[Admin] Toggle whether users are allowed to withdraw from adventure currency to main currency."""
 
-        if bank.is_global(_forced=True):
+        if await bank.is_global(_forced=True):
             state = await self.config.disallow_withdraw()
             await self.config.disallow_withdraw.set(not state)
         else:
@@ -7137,7 +7137,7 @@ class Adventure(commands.Cog):
         configs = await self.config.all()
         from_conversion_rate = configs.get("from_conversion_rate")
         transferable_amount = amount // from_conversion_rate
-        if not bank.can_spend(member=ctx.author, amount=amount):
+        if not await bank.can_spend(member=ctx.author, amount=amount):
             return await smart_embed(
                 ctx,
                 _("{author.mention} you don't have enough {name}.").format(
