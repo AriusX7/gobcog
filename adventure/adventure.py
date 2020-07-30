@@ -231,7 +231,7 @@ class AdventureResults:
 class Adventure(commands.Cog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.3.1"
+    __version__ = "3.3.2"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -7096,7 +7096,7 @@ class Adventure(commands.Cog):
     @commands.guild_only()
     async def commands_atransfer_withdraw(self, ctx: commands.Context, *, amount: int):
         """Convert gold to bank currency."""
-        if bank.is_global(_forced=True):
+        if await bank.is_global(_forced=True):
             global_config = await self.config.all()
             can_withdraw = global_config["disallow_withdraw"]
             max_allowed_withdraw = global_config["max_allowed_withdraw"]
