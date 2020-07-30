@@ -594,6 +594,9 @@ class LeaderboardMenu(BaseMenu, inherit_buttons=False):
             return True
         return max_pages <= 2
 
+    def _unified_bank(self):
+        return not self.cog._separate_economy
+
     @menus.button("\N{CHART WITH UPWARDS TREND}")
     async def home(self, payload: discord.RawReactionActionEvent) -> None:
         if self._current == "leaderboard":
@@ -607,7 +610,9 @@ class LeaderboardMenu(BaseMenu, inherit_buttons=False):
         if self._current == "economy":
             return
         self._current = "economy"
-        bank_sorted = await bank.get_leaderboard(guild=self.ctx.guild if not self.show_global else None)
+        bank_sorted = await bank.get_leaderboard(
+            guild=self.ctx.guild if not self.show_global else None, _forced=self._unified_bank()
+        )
         await self.change_source(source=EconomySource(entries=bank_sorted))
 
     @menus.button(

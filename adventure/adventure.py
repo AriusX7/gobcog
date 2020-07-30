@@ -53,6 +53,7 @@ from .charsheet import (
     Stats,
     calculate_sp,
     can_equip,
+    no_dev_prompt,
     equip_level,
     has_funds,
     parse_timedelta,
@@ -128,7 +129,9 @@ def check_global_setting_admin():
 
 def has_separated_economy():
     async def predicate(ctx):
-        return ctx.cog and ctx.cog._separate_economy is True
+        if not (ctx.cog and getattr(ctx.cog, "_separate_economy", False)):
+            raise CheckFailure
+        return True
 
     return check(predicate)
 
@@ -231,7 +234,7 @@ class AdventureResults:
 class Adventure(commands.Cog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.3.2"
+    __version__ = "3.3.3"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -393,8 +396,6 @@ class Adventure(commands.Cog):
 
     async def cog_before_invoke(self, ctx: Context):
         await self._ready_event.wait()
-
-    async def cog_before_invoke(self, ctx: Context):
         if ctx.author.id in self.locks and self.locks[ctx.author.id].locked():
             raise CheckFailure(f"There's an active lock for this user ({ctx.author.id})")
         return True
@@ -681,7 +682,9 @@ class Adventure(commands.Cog):
     @commands.bot_has_permissions(add_reactions=True)
     @commands.is_owner()
     async def makecart(self, ctx: Context):
-        """[Owner] Force a cart to appear."""
+        """[Dev] Force a cart to appear."""
+        if not await no_dev_prompt(ctx):
+            return
         await self._trader(ctx, True)
 
     async def _genitem(self, rarity: str = None, slot: str = None):
@@ -760,7 +763,9 @@ class Adventure(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def genitems(self, ctx: Context, rarity: str, slot: str, num: int = 1):
-        """[Owner] Generate random items."""
+        """[Dev] Generate random items."""
+        if not await no_dev_prompt(ctx):
+            return
         user = ctx.author
         rarity = rarity.lower()
         slot = slot.lower()
@@ -1556,7 +1561,9 @@ class Adventure(commands.Cog):
     async def devrebirth(
         self, ctx: Context, rebirth_level: int = 1, character_level: int = 1, user: discord.Member = None,
     ):
-        """[Owner] Set a users rebirth level."""
+        """[Dev] Set a users rebirth level."""
+        if not await no_dev_prompt(ctx):
+            return
         target = user or ctx.author
 
         if not self.is_dev(ctx.author):
@@ -1595,15 +1602,17 @@ class Adventure(commands.Cog):
                 )
             )
             character_data = await c.rebirth(dev_val=rebirth_level)
-            character_data["lvl"] = character_level
             await self.config.user(target).set(character_data)
+        await self._add_rewards(ctx, target, int((character_level) ** 3.5) + 1, 0, False)
         await ctx.tick()
 
     @commands.command()
     @commands.bot_has_permissions(add_reactions=True)
     @commands.is_owner()
     async def devreset(self, ctx: commands.Context, user: discord.Member = None):
-        """[Owner] Reset the skill cooldown for this user."""
+        """[Dev] Reset the skill cooldown for this user."""
+        if not await no_dev_prompt(ctx):
+            return
         target = user or ctx.author
         async with self.get_lock(target):
             try:
@@ -1893,17 +1902,22 @@ class Adventure(commands.Cog):
 
     @commands.is_owner()
     @commands_adventureset_economy.command(name="rate")
-    async def commands_adventureset_economy_conversion_rate(self, ctx: Context, *, rate: int):
-        """[Owner] Set how much 1 bank credit is worth in adventure."""
-        if rate < 0:
+    async def commands_adventureset_economy_conversion_rate(self, ctx: Context, rate_in: int, rate_out: int):
+        """[Owner] Set how much 1 bank credit is worth in adventure.
+
+        **rate_in**: Is how much gold you will get for 1 bank credit. Default is 10
+        **rate_out**: Is how much gold is needed to convert to 1 bank credit. Default is 11
+        """
+        if rate_in < 0 or rate_out < 0:
             return await smart_embed(ctx, _("You are evil ... please DM me your phone number we need to hangout."))
-        await self.config.to_conversion_rate.set(rate)
-        await self.config.from_conversion_rate.set(int(1.1 * rate))
+        await self.config.to_conversion_rate.set(rate_in)
+        await self.config.from_conversion_rate.set(rate_out)
         await smart_embed(
             ctx,
-            _("1 {name} will be worth {rate} {a_name}.").format(
+            _("1 {name} will be worth {rate_in} {a_name}.\n{rate_out} {a_name} will convert into 1 {name}").format(
                 name=await bank.get_currency_name(ctx.guild, _forced=True),
-                rate=rate,
+                rate_in=humanize_number(rate_in),
+                rate_out=humanize_number(rate_out),
                 a_name=await bank.get_currency_name(ctx.guild),
             ),
         )
@@ -4415,7 +4429,9 @@ class Adventure(commands.Cog):
     @commands.bot_has_permissions(add_reactions=True)
     @commands.is_owner()
     async def _devcooldown(self, ctx: Context):
-        """[Owner] Resets the after-adventure cooldown in this server."""
+        """[Dev] Resets the after-adventure cooldown in this server."""
+        if not await no_dev_prompt(ctx):
+            return
         await self.config.guild(ctx.guild).cooldown.set(0)
         await ctx.tick()
 
@@ -7012,7 +7028,7 @@ class Adventure(commands.Cog):
         else:
             return sorted_acc[:positions]
 
-    @commands.command(name="apayday")
+    @commands.command(name="apayday", cooldown_after_parsing=True)
     @has_separated_economy()
     @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
     async def commands_apayday(self, ctx: commands.Context):
@@ -7092,8 +7108,9 @@ class Adventure(commands.Cog):
             ),
         )
 
-    @commands_atransfer.command(name="withdraw")
+    @commands_atransfer.command(name="withdraw", cooldown_after_parsing=True)
     @commands.guild_only()
+    @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
     async def commands_atransfer_withdraw(self, ctx: commands.Context, *, amount: int):
         """Convert gold to bank currency."""
         if await bank.is_global(_forced=True):

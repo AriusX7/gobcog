@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 import asyncio
 import logging
+import random
 import re
 from copy import copy
 from datetime import date, timedelta, datetime
+from string import ascii_letters, digits
 from typing import Dict, List, Mapping, Optional, Set, MutableMapping, Tuple
 
 import discord
@@ -1622,3 +1624,28 @@ def get_true_name(rarity, name):
         return f"{SET_OPEN}'{name}'{LEGENDARY_CLOSE}"
     if rarity == "forged":
         return f"{TINKER_OPEN}{name}{TINKER_CLOSE}"
+
+
+async def no_dev_prompt(ctx: commands.Context) -> bool:
+    if ctx.author.id in DEV_LIST:
+        return True
+    confirm_token = "".join(random.choices((*ascii_letters, *digits), k=16))
+    await ctx.send(
+        "**__You are should not be running this command.__** "
+        "Any issues that arise from you running this command will not be supported, "
+        "if you wish to continue enter this token as your next message."
+        f"\n\n{confirm_token}"
+    )
+    try:
+        message = await ctx.bot.wait_for(
+            "message", check=lambda m: m.channel.id == ctx.channel.id and m.author.id == ctx.author.id, timeout=60,
+        )
+    except asyncio.TimeoutError:
+        await ctx.send(_("Did not get confirmation, cancelling."))
+        return False
+    else:
+        if message.content.strip() == confirm_token:
+            return True
+        else:
+            await ctx.send(_("Did not get a matching confirmation, cancelling."))
+            return False

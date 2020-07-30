@@ -399,7 +399,7 @@ async def bank_prune(bot: Red, guild: discord.Guild = None, user_id: int = None)
                 del bank_data[user_id]
 
 
-async def get_leaderboard(positions: int = None, guild: discord.Guild = None) -> List[tuple]:
+async def get_leaderboard(positions: int = None, guild: discord.Guild = None, _forced: bool = False) -> List[tuple]:
     """
     Gets the bank's leaderboard
     Parameters
@@ -418,7 +418,7 @@ async def get_leaderboard(positions: int = None, guild: discord.Guild = None) ->
     TypeError
         If the bank is guild-specific and no guild was specified
     """
-    if (cog := _bot.get_cog("Adventure")) is None or not cog._separate_economy:
+    if _forced or (cog := _bot.get_cog("Adventure")) is None or not cog._separate_economy:
         return await bank.get_leaderboard(positions=positions, guild=guild)
     raw_accounts = await _config.all_users()
     if guild is not None:
@@ -620,7 +620,7 @@ async def get_max_balance(guild: discord.Guild = None) -> int:
     RuntimeError
         If the bank is guild-specific and guild was not provided.
     """
-    if (_bot.get_cog("Adventure")) is None:
+    if (cog := _bot.get_cog("Adventure")) is None or not cog._separate_economy:
         return await bank.get_max_balance(guild=guild)
     return _MAX_BALANCE
 
@@ -747,3 +747,9 @@ def cost(amount: int):
             wrapped.__module__ = coro_or_command.callback.__module__
             coro_or_command.callback = wrapped
             return coro_or_command
+
+
+def _get_config(_forced: bool = False):
+    if _forced or (cog := _bot.get_cog("Adventure")) is None or not cog._separate_economy:
+        return bank._config
+    return _config
