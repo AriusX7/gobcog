@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict, Tuple, List, Optional, Any
+from typing import Any, Dict, List, Optional, Tuple
 
 import discord
 from redbot.core.commands import commands
 from redbot.core.i18n import Translator
-from redbot.core.utils.chat_formatting import humanize_number, escape
+from redbot.core.utils.chat_formatting import escape, humanize_number
 from redbot.vendored.discord.ext import menus
 
 from . import bank
@@ -213,7 +213,8 @@ class ScoreboardSource(WeeklyScoreboardSource):
 class EconomySource(menus.ListPageSource):
     def __init__(self, entries: List[Tuple[str, Dict[str, Any]]]):
         super().__init__(entries, per_page=10)
-        self._total_balance = None
+        self._total_balance_unified = None
+        self._total_balance_sep = None
         self.author_position = None
 
     async def format_page(self, menu: menus.MenuPages, entries: List[Tuple[str, Dict[str, Any]]]) -> discord.Embed:
@@ -222,20 +223,30 @@ class EconomySource(menus.ListPageSource):
         position = (menu.current_page * self.per_page) + 1
         bal_len = len(humanize_number(entries[0][1]["balance"]))
         pound_len = len(str(position + 9))
-        user_bal = await bank.get_balance(menu.ctx.author)
+        user_bal = await bank.get_balance(menu.ctx.author, _forced=not menu.ctx.cog._separate_economy)
         if self.author_position is None:
             self.author_position = await bank.get_leaderboard_position(menu.ctx.author)
         header_primary = "{pound:{pound_len}}{score:{bal_len}}{name:2}\n".format(
             pound="#", name=_("Name"), score=_("Score"), bal_len=bal_len + 6, pound_len=pound_len + 3,
         )
         header = ""
-        if self._total_balance is None:
-            accounts = await bank._config.all_users()
-            overall = 0
-            for key, value in accounts.items():
-                overall += value["balance"]
-            self._total_balance = overall
-        percent = round((int(user_bal) / self._total_balance * 100), 3)
+        if menu.ctx.cog._separate_economy:
+            if self._total_balance_sep is None:
+                accounts = await bank._config.all_users()
+                overall = 0
+                for key, value in accounts.items():
+                    overall += value["balance"]
+                self._total_balance_sep = overall
+            _total_balance = self._total_balance_sep
+        else:
+            if self._total_balance_unified is None:
+                accounts = await bank._get_config(_forced=True).all_users()
+                overall = 0
+                for key, value in accounts.items():
+                    overall += value["balance"]
+                self._total_balance_unified = overall
+            _total_balance = self._total_balance_unified
+        percent = round((int(user_bal) / _total_balance * 100), 3)
         for position, acc in enumerate(entries, start=position):
             user_id = acc[0]
             account_data = acc[1]
@@ -256,9 +267,7 @@ class EconomySource(menus.ListPageSource):
             balance = humanize_number(balance)
 
             if acc[0] != author.id:
-                header += (
-                    f"{f'{humanize_number(position)}.': <{pound_len + 2}} " f"{balance: <{bal_len + 5}} {username}\n"
-                )
+                header += f"{f'{humanize_number(position)}.': <{pound_len + 2}} {balance: <{bal_len + 5}} {username}\n"
             else:
                 header += (
                     f"{f'{humanize_number(position)}.': <{pound_len + 2}} "
@@ -271,7 +280,7 @@ class EconomySource(menus.ListPageSource):
             ),
             color=await menu.ctx.embed_color(),
             description="```md\n{}``` ```md\n{}``` ```py\nTotal bank amount {}\nYou have {}% of the total amount!```".format(
-                header_primary, header, humanize_number(self._total_balance), percent
+                header_primary, header, humanize_number(_total_balance), percent
             ),
         )
         embed.set_footer(text=f"Page {menu.current_page + 1}/{self.get_max_pages()}")

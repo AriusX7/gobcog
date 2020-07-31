@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import asyncio
-import calendar
 import contextlib
 import json
 import logging
@@ -12,7 +11,7 @@ from collections import namedtuple
 from datetime import date, datetime, timedelta
 from operator import itemgetter
 from types import SimpleNamespace
-from typing import List, Optional, Union, MutableMapping
+from typing import List, MutableMapping, Optional, Union
 
 import discord
 from discord.ext.commands import CheckFailure
@@ -24,51 +23,44 @@ from redbot.core.data_manager import bundled_data_path, cog_data_path
 from redbot.core.errors import BalanceTooHigh
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter
-from redbot.core.utils.chat_formatting import (
-    box,
-    escape,
-    humanize_list,
-    humanize_number,
-    humanize_timedelta,
-    pagify,
-)
+from redbot.core.utils.chat_formatting import box, escape, humanize_list, humanize_number, humanize_timedelta, pagify
 from redbot.core.utils.common_filters import filter_various_mentions
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu, start_adding_reactions
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
-import adventure.charsheet
 
+import adventure.charsheet
 from . import bank
-from .menus import (
-    LeaderboardSource,
-    ScoreboardSource,
-    BaseMenu,
-    ScoreBoardMenu,
-    WeeklyScoreboardSource,
-    LeaderboardMenu,
-)
 from .charsheet import (
-    Character,
-    GameSession,
-    Item,
-    Stats,
-    calculate_sp,
-    can_equip,
-    no_dev_prompt,
-    equip_level,
-    has_funds,
-    parse_timedelta,
     DEV_LIST,
-    RARITIES,
     ORDER,
-    ItemConverter,
-    EquipmentConverter,
-    RarityConverter,
-    SlotConverter,
-    ThemeSetMonterConverter,
-    ThemeSetPetConverter,
-    PercentageConverter,
+    RARITIES,
+    Character,
     DayConverter,
     EquipableItemConverter,
+    EquipmentConverter,
+    GameSession,
+    Item,
+    ItemConverter,
+    PercentageConverter,
+    RarityConverter,
+    SlotConverter,
+    Stats,
+    ThemeSetMonterConverter,
+    ThemeSetPetConverter,
+    calculate_sp,
+    can_equip,
+    equip_level,
+    has_funds,
+    no_dev_prompt,
+    parse_timedelta,
+)
+from .menus import (
+    BaseMenu,
+    LeaderboardMenu,
+    LeaderboardSource,
+    ScoreBoardMenu,
+    ScoreboardSource,
+    WeeklyScoreboardSource,
 )
 
 _ = Translator("Adventure", __file__)
@@ -234,7 +226,7 @@ class AdventureResults:
 class Adventure(commands.Cog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.3.3"
+    __version__ = "3.3.4"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -1479,7 +1471,7 @@ class Adventure(commands.Cog):
             rebirthcost = 1000 * c.rebirths
             current_balance = c.bal
             last_known_currency = c.last_known_currency
-            if current_balance / last_known_currency < 0.25:
+            if last_known_currency and current_balance / last_known_currency < 0.25:
                 currency_name = await bank.get_currency_name(ctx.guild,)
                 return await smart_embed(
                     ctx,
@@ -3634,10 +3626,11 @@ class Adventure(commands.Cog):
                 character = await Character.from_json(self.config, ctx.author, self._daily_bonus)
             except Exception as exc:
                 log.exception("Error with the new character sheet", exc_info=exc)
-            if character.last_currency_check + 600 < time.time() or character.bal > character.last_known_currency:
-                character.last_known_currency = await bank.get_balance(ctx.author)
-                character.last_currency_check = time.time()
-                await self.config.user(ctx.author).set(await character.to_json(self.config))
+            else:
+                if character.last_currency_check + 600 < time.time() or character.bal > character.last_known_currency:
+                    character.last_known_currency = await bank.get_balance(ctx.author)
+                    character.last_currency_check = time.time()
+                    await self.config.user(ctx.author).set(await character.to_json(self.config))
 
     @commands.group(autohelp=False)
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
@@ -7048,7 +7041,6 @@ class Adventure(commands.Cog):
                     "You currently have {new_balance} {currency}."
                 ).format(currency=adventure_credits_name, new_balance=humanize_number(exc.max_balance)),
             )
-            return
         else:
             await smart_embed(
                 ctx,
@@ -7064,6 +7056,15 @@ class Adventure(commands.Cog):
                     new_balance=humanize_number(await bank.get_balance(author)),
                 ),
             )
+        try:
+            character = await Character.from_json(self.config, ctx.author, self._daily_bonus)
+        except Exception as exc:
+            log.exception("Error with the new character sheet", exc_info=exc)
+        else:
+            if character.last_currency_check + 600 < time.time() or character.bal > character.last_known_currency:
+                character.last_known_currency = await bank.get_balance(ctx.author)
+                character.last_currency_check = time.time()
+                await self.config.user(ctx.author).set(await character.to_json(self.config))
 
     @commands.group(name="atransfer")
     @has_separated_economy()
@@ -7107,6 +7108,15 @@ class Adventure(commands.Cog):
                 currency=await bank.get_currency_name(ctx.guild, _forced=True),
             ),
         )
+        try:
+            character = await Character.from_json(self.config, ctx.author, self._daily_bonus)
+        except Exception as exc:
+            log.exception("Error with the new character sheet", exc_info=exc)
+        else:
+            if character.last_currency_check + 600 < time.time() or character.bal > character.last_known_currency:
+                character.last_known_currency = await bank.get_balance(ctx.author)
+                character.last_currency_check = time.time()
+                await self.config.user(ctx.author).set(await character.to_json(self.config))
 
     @commands_atransfer.command(name="withdraw", cooldown_after_parsing=True)
     @commands.guild_only()

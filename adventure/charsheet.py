@@ -4,15 +4,14 @@ import logging
 import random
 import re
 from copy import copy
-from datetime import date, timedelta, datetime
+from datetime import date, datetime, timedelta
 from string import ascii_letters, digits
-from typing import Dict, List, Mapping, Optional, Set, MutableMapping, Tuple
+from typing import Dict, List, Mapping, MutableMapping, Optional, Set, Tuple
 
 import discord
 from discord.ext.commands import check
 from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
-
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
@@ -25,13 +24,6 @@ from . import bank
 log = logging.getLogger("red.cogs.adventure")
 
 _ = Translator("Adventure", __file__)
-
-try:
-    from redbot.core.utils.chat_formatting import humanize_number
-except ImportError:
-
-    def humanize_number(val: int) -> str:
-        return "{:,}".format(val)
 
 
 DEV_LIST = [208903205982044161, 154497072148643840, 218773382617890828]
