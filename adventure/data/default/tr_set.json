@@ -1,4 +1,18 @@
 {
+
+    "Depiction Of Nature And Society": {"slot": ["belt"], "set": "The Supreme One", "parts": 11, "att": 80, "cha": 80, "int": 80, "dex": 80, "luck": 80, "rarity": "set"},
+    "Ahura Mazda": {"slot": ["boots"], "set": "The Supreme One", "parts": 11, "att": 80, "cha": 80, "int": 80, "dex": 80, "luck": 80, "rarity": "set"},
+    "Downfall Of Castle And Country": {"slot": ["head"], "set": "The Supreme One", "parts": 11, "att": 80, "cha": 80, "int": 80, "dex": 80, "luck": 80, "rarity": "set"},
+    "Avarice And Generosity": {"slot": ["gloves"], "set": "The Supreme One", "parts": 11, "att": 80, "cha": 80, "int": 80, "dex": 80, "luck": 80, "rarity": "set"},
+    "World Savior": {"slot": ["chest"], "set": "The Supreme One", "parts": 11, "att": 80, "cha": 80, "int": 80, "dex": 80, "luck": 80, "rarity": "set"},
+    "Ouroboros": {"slot": ["charm"], "set": "The Supreme One", "parts": 11, "att": 80, "cha": 80, "int": 80, "dex": 80, "luck": 80, "rarity": "set"},
+    "Two-Worlds Mandala": {"slot": ["legs"], "set": "The Supreme One", "parts": 11, "att": 80, "cha": 80, "int": 80, "dex": 80, "luck": 80, "rarity": "set"},
+    "Ginnungagap": {"slot": ["neck"], "set": "The Supreme One", "parts": 11, "att": 80, "cha": 80, "int": 80, "dex": 80, "luck": 80, "rarity": "set"},
+    "Gjallarhorn": {"slot": ["ring"], "set": "The Supreme One", "parts": 11, "att": 80, "cha": 80, "int": 80, "dex": 80, "luck": 80, "rarity": "set"},
+    "Billion Blades": {"slot": ["left"], "set": "The Supreme One", "parts": 11, "att": 80, "cha": 80, "int": 80, "dex": 80, "luck": 80, "rarity": "set"},
+    "Holy Grail": {"slot": ["right"], "set": "The Supreme One", "parts": 11, "att": 80, "cha": 80, "int": 80, "dex": 80, "luck": 80, "rarity": "set"},
+
+
     "Belt Of Ainz Ooal Gown": {"slot": ["belt"], "set": "Ainz Ooal Gown", "parts": 10, "att": 40, "cha": 40, "int": 40, "dex": 40, "luck": 40, "rarity": "set"},
     "Boots Of Ainz Ooal Gown": {"slot": ["boots"], "set": "Ainz Ooal Gown", "parts": 10, "att": 40, "cha": 40, "int": 40, "dex": 40, "luck": 40, "rarity": "set"},
     "Crown Of Ainz Ooal Gown": {"slot": ["head"], "set": "Ainz Ooal Gown", "parts": 10, "att": 40, "cha": 40, "int": 40, "dex": 40, "luck": 40, "rarity": "set"},
@@ -115,5 +129,16 @@
     "King Solomons Lower Robe": {"slot": ["legs"], "set": "The King of Mages", "parts": 9, "att": -50, "cha": 5, "int": 30, "dex": 10, "luck": 0, "rarity": "set"},
     "King Solomons Shoes": {"slot": ["boots"], "set": "The King of Mages", "parts": 9, "att": -50, "cha": 5, "int": 30, "dex": 10, "luck": 0, "rarity": "set"},
     "King Solomons 10 Rings": {"slot": ["left", "right"], "set": "The King of Mages","parts": 9, "att": -50, "cha": 5, "int": 30, "dex": 10, "luck": 0, "rarity": "set"},
-    "King Solomons Markings": {"slot": ["charm"], "set": "The King of Mages", "parts": 9, "att": -50, "cha": 5, "int": 30, "dex": 10, "luck": 0, "rarity": "set"}
+    "King Solomons Markings": {"slot": ["charm"], "set": "The King of Mages", "parts": 9, "att": -50, "cha": 5, "int": 30, "dex": 10, "luck": 0, "rarity": "set"},
+
+    "King Titan Galea": {"slot": ["head"], "set": "King Titan", "parts": 10, "att": 30, "cha": 5, "int": -50, "dex": 10, "luck": 0, "rarity": "set"},
+    "King Titan Ocrea": {"slot": ["neck"], "set": "King Titan", "parts": 10, "att": 30, "cha": 5, "int": -50, "dex": 10, "luck": 0, "rarity": "set"},
+    "King Titan Skin": {"slot": ["chest"], "set": "King Titan", "parts": 10, "att": 30, "cha": 5, "int": -50, "dex": 10, "luck": 0, "rarity": "set"},
+    "King Titan Manica": {"slot": ["gloves"], "set": "King Titan", "parts": 10, "att": 30, "cha": 5, "int": -50, "dex": 10, "luck": 0, "rarity": "set"},
+    "King Titan Balteus": {"slot": ["belt"], "set": "King Titan", "parts": 10, "att": 30, "cha": 5, "int": -50, "dex": 10, "luck": 0, "rarity": "set"},
+    "King Titan Fasciae": {"slot": ["legs"], "set": "King Titan", "parts": 10, "att": 30, "cha": 5, "int": -50, "dex": 10, "luck": 0, "rarity": "set"},
+    "King Titan Sandals": {"slot": ["boots"], "set": "King Titan", "parts": 10, "att": 30, "cha": 5, "int": -50, "dex": 10, "luck": 0, "rarity": "set"},
+    "King Titan Gladius": {"slot": ["right"], "set": "King Titan","parts": 10, "att": 30, "cha": 5, "int": -50, "dex": 10, "luck": 0, "rarity": "set"},
+    "King Titan Scutum": {"slot": ["left"], "set": "King Titan","parts": 10, "att": 30, "cha": 5, "int": -50, "dex": 10, "luck": 0, "rarity": "set"},
+    "King Titan Chains": {"slot": ["charm"], "set": "King Titan", "parts": 10, "att": 30, "cha": 5, "int": -50, "dex": 10, "luck": 0, "rarity": "set"}
 }

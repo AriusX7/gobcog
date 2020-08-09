@@ -18,7 +18,7 @@ from discord.ext.commands import CheckFailure
 from discord.ext.commands.errors import BadArgument
 from redbot.core import Config, commands
 from redbot.core.bot import Red
-from redbot.core.commands import Context, check
+from redbot.core.commands import Context, check, get_dict_converter
 from redbot.core.data_manager import bundled_data_path, cog_data_path
 from redbot.core.errors import BalanceTooHigh
 from redbot.core.i18n import Translator, cog_i18n
@@ -27,6 +27,7 @@ from redbot.core.utils.chat_formatting import box, escape, humanize_list, humani
 from redbot.core.utils.common_filters import filter_various_mentions
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu, start_adding_reactions
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
+from tabulate import tabulate
 
 import adventure.charsheet
 from . import bank
@@ -71,6 +72,7 @@ REBIRTH_LVL = 20
 REBIRTH_STEP = 10
 _SCHEMA_VERSION = 4
 _config: Config = None
+TaxesConverter = get_dict_converter(delims=[" ", ",", ";"])
 
 
 async def smart_embed(ctx, message, success=None):
@@ -226,7 +228,7 @@ class AdventureResults:
 class Adventure(commands.Cog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.3.4"
+    __version__ = "3.3.5"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -317,7 +319,7 @@ class Adventure(commands.Cog):
             "last_skill_reset": 0,
             "last_known_currency": 0,
             "last_currency_check": 0,
-            "treasure": [0, 0, 0, 0, 0],
+            "treasure": [0, 0, 0, 0, 0, 0],
             "items": {
                 "head": {},
                 "neck": {},
@@ -362,6 +364,7 @@ class Adventure(commands.Cog):
             "rebirth_cost": 100.0,
             "themes": {},
             "daily_bonus": {"1": 0, "2": 0, "3": 0.5, "4": 0, "5": 0.5, "6": 1.0, "7": 1.0},
+            "tax_brackets": {"1000": 0.1, "5000": 0.2, "10000": 0.3, "50000": 0.4, "100000": 0.5},
             "separate_economy": True,
             "to_conversion_rate": 10,
             "from_conversion_rate": 11,
@@ -404,19 +407,24 @@ class Adventure(commands.Cog):
             _config = self.config
             theme = await self.config.theme()
             self._separate_economy = await self.config.separate_economy()
-            as_monster_fp = cog_data_path(self) / f"{theme}" / "as_monsters.json"
-            attribs_fp = cog_data_path(self) / f"{theme}" / "attribs.json"
-            locations_fp = cog_data_path(self) / f"{theme}" / "locations.json"
-            monster_fp = cog_data_path(self) / f"{theme}" / "monsters.json"
-            pets_fp = cog_data_path(self) / f"{theme}" / "pets.json"
-            raisins_fp = cog_data_path(self) / f"{theme}" / "raisins.json"
-            threatee_fp = cog_data_path(self) / f"{theme}" / "threatee.json"
-            tr_set_fp = cog_data_path(self) / f"{theme}" / "tr_set.json"
-            prefixes_fp = cog_data_path(self) / f"{theme}" / "prefixes.json"
-            materials_fp = cog_data_path(self) / f"{theme}" / "materials.json"
-            equipment_fp = cog_data_path(self) / f"{theme}" / "equipment.json"
-            suffixes_fp = cog_data_path(self) / f"{theme}" / "suffixes.json"
-            set_bonuses = cog_data_path(self) / f"{theme}" / "set_bonuses.json"
+            if "default" == theme:
+                get_path = bundled_data_path
+            else:
+                get_path = cog_data_path
+
+            as_monster_fp = get_path(self) / f"{theme}" / "as_monsters.json"
+            attribs_fp = get_path(self) / f"{theme}" / "attribs.json"
+            locations_fp = get_path(self) / f"{theme}" / "locations.json"
+            monster_fp = get_path(self) / f"{theme}" / "monsters.json"
+            pets_fp = get_path(self) / f"{theme}" / "pets.json"
+            raisins_fp = get_path(self) / f"{theme}" / "raisins.json"
+            threatee_fp = get_path(self) / f"{theme}" / "threatee.json"
+            tr_set_fp = get_path(self) / f"{theme}" / "tr_set.json"
+            prefixes_fp = get_path(self) / f"{theme}" / "prefixes.json"
+            materials_fp = get_path(self) / f"{theme}" / "materials.json"
+            equipment_fp = get_path(self) / f"{theme}" / "equipment.json"
+            suffixes_fp = get_path(self) / f"{theme}" / "suffixes.json"
+            set_bonuses = get_path(self) / f"{theme}" / "set_bonuses.json"
             files = {
                 "pets": pets_fp,
                 "attr": attribs_fp,
@@ -697,14 +705,13 @@ class Adventure(commands.Cog):
 
         RARE_INDEX = RARITIES.index("rare")
         EPIC_INDEX = RARITIES.index("epic")
-        PREFIX_CHANCE = {"rare": 0.5, "epic": 0.75, "legendary": 0.9, "set": 0}
-        SUFFIX_CHANCE = {"epic": 0.5, "legendary": 0.75}
+        PREFIX_CHANCE = {"rare": 0.5, "epic": 0.75, "legendary": 0.9, "ascended": 1.0, "set": 0}
+        SUFFIX_CHANCE = {"epic": 0.5, "legendary": 0.75, "ascended": 0.5}
 
         if rarity not in RARITIES:
             rarity = "normal"
         if slot is None:
             slot = random.choice(ORDER)
-            #  slot = random.choice(["right", "chest"])
         name = ""
         stats = {"att": 0, "cha": 0, "int": 0, "dex": 0, "luck": 0}
 
@@ -949,7 +956,7 @@ class Adventure(commands.Cog):
                     )
                 else:
                     equip_msg = box(
-                        _("{author} equipped {item} " "({slot} slot) and put {put} into their backpack.").format(
+                        _("{author} equipped {item} ({slot} slot) and put {put} into their backpack.").format(
                             author=self.escape(ctx.author.display_name),
                             item=str(equip),
                             slot=slot,
@@ -971,7 +978,7 @@ class Adventure(commands.Cog):
         assert isinstance(backpack_item, Item)
         if self.in_adventure(ctx):
             return await smart_embed(
-                ctx, _("You tried to disassemble an item but the " "monster ahead of you commands your attention."),
+                ctx, _("You tried to disassemble an item but the monster ahead of you commands your attention."),
             )
         async with self.get_lock(ctx.author):
             try:
@@ -1008,9 +1015,9 @@ class Adventure(commands.Cog):
                 await self.config.user(ctx.author).set(await character.to_json(self.config))
                 return await smart_embed(
                     ctx,
-                    _(
-                        "Your attempt at disassembling {} was successful " "and you have received {} legendary {}."
-                    ).format(item.name, roll, _("chests") if roll > 1 else _("chest")),
+                    _("Your attempt at disassembling {} was successful and you have received {} legendary {}.").format(
+                        item.name, roll, _("chests") if roll > 1 else _("chest")
+                    ),
                 )
 
     @_backpack.command(name="sellall")
@@ -1133,7 +1140,7 @@ class Adventure(commands.Cog):
             ctx.command.reset_cooldown(ctx)
             return await ctx.send(
                 box(
-                    _("\n{author}, your {device} is " "refusing to be sold and bit your finger for trying.").format(
+                    _("\n{author}, your {device} is refusing to be sold and bit your finger for trying.").format(
                         author=self.escape(ctx.author.display_name), device=str(item)
                     ),
                     lang="css",
@@ -1421,9 +1428,7 @@ class Adventure(commands.Cog):
                             await trade_msg.edit(
                                 content=(
                                     box(
-                                        _(
-                                            "\n{author} traded {item} to " "{buyer} for {asking} {currency_name}."
-                                        ).format(
+                                        _("\n{author} traded {item} to {buyer} for {asking} {currency_name}.").format(
                                             author=self.escape(ctx.author.display_name),
                                             item=item,
                                             buyer=self.escape(buyer.display_name),
@@ -1891,6 +1896,26 @@ class Adventure(commands.Cog):
     @has_separated_economy()
     async def commands_adventureset_economy(self, ctx: Context):
         """[Admin] Manages the adventure economy."""
+
+    @commands_adventureset_economy.command(name="tax", usage=" gold,tax gold,tax ...")
+    @commands.is_owner()
+    async def commands_adventureset_economy_tax(self, ctx: Context, *, taxes: TaxesConverter):
+        """[Owner] Set the tax thresholds.
+
+        **gold** must be positive
+        **percentage** must be between 0 and 1.
+
+        """
+        new_taxes = {}
+        for k, v in taxes.items():
+            if int(k) >= 0 and 0 <= float(v) <= 1:
+                new_taxes[k] = float(v)
+        new_taxes = {k: v for k, v in sorted(new_taxes.items(), key=lambda item: item[1])}
+        await self.config.tax_brackets.set(new_taxes)
+        headers = ["Tax %", "Tax Threshold"]
+        await smart_embed(
+            ctx, box(tabulate([(f"{v:.2%}", humanize_number(int(k))) for k, v in new_taxes.items()], headers=headers))
+        )
 
     @commands.is_owner()
     @commands_adventureset_economy.command(name="rate")
@@ -2470,7 +2495,7 @@ class Adventure(commands.Cog):
                                 "Successfully converted {converted} normal treasure "
                                 "chests to {to} rare treasure chest{plur}.\n{author} "
                                 "now owns {normal} normal, {rare} rare, {epic} epic, "
-                                "{leg} legendary treasure chests and {set} set treasure chests."
+                                "{leg} legendary treasure chests, {asc} ascended and {set} set treasure chests."
                             ).format(
                                 converted=humanize_number(normalcost * amount),
                                 to=humanize_number(1 * amount),
@@ -2480,7 +2505,8 @@ class Adventure(commands.Cog):
                                 rare=c.treasure[1],
                                 epic=c.treasure[2],
                                 leg=c.treasure[3],
-                                set=c.treasure[4],
+                                asc=c.treasure[4],
+                                set=c.treasure[5],
                             ),
                             lang="css",
                         )
@@ -2489,7 +2515,7 @@ class Adventure(commands.Cog):
                 else:
                     await smart_embed(
                         ctx,
-                        _("**{author}**, you do not have {amount} " "normal treasure chests to convert.").format(
+                        _("**{author}**, you do not have {amount} normal treasure chests to convert.").format(
                             author=self.escape(ctx.author.display_name), amount=humanize_number(normalcost * amount),
                         ),
                     )
@@ -2503,7 +2529,7 @@ class Adventure(commands.Cog):
                                 "Successfully converted {converted} rare treasure "
                                 "chests to {to} epic treasure chest{plur}. \n{author} "
                                 "now owns {normal} normal, {rare} rare, {epic} epic, "
-                                "{leg} legendary treasure chests and {set} set treasure chests."
+                                "{leg} legendary treasure chests, {asc} ascended and {set} set treasure chests."
                             ).format(
                                 converted=humanize_number(rarecost * amount),
                                 to=humanize_number(1 * amount),
@@ -2513,7 +2539,8 @@ class Adventure(commands.Cog):
                                 rare=c.treasure[1],
                                 epic=c.treasure[2],
                                 leg=c.treasure[3],
-                                set=c.treasure[4],
+                                asc=c.treasure[4],
+                                set=c.treasure[5],
                             ),
                             lang="css",
                         )
@@ -2522,7 +2549,7 @@ class Adventure(commands.Cog):
                 else:
                     await smart_embed(
                         ctx,
-                        _("{author}, you do not have {amount} " "rare treasure chests to convert.").format(
+                        _("{author}, you do not have {amount} rare treasure chests to convert.").format(
                             author=ctx.author.mention, amount=humanize_number(rarecost * amount)
                         ),
                     )
@@ -2536,7 +2563,7 @@ class Adventure(commands.Cog):
                                 "Successfully converted {converted} epic treasure "
                                 "chests to {to} legendary treasure chest{plur}. \n{author} "
                                 "now owns {normal} normal, {rare} rare, {epic} epic, "
-                                "{leg} legendary treasure chests and {set} set treasure chests."
+                                "{leg} legendary treasure chests, {asc} ascended and {set} set treasure chests."
                             ).format(
                                 converted=humanize_number(epiccost * amount),
                                 to=humanize_number(1 * amount),
@@ -2546,7 +2573,8 @@ class Adventure(commands.Cog):
                                 rare=c.treasure[1],
                                 epic=c.treasure[2],
                                 leg=c.treasure[3],
-                                set=c.treasure[4],
+                                asc=c.treasure[4],
+                                set=c.treasure[5],
                             ),
                             lang="css",
                         )
@@ -2555,7 +2583,7 @@ class Adventure(commands.Cog):
                 else:
                     await smart_embed(
                         ctx,
-                        _("**{author}**, you do not have {amount} " "epic treasure chests to convert.").format(
+                        _("**{author}**, you do not have {amount} epic treasure chests to convert.").format(
                             author=self.escape(ctx.author.display_name), amount=humanize_number(epiccost * amount),
                         ),
                     )
@@ -2613,8 +2641,11 @@ class Adventure(commands.Cog):
                             humanize_timedelta(seconds=int(cooldown_time)) if cooldown_time >= 1 else _("1 second")
                         ),
                     )
+                ignored_rarities = ["forged", "set", "event"]
+                if c.rebirths < 30:
+                    ignored_rarities.append("ascended")
                 consumed = []
-                forgeables_items = [str(i) for n, i in c.backpack.items() if i.rarity not in ["forged", "set"]]
+                forgeables_items = [str(i) for n, i in c.backpack.items() if i.rarity not in ignored_rarities]
 
                 if len(forgeables_items) <= 1:
                     return await smart_embed(
@@ -2624,7 +2655,7 @@ class Adventure(commands.Cog):
                         ),
                     )
                 forgeables = _("[{author}'s forgeables]\n{bc}\n").format(
-                    author=self.escape(ctx.author.display_name), bc=await c.get_backpack(True)
+                    author=self.escape(ctx.author.display_name), bc=await c.get_backpack(forging=True, clean=True)
                 )
                 pages = pagify(forgeables, delims=["\n"], shorten_by=20, page_length=1900)
                 pages = [box(page, lang="css") for page in pages]
@@ -2695,7 +2726,7 @@ class Adventure(commands.Cog):
                                 item = None
                         if item and consumed[0].owned <= 1 and str(consumed[0]) == str(item):
                             wrong_item = _(
-                                "**{c}**, you only own 1 copy of this item and " "you've already selected it."
+                                "**{c}**, you only own 1 copy of this item and you've already selected it."
                             ).format(c=self.escape(ctx.author.display_name))
                             await smart_embed(ctx, wrong_item)
                             item = None
@@ -2735,7 +2766,7 @@ class Adventure(commands.Cog):
                 lookup = list(i for n, i in c.backpack.items() if i.rarity == "forged")
                 if len(lookup) > 0:
                     forge_str = box(
-                        _("{author}, you already have a device. " "Do you want to replace {replace}?").format(
+                        _("{author}, you already have a device. Do you want to replace {replace}?").format(
                             author=self.escape(ctx.author.display_name), replace=", ".join([str(x) for x in lookup]),
                         ),
                         lang="css",
@@ -2753,9 +2784,7 @@ class Adventure(commands.Cog):
                     if pred.result:  # user reacted with Yes.
                         c.heroclass["cooldown"] = time.time() + cooldown_time
                         created_item = box(
-                            _(
-                                "{author}, your new {newitem} consumed {lk} " "and is now lurking in your backpack."
-                            ).format(
+                            _("{author}, your new {newitem} consumed {lk} and is now lurking in your backpack.").format(
                                 author=self.escape(ctx.author.display_name),
                                 newitem=newitem,
                                 lk=", ".join([str(x) for x in lookup]),
@@ -2975,16 +3004,16 @@ class Adventure(commands.Cog):
 
         if user is None:
             user = ctx.author
-        loot_types = ["normal", "rare", "epic", "legendary", "set"]
+        loot_types = ["normal", "rare", "epic", "legendary", "ascended", "set"]
         if loot_type not in loot_types:
             return await smart_embed(
                 ctx,
                 (
-                    "Valid loot types: `normal`, `rare`, `epic`, `legendary`, or `set`: "
+                    "Valid loot types: `normal`, `rare`, `epic`, `legendary`, `ascended` or `set`: "
                     "ex. `{}give loot normal @locastan` "
                 ).format(ctx.prefix),
             )
-        if loot_type in ["legendary", "set"] and not await ctx.bot.is_owner(ctx.author):
+        if loot_type in ["legendary", "set", "ascended"] and not await ctx.bot.is_owner(ctx.author):
             return await smart_embed(ctx, _("You are not worthy to award legendary loot."))
         async with self.get_lock(user):
             try:
@@ -2998,8 +3027,10 @@ class Adventure(commands.Cog):
                 c.treasure[2] += number
             elif loot_type == "legendary":
                 c.treasure[3] += number
-            elif loot_type == "set":
+            elif loot_type == "ascended":
                 c.treasure[4] += number
+            elif loot_type == "set":
+                c.treasure[5] += number
             else:
                 c.treasure[0] += number
             await self.config.user(user).set(await c.to_json(self.config))
@@ -3008,14 +3039,15 @@ class Adventure(commands.Cog):
                     _(
                         "{author} now owns {normal} normal, "
                         "{rare} rare, {epic} epic, "
-                        "{leg} legendary and {set} set treasure chests."
+                        "{leg} legendary, {asc} ascended and {set} set treasure chests."
                     ).format(
                         author=self.escape(user.display_name),
                         normal=str(c.treasure[0]),
                         rare=str(c.treasure[1]),
                         epic=str(c.treasure[2]),
                         leg=str(c.treasure[3]),
-                        set=str(c.treasure[4]),
+                        asc=str(c.treasure[4]),
+                        set=str(c.treasure[5]),
                     ),
                     lang="css",
                 )
@@ -3132,7 +3164,7 @@ class Adventure(commands.Cog):
                         return await smart_embed(ctx, _("You already are a {}.").format(clz))
                     class_msg = await ctx.send(
                         box(
-                            _("This will cost {spend} {currency_name}. " "Do you want to continue, {author}?").format(
+                            _("This will cost {spend} {currency_name}. Do you want to continue, {author}?").format(
                                 spend=humanize_number(spend),
                                 currency_name=currency_name,
                                 author=self.escape(ctx.author.display_name),
@@ -3198,7 +3230,7 @@ class Adventure(commands.Cog):
                                 await class_msg.edit(
                                     content=box(
                                         _(
-                                            "{}, you will lose your pet " "if you change your class.\nShall I proceed?"
+                                            "{}, you will lose your pet if you change your class.\nShall I proceed?"
                                         ).format(self.escape(ctx.author.display_name)),
                                         lang="css",
                                     )
@@ -3303,7 +3335,7 @@ class Adventure(commands.Cog):
 
         Use the box rarity type with the command: normal, rare, epic, legendary or set.
         """
-        if number > 100 or number < 1:
+        if (not self.is_dev(ctx.author) and number > 100) or number < 1:
             return await smart_embed(ctx, _("Nice try :smirk:."))
         if self.in_adventure(ctx):
             return await smart_embed(
@@ -3323,14 +3355,15 @@ class Adventure(commands.Cog):
                     box(
                         _(
                             "{author} owns {normal} normal, "
-                            "{rare} rare, {epic} epic, {leg} legendary and {set} set chests."
+                            "{rare} rare, {epic} epic, {leg} legendary , {asc} ascended and {set} set chests."
                         ).format(
                             author=self.escape(ctx.author.display_name),
                             normal=str(c.treasure[0]),
                             rare=str(c.treasure[1]),
                             epic=str(c.treasure[2]),
                             leg=str(c.treasure[3]),
-                            set=str(c.treasure[4]),
+                            asc=str(c.treasure[4]),
+                            set=str(c.treasure[5]),
                         ),
                         lang="css",
                     )
@@ -3343,8 +3376,10 @@ class Adventure(commands.Cog):
                 redux = 2
             elif box_type == "legendary":
                 redux = 3
-            elif box_type == "set":
+            elif box_type == "ascended":
                 redux = 4
+            elif box_type == "set":
+                redux = 5
             else:
                 return await smart_embed(
                     ctx, _("There is talk of a {} treasure chest but nobody ever saw one.").format(box_type),
@@ -3430,7 +3465,7 @@ class Adventure(commands.Cog):
             ctx.command.reset_cooldown(ctx)
             return await smart_embed(ctx, _("The gods refuse your pitiful offering."))
         if offering > bal:
-            offering = bal
+            offering = int(bal)
         lock = self.get_lock(ctx.author)
         await lock.acquire()
         try:
@@ -3505,6 +3540,7 @@ class Adventure(commands.Cog):
             except Exception as exc:
                 log.exception("Error with the new character sheet", exc_info=exc)
                 lock.release()
+                ctx.command.reset_cooldown(ctx)
                 return
             roll = random.randint(max(1, min_roll * 2), 50)
             versus = random.randint(10, 60)
@@ -3518,19 +3554,27 @@ class Adventure(commands.Cog):
             xp_won = int(xp_won * (character.gear_set_bonus.get("xpmult", 1) + daymult))
             if roll < 10:
                 loss = round(bal // 3)
+                looted = ""
                 try:
                     await bank.withdraw_credits(ctx.author, loss)
-                    loss = humanize_number(loss)
+                    loss_string = humanize_number(loss)
                 except ValueError:
                     await bank.set_balance(ctx.author, 0)
-                    loss = _("all of their")
+                    loss_string = _("all of their")
+                if character.bal < loss:
+                    items = await character.looted(how_many=max(int(10 - roll) // 2, 1))
+                    item_string = "\n".join([f"{v} {i}" for v, i in items])
+                    looted = box(f"{item_string}", lang="css")
+                await self.config.user(ctx.author).set(await character.to_json(self.config))
                 loss_msg = _(
-                    ", losing {loss} {currency_name} as **{negachar}** rifled through their belongings"
-                ).format(loss=loss, currency_name=currency_name, negachar=negachar)
+                    ", losing {loss} {currency_name} as **{negachar}** rifled through their belongings."
+                ).format(loss=loss_string, currency_name=currency_name, negachar=negachar)
+                if looted:
+                    loss_msg += _(" **{negachar}** also stole the following items\n\n{items}").format(
+                        items=looted, negachar=negachar
+                    )
                 await nega_msg.edit(
-                    content=_(
-                        "{content}\n**{author}** fumbled and died to **{negachar}'s** savagery{loss_msg}."
-                    ).format(
+                    content=_("{content}\n**{author}** fumbled and died to **{negachar}'s** savagery{loss_msg}").format(
                         content=nega_msg.content,
                         author=self.escape(ctx.author.display_name),
                         negachar=negachar,
@@ -3583,7 +3627,7 @@ class Adventure(commands.Cog):
                 ctx.command.reset_cooldown(ctx)
                 await nega_msg.edit(
                     content=_(
-                        "{content}\n**{author}** " "{dice}({roll}) almost killed **{negachar}** {dice}({versus})."
+                        "{content}\n**{author}** {dice}({roll}) almost killed **{negachar}** {dice}({versus})."
                     ).format(
                         dice=self.emojis.dice,
                         content=nega_msg.content,
@@ -3595,19 +3639,28 @@ class Adventure(commands.Cog):
                 )
             else:
                 loss = round(bal / (random.randint(10, 25)))
+                looted = ""
                 try:
                     await bank.withdraw_credits(ctx.author, loss)
+                    loss_string = humanize_number(loss)
                 except ValueError:
                     await bank.set_balance(ctx.author, 0)
-                    loss = _("all of their")
-                loss_msg = _(", losing {loss} {currency_name} as **{negachar}** looted their backpack").format(
-                    loss=humanize_number(loss) if not isinstance(loss, str) else loss,
-                    currency_name=currency_name,
-                    negachar=negachar,
+                    loss_string = _("all of their")
+                if character.bal < loss:
+                    items = await character.looted(how_many=max(int(10 - roll) // 2, 1))
+                    item_string = "\n".join([f"{i}  - {v}" for v, i in items])
+                    looted = box(f"{item_string}", lang="css")
+
+                loss_msg = _(", losing {loss} {currency_name} as **{negachar}** looted their backpack.").format(
+                    loss=loss_string, currency_name=currency_name, negachar=negachar,
                 )
+                if looted:
+                    loss_msg += _(" **{negachar}** also stole the following items\n\n{items}").format(
+                        items=looted, negachar=negachar
+                    )
                 await nega_msg.edit(
                     content=_(
-                        "**{author}** {dice}({roll}) was killed by **{negachar}** {dice}({versus}){loss_msg}."
+                        "**{author}** {dice}({roll}) was killed by **{negachar}** {dice}({versus}){loss_msg}"
                     ).format(
                         dice=self.emojis.dice,
                         author=self.escape(ctx.author.display_name),
@@ -3662,7 +3715,7 @@ class Adventure(commands.Cog):
                     ctx.command.reset_cooldown(ctx)
                     return await ctx.send(
                         box(
-                            _("{author}, you already have a pet. " "Try foraging ({prefix}pet forage).").format(
+                            _("{author}, you already have a pet. Try foraging ({prefix}pet forage).").format(
                                 author=self.escape(ctx.author.display_name), prefix=ctx.prefix
                             ),
                             lang="css",
@@ -3697,7 +3750,7 @@ class Adventure(commands.Cog):
                     pet_msg4 = ""
                     can_catch = True
                     force_catch = False
-                    if "Ainz Ooal Gown" in c.sets:
+                    if any(x in c.sets for x in ["The Supreme One", "Ainz Ooal Gown"]):
                         can_catch = True
                         pet = random.choice(
                             ["Albedo", "Rubedo", "Guardians of Nazarick", *random.choices(pet_choices, k=10),]
@@ -3734,7 +3787,7 @@ class Adventure(commands.Cog):
                         else:
                             roll = random.randint(0, 2 if roll in [50, 25] else 5)
                         if roll == 0:
-                            if force_catch and "Ainz Ooal Gown" in c.sets:
+                            if force_catch and any(x in c.sets for x in ["The Supreme One", "Ainz Ooal Gown"]):
                                 msg = random.choice(
                                     [
                                         _("{author} commands {pet} into submission.").format(
@@ -4213,10 +4266,10 @@ class Adventure(commands.Cog):
                 xpmult=xpmult,
                 cpmult=cpmult,
             )
-        stats_msg = _("{set_name}\n{part_val} Part Bonus\n\n").format(set_name=title_cased_set_name, part_val=parts)
-        stats_msg += breakdown
-        stats_msg += "Multiple complete set bonuses stack."
-        msg_list.append(box(stats_msg, lang="ini"))
+            stats_msg = _("{set_name}\n{part_val} Part Bonus\n\n").format(set_name=title_cased_set_name, part_val=parts)
+            stats_msg += breakdown
+            stats_msg += "Multiple complete set bonuses stack."
+            msg_list.append(box(stats_msg, lang="ini"))
         set_items = {key: value for key, value in self.TR_GEAR_SET.items() if value["set"] == title_cased_set_name}
 
         d = {}
@@ -4233,7 +4286,8 @@ class Adventure(commands.Cog):
         msg_list.append(box(set_msg, lang="css"))
 
         backpack_contents = _("{author}'s backpack \n\n{backpack}\n").format(
-            author=self.escape(ctx.author.display_name), backpack=await c.get_backpack(set_name=title_cased_set_name),
+            author=self.escape(ctx.author.display_name),
+            backpack=await c.get_backpack(set_name=title_cased_set_name, clean=True),
         )
         async for page in AsyncIter(pagify(backpack_contents, delims=["\n"], shorten_by=20, page_length=1950)):
             msg_list.append(box(page, lang="css"))
@@ -4278,7 +4332,7 @@ class Adventure(commands.Cog):
             return
 
         legend = _("( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | [DEGRADE#] | SET (SET PIECES)")
-        equipped_gear_msg = _("[{user}'s Character Sheet]\n\nItems Equipped:\n{legend}{equip}").format(
+        equipped_gear_msg = _("{user}'s Character Sheet\n\nItems Equipped:\n{legend}{equip}").format(
             legend=legend, equip=c.get_equipment(), user=c.user.display_name
         )
         await menu(
@@ -4452,8 +4506,16 @@ class Adventure(commands.Cog):
 
         if not await has_funds(ctx.author, 250):
             currency_name = await bank.get_currency_name(ctx.guild,)
+            extra = (
+                _("\nRun `{ctx.clean_prefix}apayday` to get some gold.").format(ctx=ctx)
+                if self._separate_economy
+                else ""
+            )
             return await smart_embed(
-                ctx, _("You need {req} {name} to start an adventure.").format(req=250, name=currency_name),
+                ctx,
+                _("You need {req} {name} to start an adventure.{extra}").format(
+                    req=250, name=currency_name, extra=extra
+                ),
             )
         guild_settings = await self.config.guild(ctx.guild).all()
         cooldown = guild_settings["cooldown"]
@@ -4480,6 +4542,8 @@ class Adventure(commands.Cog):
         except Exception as exc:
             await self.config.guild(ctx.guild).cooldown.set(0)
             log.exception("Something went wrong controlling the game", exc_info=exc)
+            while ctx.guild.id in self._sessions:
+                del self._sessions[ctx.guild.id]
             return
         if not reward and not participants:
             await self.config.guild(ctx.guild).cooldown.set(0)
@@ -5096,7 +5160,7 @@ class Adventure(commands.Cog):
                 int_hp=humanize_number(hp),
             )
         if diplomacy > 0:
-            diplo_str = _("The group {status} the {challenge} with {how}" " **({diplomacy}/{int_dipl})**.\n").format(
+            diplo_str = _("The group {status} the {challenge} with {how} **({diplomacy}/{int_dipl})**.\n").format(
                 status=_("tried to persuade") if not persuaded else _("distracted"),
                 challenge=challenge,
                 how=_("flattery") if failed or not persuaded else _("insults"),
@@ -5138,7 +5202,7 @@ class Adventure(commands.Cog):
         await calc_msg.delete()
         text = ""
         success = False
-        treasure = [0, 0, 0, 0, 0]
+        treasure = [0, 0, 0, 0, 0, 0]
         if (slain or persuaded) and not failed:
             success = True
             roll = random.randint(1, 10)
@@ -5146,34 +5210,36 @@ class Adventure(commands.Cog):
             if session.transcended:
                 if session.boss and "Trancended" in session.challenge:
                     avaliable_loot = [
-                        [0, 0, 1, 5, 1],
-                        [0, 0, 0, 0, 2],
+                        [0, 0, 1, 5, 2, 1],
+                        [0, 0, 0, 0, 1, 2],
                     ]
                 else:
                     avaliable_loot = [
-                        [0, 0, 1, 5, 1],
-                        [0, 0, 1, 3, 1],
-                        [0, 0, 1, 1, 1],
-                        [0, 0, 0, 0, 1],
+                        [0, 0, 1, 5, 1, 1],
+                        [0, 0, 1, 3, 0, 1],
+                        [0, 0, 1, 1, 1, 1],
+                        [0, 0, 0, 0, 0, 1],
                     ]
                 treasure = random.choice(avaliable_loot)
             elif session.boss:  # rewards 60:30:10 Epic Legendary Gear Set items
-                avaliable_loot = [[0, 0, 3, 1, 0], [0, 0, 1, 2, 0], [0, 0, 0, 3, 0]]
+                avaliable_loot = [[0, 0, 3, 1, 0, 0], [0, 0, 1, 2, 0, 0], [0, 0, 0, 3, 0, 0]]
                 treasure = random.choice(avaliable_loot)
             elif session.miniboss:  # rewards 50:50 rare:normal chest for killing something like the basilisk
-                treasure = random.choice([[1, 1, 1, 0, 0], [0, 0, 1, 1, 0], [0, 0, 2, 2, 0], [0, 1, 0, 2, 0]])
+                treasure = random.choice(
+                    [[1, 1, 1, 0, 0, 0], [0, 0, 1, 1, 0, 0], [0, 0, 2, 2, 0, 0], [0, 1, 0, 2, 0, 0]]
+                )
             elif monster_amount >= 700:  # super hard stuff
                 if roll <= 7:
-                    treasure = random.choice([[0, 0, 1, 0, 0], [0, 1, 0, 0, 0], [0, 0, 0, 1, 0]])
+                    treasure = random.choice([[0, 0, 1, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0]])
             elif monster_amount >= 500:  # rewards 50:50 rare:epic chest for killing hard stuff.
                 if roll <= 5:
-                    treasure = random.choice([[0, 0, 1, 0, 0], [0, 1, 0, 0, 0], [0, 1, 1, 0, 0]])
+                    treasure = random.choice([[0, 0, 1, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 1, 1, 0, 0, 0]])
             elif monster_amount >= 300:  # rewards 50:50 rare:normal chest for killing hardish stuff
                 if roll <= 2:
-                    treasure = random.choice([[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [1, 1, 0, 0, 0]])
+                    treasure = random.choice([[1, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0]])
             elif monster_amount >= 80:  # small chance of a normal chest on killing stuff that's not terribly weak
                 if roll == 1:
-                    treasure = [1, 0, 0, 0, 0]
+                    treasure = [1, 0, 0, 0, 0, 0]
 
             if session.boss:  # always rewards at least an epic chest.
                 # roll for legendary chest
@@ -5184,7 +5250,7 @@ class Adventure(commands.Cog):
                     treasure[2] += 1
             if len(critlist) != 0:
                 treasure[0] += 1
-            if treasure == [0, 0, 0, 0, 0]:
+            if treasure == [0, 0, 0, 0, 0, 0]:
                 treasure = False
         if session.miniboss and failed:
             session.participants = set(fight_list + talk_list + pray_list + magic_list + fumblelist)
@@ -5403,7 +5469,7 @@ class Adventure(commands.Cog):
                     else:
                         group = fighters_final_string if len(fight_list) > 0 else wizards_final_string
                         text = _(
-                            "{b_group} slayed the {chall} " "in battle, while {b_talkers} distracted with insults."
+                            "{b_group} slayed the {chall} in battle, while {b_talkers} distracted with insults."
                         ).format(b_group=group, chall=session.challenge, b_talkers=talkers_final_string)
                 text += await self._reward(
                     ctx,
@@ -5415,7 +5481,7 @@ class Adventure(commands.Cog):
 
             if not slain and persuaded:
                 if len(pray_list) > 0:
-                    text = _("{b_talkers} talked the {chall} " "down with {b_preachers}'s blessing.").format(
+                    text = _("{b_talkers} talked the {chall} down with {b_preachers}'s blessing.").format(
                         b_talkers=talkers_final_string, chall=session.challenge, b_preachers=preachermen_final_string,
                     )
                 else:
@@ -5863,15 +5929,15 @@ class Adventure(commands.Cog):
 
                     if fight_list:
                         pray_att_bonus = int(
-                            (mod * len(fight_list)) + ((mod * len(fight_list)) * max(rebirths * 0.01, 1.5))
+                            (mod * len(fight_list)) + ((mod * len(fight_list)) * max(rebirths * 0.1, 1.5))
                         )
                     if talk_list:
                         pray_diplo_bonus = int(
-                            (mod * len(talk_list)) + ((mod * len(talk_list)) * max(rebirths * 0.01, 1.5))
+                            (mod * len(talk_list)) + ((mod * len(talk_list)) * max(rebirths * 0.1, 1.5))
                         )
                     if magic_list:
                         pray_magic_bonus = int(
-                            (mod * len(magic_list)) + ((mod * len(magic_list)) * max(rebirths * 0.01, 1.5))
+                            (mod * len(magic_list)) + ((mod * len(magic_list)) * max(rebirths * 0.1, 1.5))
                         )
                     attack += pray_att_bonus
                     magic += pray_magic_bonus
@@ -6044,7 +6110,7 @@ class Adventure(commands.Cog):
                     except Exception as exc:
                         log.exception("Error with the new character sheet", exc_info=exc)
                         continue
-                    if "Ainz Ooal Gown" in c.sets:
+                    if any(x in c.sets for x in ["The Supreme One", "Ainz Ooal Gown"]):
                         failed = False
                         break
                     with contextlib.suppress(KeyError):
@@ -6107,7 +6173,7 @@ class Adventure(commands.Cog):
                 if lvl_end == c.maxlevel:
                     roll += random.randint(50, 100)
                 if special is False:
-                    special = [0, 0, 0, 0, 0]
+                    special = [0, 0, 0, 0, 0, 0]
                     if c.rebirths > 1 and roll < 50:
                         special[0] += 1
                     if c.rebirths > 5 and roll < 30:
@@ -6116,7 +6182,7 @@ class Adventure(commands.Cog):
                         special[2] += 1
                     if c.rebirths > 15 and roll < 5:
                         special[3] += 1
-                    if special == [0, 0, 0, 0, 0]:
+                    if special == [0, 0, 0, 0, 0, 0]:
                         special = False
                 else:
                     if c.rebirths > 1 and roll < 50:
@@ -6127,7 +6193,7 @@ class Adventure(commands.Cog):
                         special[2] += 1
                     if c.rebirths > 15 and roll < 5:
                         special[3] += 1
-                    if special == [0, 0, 0, 0, 0]:
+                    if special == [0, 0, 0, 0, 0, 0]:
                         special = False
             if special is not False:
                 c.treasure = [sum(x) for x in zip(c.treasure, special)]
@@ -6282,6 +6348,11 @@ class Adventure(commands.Cog):
                 rarity = "epic"
             else:
                 rarity = "rare"  # 5% to roll rare
+        elif chest_type == "ascended":
+            if roll <= INITIAL_MAX_ROLL * 0.55:  # 55% to roll set
+                rarity = "ascended"
+            else:
+                rarity = "legendary"  # 45% to roll legendary
         elif chest_type == "pet":
             if roll <= INITIAL_MAX_ROLL * 0.05:  # 5% to roll legendary
                 rarity = "legendary"
@@ -6294,6 +6365,8 @@ class Adventure(commands.Cog):
         elif chest_type == "set":
             if roll <= INITIAL_MAX_ROLL * 0.55:  # 55% to roll set
                 rarity = "set"
+            elif roll <= INITIAL_MAX_ROLL * 0.87:
+                rarity = "ascended"  # 45% to roll legendary
             else:
                 rarity = "legendary"  # 45% to roll legendary
 
@@ -6495,7 +6568,7 @@ class Adventure(commands.Cog):
                 )
             else:
                 equip_msg = box(
-                    _("{user} equipped {item} " "({slot} slot) and put {old_item} into their backpack.").format(
+                    _("{user} equipped {item} ({slot} slot) and put {old_item} into their backpack.").format(
                         user=self.escape(ctx.author.display_name),
                         item=item,
                         slot=slot,
@@ -6638,7 +6711,9 @@ class Adventure(commands.Cog):
 
     @staticmethod
     def _sell(c: Character, item: Item, *, amount: int = 1):
-        if item.rarity == "legendary":
+        if item.rarity == "ascended":
+            base = (5000, 10000)
+        elif item.rarity == "legendary":
             base = (1000, 2000)
         elif item.rarity == "epic":
             base = (500, 750)
@@ -6760,7 +6835,7 @@ class Adventure(commands.Cog):
             rarity_roll = random.random()
             #  rarity_roll = .9
             # 1% legendary
-            if rarity_roll >= 0.99:
+            if rarity_roll >= 0.95:
                 item = await self._genitem("legendary")
                 # min. 10 stat for legendary, want to be about 50k
                 price = random.randint(2500, 5000)
@@ -7079,10 +7154,7 @@ class Adventure(commands.Cog):
         transferable_amount = amount * from_conversion_rate
         if amount <= 0:
             await smart_embed(
-                ctx,
-                _("{author.mention} You can't deposit 0 or negative values.").format(
-                    author=ctx.author, name=await bank.get_currency_name(ctx.guild, _forced=True)
-                ),
+                ctx, _("{author.mention} You can't deposit 0 or negative values.").format(author=ctx.author),
             )
             return
         if not await bank.can_spend(ctx.author, amount=amount, _forced=True):
@@ -7144,10 +7216,7 @@ class Adventure(commands.Cog):
             return
         if amount <= 0:
             await smart_embed(
-                ctx,
-                _("{author.mention} You can't withdraw 0 or negative values.").format(
-                    author=ctx.author, name=await bank.get_currency_name(ctx.guild)
-                ),
+                ctx, _("{author.mention} You can't withdraw 0 or negative values.").format(author=ctx.author),
             )
             return
         configs = await self.config.all()
@@ -7185,37 +7254,79 @@ class Adventure(commands.Cog):
             ),
         )
 
-    @commands_atransfer.command(name="player")
+    @commands_atransfer.command(name="player", cooldown_after_parsing=True)
     @commands.guild_only()
+    @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
     async def commands_atransfer_player(self, ctx: commands.Context, amount: int, *, player: discord.User):
         """Transfer gold to another player."""
         if amount <= 0:
             await smart_embed(
-                ctx,
-                _("{author.mention} You can't transfer 0 or negative values.").format(
-                    author=ctx.author, name=await bank.get_currency_name(ctx.guild)
-                ),
+                ctx, _("{author.mention} You can't transfer 0 or negative values.").format(author=ctx.author),
             )
+            ctx.command.reset_cooldown(ctx)
             return
         currency = await bank.get_currency_name(ctx.guild)
         if not await bank.can_spend(member=ctx.author, amount=amount):
+            ctx.command.reset_cooldown(ctx)
             return await smart_embed(
                 ctx,
                 _("{author.mention} you don't have enough {name}.").format(
                     author=ctx.author, name=await bank.get_currency_name(ctx.guild)
                 ),
             )
+        tax = await self.config.tax_brackets.all()
+        highest = 0
+        for tax, percent in tax.items():
+            tax = int(tax)
+            if tax >= amount:
+                break
+            highest = percent
 
         try:
-            await bank.transfer_credits(from_=ctx.author, to=player, amount=amount, tax=0.0)  # Customizable Tax
+            transfered = await bank.transfer_credits(
+                from_=ctx.author, to=player, amount=amount, tax=tax
+            )  # Customizable Tax
         except (ValueError, BalanceTooHigh) as e:
+            ctx.command.reset_cooldown(ctx)
             return await ctx.send(str(e))
 
         await ctx.send(
-            _("{user} transferred {num} {currency} to {other_user}").format(
+            _(
+                "{user} transferred {num} {currency} to {other_user} (You have been taxed {tax:.2%}, total transfered: {transfered})"
+            ).format(
                 user=ctx.author.display_name,
                 num=humanize_number(amount),
                 currency=currency,
                 other_user=player.display_name,
+                tax=highest,
+                transfered=humanize_number(transfered),
             )
+        )
+
+    @commands_atransfer.command(name="give")
+    @commands.is_owner()
+    async def commands_atransfer_give(self, ctx: commands.Context, amount: int, *players: discord.User):
+        """[Owner] Give gold to adventurers."""
+        if amount <= 0:
+            await smart_embed(
+                ctx, _("{author.mention} You can't give 0 or negative values.").format(author=ctx.author),
+            )
+            return
+        players_string = ""
+        for player in players:
+            try:
+                await bank.deposit_credits(member=player, amount=amount)
+                players_string += f"{player.display_name}\n"
+            except BalanceTooHigh as exc:
+                await bank.set_balance(member=player, amount=exc.max_balance)
+                players_string += f"{player.display_name}\n"
+
+        await smart_embed(
+            ctx,
+            _("{author.mention} I've given {amount} {name} to the following adventurers:\n\n{players}").format(
+                author=ctx.author,
+                amount=humanize_number(amount),
+                players=players_string,
+                name=await bank.get_currency_name(ctx.guild),
+            ),
         )

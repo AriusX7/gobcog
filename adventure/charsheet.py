@@ -45,6 +45,7 @@ ORDER = [
 TINKER_OPEN = r"{.:'"
 TINKER_CLOSE = r"':.}"
 LEGENDARY_OPEN = r"{Legendary:'"
+ASC_OPEN = r"{Ascended:'"
 LEGENDARY_CLOSE = r"'}"
 SET_OPEN = r"{Set:'"
 EVENT_OPEN = r"{Event:'"
@@ -74,8 +75,8 @@ INT = re.compile(r"(-?\d*) (int(?:elligence)?)")
 LUCK = re.compile(r"(-?\d*) (luck)")
 DEX = re.compile(r"(-?\d*) (dex(?:terity)?)")
 SLOT = re.compile(r"(head|neck|chest|gloves|belt|legs|boots|left|right|ring|charm|twohanded)")
-RARITY = re.compile(r"(normal|rare|epic|legend(?:ary)?|set|forged|event)")
-RARITIES = ("normal", "rare", "epic", "legendary", "set", "event")
+RARITY = re.compile(r"(normal|rare|epic|legend(?:ary)?|asc(?:ended)?|set|forged|event)")
+RARITIES = ("normal", "rare", "epic", "legendary", "ascended", "set", "event")
 DEG = re.compile(r"(-?\d*) degrade")
 LEVEL = re.compile(r"(-?\d*) (level|lvl)")
 PERCENTAGE = re.compile(r"^(\d*\.?\d+)(%?)")
@@ -156,7 +157,7 @@ class Item:
     def __init__(self, **kwargs):
         if kwargs.get("rarity") in ["event"]:
             self.name: str = kwargs.get("name")
-        elif kwargs.get("rarity") in ["set", "legendary"]:
+        elif kwargs.get("rarity") in ["set", "legendary", "ascended"]:
             self.name: str = kwargs.get("name").title()
         else:
             self.name: str = kwargs.get("name").lower()
@@ -188,6 +189,8 @@ class Item:
             return f"[{self.name}]"
         elif self.rarity == "legendary":
             return f"{LEGENDARY_OPEN}{self.name}{LEGENDARY_CLOSE}"
+        elif self.rarity == "ascended":
+            return f"{ASC_OPEN}'{self.name}'{LEGENDARY_CLOSE}"
         elif self.rarity == "set":
             return f"{SET_OPEN}'{self.name}'{LEGENDARY_CLOSE}"
         elif self.rarity == "forged":
@@ -231,6 +234,10 @@ class Item:
             item = item.replace("{Legendary:'", "").replace("'}", "")
         if item.startswith("{legendary:'"):
             item = item.replace("{legendary:'", "").replace("'}", "")
+        if item.startswith("{ascended:'"):
+            item = item.replace("{ascended:'", "").replace("'}", "")
+        if item.startswith("{Ascended:'"):
+            item = item.replace("{Ascended:'", "").replace("'}", "")
         if item.startswith("{Gear_Set:'"):
             item = item.replace("{Gear_Set:'", "").replace("'}", "")
         if item.startswith("{gear_set:'"):
@@ -264,6 +271,12 @@ class Item:
         elif name.startswith("{legendary:'"):
             name = name.replace("{legendary:'", "").replace("'}", "")
             rarity = "legendary"
+        elif name.startswith("{Ascended:'"):
+            name = name.replace("{Ascended:'", "").replace("'}", "")
+            rarity = "ascended"
+        elif name.startswith("{ascended:'"):
+            name = name.replace("{ascended:'", "").replace("'}", "")
+            rarity = "ascended"
         elif name.startswith("{Gear_Set:'"):
             name = name.replace("{Gear_Set:'", "").replace("'}", "")
             rarity = "set"
@@ -309,7 +322,7 @@ class Item:
                 dex = item.get("dex", dex)
                 luck = item.get("luck", luck)
                 slots = item.get("slot", slots)
-        if rarity not in ["legendary", "event"]:
+        if rarity not in ["legendary", "event", "ascended"]:
             degrade = 3
         if rarity not in ["event"]:
             lvl = 1
@@ -355,7 +368,7 @@ class Item:
                 "owned": self.owned,
             }
         }
-        if self.rarity == "legendary":
+        if self.rarity in ["legendary", "ascended"]:
             data[self.name]["degrade"] = self.degrade
         elif self.rarity == "set":
             data[self.name]["parts"] = self.parts
@@ -495,7 +508,7 @@ class Character(Item):
     def remove_restrictions(self):
         if self.heroclass["name"] == "Ranger" and self.heroclass["pet"]:
             requirements = PETS.get(self.heroclass["pet"]["name"], {}).get("bonuses", {}).get("req", {})
-            if "Ainz Ooal Gown" in self.sets and self.heroclass["pet"]["name"] in [
+            if any(x in self.sets for x in ["The Supreme One", "Ainz Ooal Gown"]) and self.heroclass["pet"]["name"] in [
                 "Albedo",
                 "Rubedo",
                 "Guardians of Nazarick",
@@ -608,11 +621,9 @@ class Character(Item):
                 if not self.heroclass["pet"]:
                     class_desc += _("\n\n- Current pet: [None]")
                 elif self.heroclass["pet"]:
-                    if "Ainz Ooal Gown" in self.sets and self.heroclass["pet"]["name"] in [
-                        "Albedo",
-                        "Rubedo",
-                        "Guardians of Nazarick",
-                    ]:
+                    if any(x in self.sets for x in ["The Supreme One", "Ainz Ooal Gown"]) and self.heroclass["pet"][
+                        "name"
+                    ] in ["Albedo", "Rubedo", "Guardians of Nazarick",]:
                         class_desc += _("\n\n- Current servant: [{}]").format(self.heroclass["pet"]["name"])
                     else:
                         class_desc += _("\n\n- Current pet: [{}]").format(self.heroclass["pet"]["name"])
@@ -714,7 +725,7 @@ class Character(Item):
             luck_space = " " if len(str(luck)) >= 1 else ""
 
             owned = ""
-            if item.rarity in ["legendary", "event"] and item.degrade >= 0:
+            if item.rarity in ["legendary", "event", "ascended"] and item.degrade >= 0:
                 owned += f" | [{item.degrade}#]"
             if item.set:
                 settext += f" | Set `{item.set}` ({item.parts}pcs)"
@@ -758,16 +769,18 @@ class Character(Item):
             return 1
         elif item_obj.rarity == "set":
             return 2
-        elif item_obj.rarity == "legendary":
+        elif item_obj.rarity == "ascended":
             return 3
-        elif item_obj.rarity == "epic":
+        elif item_obj.rarity == "legendary":
             return 4
-        elif item_obj.rarity == "rare":
+        elif item_obj.rarity == "epic":
             return 5
-        elif item_obj.rarity == "normal":
+        elif item_obj.rarity == "rare":
             return 6
+        elif item_obj.rarity == "normal":
+            return 7
         else:
-            return 6  # common / normal
+            return 7  # common / normal
 
     async def get_sorted_backpack(self, backpack: dict, slot=None, rarity=None):
         tmp = {}
@@ -797,6 +810,26 @@ class Character(Item):
         final.sort(key=lambda i: ORDER.index(i[0][1].slot[0]) if len(i[0][1].slot) == 1 else ORDER.index("two handed"))
         return final
 
+    async def looted(self, how_many: int = 1) -> List[Tuple[str, int]]:
+        items = [i for n, i in self.backpack.items() if i.rarity not in ["normal", "rare", "epic", "forged"]]
+        looted_so_far = 0
+        looted = []
+        while how_many > looted_so_far:
+            if looted_so_far >= how_many:
+                break
+            item = random.choice(items)
+            if not bool(random.getrandbits(1)):
+                continue
+            loot_number = random.randint(1, min(item.owned, how_many - looted_so_far))
+            looted_so_far += loot_number
+            looted.append((str(item), loot_number))
+            item.owned -= loot_number
+            if item.owned <= 0:
+                del self.backpack[item.name]
+            else:
+                self.backpack[item.name] = item
+        return looted
+
     async def get_backpack(
         self,
         forging: bool = False,
@@ -806,6 +839,7 @@ class Character(Item):
         show_delta=False,
         equippable=False,
         set_name: str = None,
+        clean: bool = False,
     ):
         if consumed is None:
             consumed = []
@@ -818,20 +852,21 @@ class Character(Item):
         async for slot_group in AsyncIter(bkpk):
             slot_name_org = slot_group[0][1].slot
             slot_name = slot_name_org[0] if len(slot_name_org) < 2 else "two handed"
-            form_string += f"\n\n {slot_name.title()} slot\n"
+            if slot is not None and slot != slot_name:
+                continue
+            if clean and not slot_group:
+                continue
+            slot_string = ""
             current_equipped = getattr(self, slot_name if slot != "two handed" else "left", None)
             async for item in AsyncIter(slot_group):
                 if forging and (item[1].rarity in ["forged", "set"] or item[1] in consumed_list):
                     continue
                 if rarity is not None and rarity != item[1].rarity:
                     continue
-                if slot is not None and slot != slot_name:
-                    continue
                 if equippable and not can_equip(self, item[1]):
                     continue
                 if set_name is not None and set_name != item[1].set:
                     continue
-
                 settext = ""
                 att_space = " " if len(str(item[1].att)) >= 1 else ""
                 cha_space = " " if len(str(item[1].cha)) >= 1 else ""
@@ -839,7 +874,7 @@ class Character(Item):
                 dex_space = " " if len(str(item[1].dex)) >= 1 else ""
                 luck_space = " " if len(str(item[1].luck)) >= 1 else ""
                 owned = ""
-                if item[1].rarity in ["legendary", "event"] and item[1].degrade >= 0:
+                if item[1].rarity in ["legendary", "event", "ascended"] and item[1].degrade >= 0:
                     owned += f" | [{item[1].degrade}#]"
                 owned += f" | {item[1].owned}"
                 if item[1].set:
@@ -873,7 +908,9 @@ class Character(Item):
                     f"{luck_space}{luck:<{rjuststat}} )"
                 )
 
-                form_string += f"\n{str(item[1]):<{rjust}} - " f"{stats}" f" | Lvl {level:<5}" f"{owned}{settext}"
+                slot_string += f"\n{str(item[1]):<{rjust}} - {stats} | Lvl {level:<5}{owned}{settext}"
+            if slot_string:
+                form_string += f"\n\n {slot_name.title()} slot\n{slot_string}"
 
         return form_string + "\n"
 
@@ -1021,6 +1058,9 @@ class Character(Item):
             backpack = {n: Item.from_json({n: i}) for n, i in data["backpack"].items()}
         while len(data["treasure"]) < 5:
             data["treasure"].append(0)
+
+        if len(data["treasure"]) == 5:
+            data["treasure"].insert(4, 0)
 
         if heroclass["name"] == "Ranger":
             if heroclass.get("pet"):
@@ -1172,13 +1212,13 @@ class Character(Item):
                             continue
                         forged += 1
                     backpack[n] = i
-                elif self.rebirths < 50 and i.get("rarity", False) in ["legendary", "event"]:
+                elif self.rebirths < 50 and i.get("rarity", False) in ["legendary", "event", "ascended"]:
                     if "degrade" in i:
                         i["degrade"] -= 1
                         if i.get("degrade", 0) >= 0:
                             backpack[n] = i
 
-        tresure = [0, 0, 0, 0, 0]
+        tresure = [0, 0, 0, 0, 0, 0]
         if self.rebirths >= 15:
             tresure[3] += max(int(self.rebirths // 15), 0)
         if self.rebirths >= 10:
@@ -1270,7 +1310,7 @@ class ItemConverter(Converter):
             lookup = list(i for x, i in c.backpack.items() if str(i) in _temp_items)
             if len(lookup) > 10:
                 raise BadArgument(
-                    _("You have too many items matching the name `{}`," " please be more specific.").format(argument)
+                    _("You have too many items matching the name `{}`, please be more specific.").format(argument)
                 )
             items = ""
             for (number, item) in enumerate(lookup):
@@ -1336,7 +1376,7 @@ class EquipableItemConverter(Converter):
             lookup = list(i for x, i in c.backpack.items() if str(i) in _temp_items)
             if len(lookup) > 10:
                 raise BadArgument(
-                    _("You have too many items matching the name `{}`," " please be more specific.").format(argument)
+                    _("You have too many items matching the name `{}`, please be more specific.").format(argument)
                 )
             items = ""
             for (number, item) in enumerate(lookup):
@@ -1403,7 +1443,7 @@ class EquipmentConverter(Converter):
         else:
             if len(lookup) > 10:
                 raise BadArgument(
-                    _("You have too many items matching the name `{}`," " please be more specific").format(argument)
+                    _("You have too many items matching the name `{}`, please be more specific").format(argument)
                 )
             items = ""
             for (number, item) in enumerate(lookup):
@@ -1478,7 +1518,7 @@ class ThemeSetPetConverter(Converter):
             raise
         except Exception:
             raise BadArgument(
-                "Invalid format, Excepted:\n`theme++name++bonus_multiplier" "++required_cha++crit_chance++always_crit`"
+                "Invalid format, Excepted:\n`theme++name++bonus_multiplier++required_cha++crit_chance++always_crit`"
             )
         if not ctx.cog.is_dev(ctx.author):
             if bonus > 2:
@@ -1601,21 +1641,6 @@ def parse_timedelta(argument: str) -> Optional[timedelta]:
         if params:
             return timedelta(**params)
     return None
-
-
-def get_true_name(rarity, name):
-    if rarity == "normal":
-        return name
-    if rarity == "rare":
-        return "." + name.replace(" ", "_")
-    if rarity == "epic":
-        return f"[{name}]"
-    if rarity == "legendary":
-        return f"{LEGENDARY_OPEN}{name}{LEGENDARY_CLOSE}"
-    if rarity == "set":
-        return f"{SET_OPEN}'{name}'{LEGENDARY_CLOSE}"
-    if rarity == "forged":
-        return f"{TINKER_OPEN}{name}{TINKER_CLOSE}"
 
 
 async def no_dev_prompt(ctx: commands.Context) -> bool:
