@@ -333,7 +333,8 @@ async def transfer_credits(
         raise errors.BalanceTooHigh(user=to.display_name, max_balance=max_bal, currency_name=currency)
 
     await withdraw_credits(from_, int(amount))
-    return await deposit_credits(to, int(new_amount))
+    await deposit_credits(to, int(new_amount))
+    return int(new_amount)
 
 
 async def wipe_bank(guild: Optional[discord.Guild] = None) -> None:

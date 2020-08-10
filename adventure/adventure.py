@@ -228,7 +228,7 @@ class AdventureResults:
 class Adventure(commands.Cog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.3.5"
+    __version__ = "3.3.6"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -2822,7 +2822,7 @@ class Adventure(commands.Cog):
         item1 = consumed[0]
         item2 = consumed[1]
 
-        roll = random.randint(1, 20) + (character.total_int // 50) + (character.luck // 20)
+        roll = max(random.randint(1, 20) + (character.total_int // 50) + (character.luck // 20), 0)
         if roll == 1:
             modifier = 0.4
         elif 1 < roll <= 6:
@@ -3502,7 +3502,7 @@ class Adventure(commands.Cog):
 
             percentage_offered = (offering / bal) * 100
             min_roll = int(percentage_offered / 10)
-            entry_roll = random.randint(max(1, min_roll), 20)
+            entry_roll = max(random.randint(max(1, min_roll), 20), 0)
             if entry_roll == 1:
                 tax_mod = random.randint(4, 8)
                 tax = round(bal / tax_mod)
@@ -5705,7 +5705,7 @@ class Adventure(commands.Cog):
             except Exception as exc:
                 log.exception("Error with the new character sheet", exc_info=exc)
                 continue
-            crit_mod = max(c.dex, c.luck) + (c.total_att // 20)  # Thanks GoaFan77
+            crit_mod = max(max(c.dex, c.luck) + (c.total_att // 20), 1)  # Thanks GoaFan77
             mod = 0
             max_roll = 50 if c.rebirths >= 15 else 20
             if crit_mod != 0:
@@ -5716,7 +5716,7 @@ class Adventure(commands.Cog):
             elif (mod + 1) > 45:
                 mod = 45
 
-            roll = random.randint((1 + mod), max_roll)
+            roll = max(random.randint((1 + mod), max_roll), 1)
             if c.heroclass.get("pet", {}).get("bonuses", {}).get("crit", False):
                 pet_crit = c.heroclass.get("pet", {}).get("bonuses", {}).get("crit", 0)
                 pet_crit = random.randint(pet_crit, 100)
@@ -5778,7 +5778,7 @@ class Adventure(commands.Cog):
             except Exception as exc:
                 log.exception("Error with the new character sheet", exc_info=exc)
                 continue
-            crit_mod = max(c.dex, c.luck) + (c.total_int // 20)
+            crit_mod = max(max(c.dex, c.luck) + (c.total_int // 20), 0)
             mod = 0
             max_roll = 50 if c.rebirths >= 15 else 20
             if crit_mod != 0:
@@ -5788,7 +5788,7 @@ class Adventure(commands.Cog):
                 max_roll = 20
             elif (mod + 1) > 45:
                 mod = 45
-            roll = random.randint((1 + mod), max_roll)
+            roll = max(random.randint((1 + mod), max_roll), 1)
             if c.heroclass.get("pet", {}).get("bonuses", {}).get("crit", False):
                 pet_crit = c.heroclass.get("pet", {}).get("bonuses", {}).get("crit", 0)
                 pet_crit = random.randint(pet_crit, 100)
@@ -5885,7 +5885,7 @@ class Adventure(commands.Cog):
                     max_roll = 20
                 elif (mod + 1) > 45:
                     mod = 45
-                roll = random.randint((1 + mod), max_roll)
+                roll = max(random.randint((1 + mod), max_roll), 1)
                 if len(fight_list + talk_list + magic_list) == 0:
                     msg += _("**{}** blessed like a madman but nobody was there to receive it.\n").format(
                         self.escape(user.display_name)
@@ -6026,7 +6026,7 @@ class Adventure(commands.Cog):
             except Exception as exc:
                 log.exception("Error with the new character sheet", exc_info=exc)
                 continue
-            crit_mod = max(c.dex, c.luck) + (c.total_int // 50) + (c.total_cha // 20)
+            crit_mod = max(max(c.dex, c.luck) + (c.total_int // 50) + (c.total_cha // 20), 1)
             mod = 0
             max_roll = 50 if c.rebirths >= 15 else 20
             if crit_mod != 0:
@@ -6035,7 +6035,7 @@ class Adventure(commands.Cog):
                 mod = 15
             elif (mod + 1) > 45:
                 mod = 45
-            roll = random.randint((1 + mod), max_roll)
+            roll = max(random.randint((1 + mod), max_roll), 1)
             dipl_value = c.total_cha
             rebirths = c.rebirths * 3 if c.heroclass["name"] == "Bard" else 0
             if roll == 1:
@@ -6321,7 +6321,7 @@ class Adventure(commands.Cog):
         # lower gives you better chances for better items
         max_roll = INITIAL_MAX_ROLL - round(c.luck) - (c.rebirths // 2)
         top_range = max(max_roll, INITIAL_MAX_ROLL - MAX_CHEST_LUCK)
-        roll = random.randint(1, top_range)
+        roll = max(random.randint(1, top_range), 1)
         if chest_type == "normal":
             if roll <= INITIAL_MAX_ROLL * 0.05:  # 5% to roll rare
                 rarity = "rare"
@@ -6721,7 +6721,7 @@ class Adventure(commands.Cog):
             base = (250, 500)
         else:
             base = (10, 100)
-        price = random.randint(base[0], base[1]) * item.max_main_stat
+        price = random.randint(base[0], base[1]) * abs(item.max_main_stat)
         price += price * int((c.total_cha) / 1000)
 
         if c.luck > 0:
@@ -7284,7 +7284,7 @@ class Adventure(commands.Cog):
 
         try:
             transfered = await bank.transfer_credits(
-                from_=ctx.author, to=player, amount=amount, tax=tax
+                from_=ctx.author, to=player, amount=amount, tax=highest
             )  # Customizable Tax
         except (ValueError, BalanceTooHigh) as e:
             ctx.command.reset_cooldown(ctx)
