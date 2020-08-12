@@ -228,7 +228,7 @@ class AdventureResults:
 class Adventure(commands.Cog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
-    __version__ = "3.3.7"
+    __version__ = "3.3.8"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -2641,12 +2641,13 @@ class Adventure(commands.Cog):
                             humanize_timedelta(seconds=int(cooldown_time)) if cooldown_time >= 1 else _("1 second")
                         ),
                     )
+                ascended_forge_msg = ""
                 ignored_rarities = ["forged", "set", "event"]
                 if c.rebirths < 30:
                     ignored_rarities.append("ascended")
+                    ascended_forge_msg += _("\n\nAscended items will be forgeable after 30 rebirths.")
                 consumed = []
                 forgeables_items = [str(i) for n, i in c.backpack.items() if i.rarity not in ignored_rarities]
-
                 if len(forgeables_items) <= 1:
                     return await smart_embed(
                         ctx,
@@ -2654,7 +2655,7 @@ class Adventure(commands.Cog):
                             self.escape(ctx.author.display_name)
                         ),
                     )
-                forgeables = _("[{author}'s forgeables]\n{bc}\n").format(
+                forgeables = _("{author}'s forgeables\n\n{bc}\n").format(
                     author=self.escape(ctx.author.display_name), bc=await c.get_backpack(forging=True, clean=True)
                 )
                 pages = pagify(forgeables, delims=["\n"], shorten_by=20, page_length=1900)
@@ -2664,7 +2665,7 @@ class Adventure(commands.Cog):
                     ctx,
                     _(
                         "Reply with the full or partial name of item 1 to select for forging. "
-                        "Try to be specific. (Say `cancel` to exit)"
+                        "Try to be specific. (Say `cancel` to exit){}".format(ascended_forge_msg)
                     ),
                 )
                 try:
@@ -3355,7 +3356,7 @@ class Adventure(commands.Cog):
                     box(
                         _(
                             "{author} owns {normal} normal, "
-                            "{rare} rare, {epic} epic, {leg} legendary , {asc} ascended and {set} set chests."
+                            "{rare} rare, {epic} epic, {leg} legendary, {asc} ascended and {set} set chests."
                         ).format(
                             author=self.escape(ctx.author.display_name),
                             normal=str(c.treasure[0]),
@@ -3571,7 +3572,7 @@ class Adventure(commands.Cog):
                     ", losing {loss} {currency_name} as **{negachar}** rifled through their belongings."
                 ).format(loss=loss_string, currency_name=currency_name, negachar=negachar)
                 if looted:
-                    loss_msg += _(" **{negachar}** also stole the following items\n\n{items}").format(
+                    loss_msg += _(" **{negachar}** also stole the following items:\n\n{items}").format(
                         items=looted, negachar=negachar
                     )
                 await nega_msg.edit(
