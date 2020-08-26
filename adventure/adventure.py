@@ -1785,6 +1785,39 @@ class Adventure(commands.Cog):
                 await ctx.send(current_stats)
                 await self.config.user(ctx.author).set(await c.to_json(self.config))
 
+    @loadout.command(name="update")
+    async def update_loadout(self, ctx: Context, name: str):
+        """Updates specified loadout with current equipments."""
+
+        if not await self.allow_in_dm(ctx):
+            return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
+
+        async with self.get_lock(ctx.author):
+            name = name.lower()
+            try:
+                c = await Character.from_json(self.config, ctx.author, self._daily_bonus)
+            except Exception as exc:
+                log.exception("Error with the new character sheet", exc_info=exc)
+                return
+            if name not in c.loadouts:
+                await smart_embed(
+                    ctx,
+                    _("**{author}**, you don't have a loadout named {name}.").format(
+                        author=self.escape(ctx.author.display_name), name=name
+                    ),
+                )
+                return
+            else:
+                loadout = await Character.save_loadout(c)
+                c.loadouts[name] = loadout
+                await self.config.user(ctx.author).set(await c.to_json(self.config))
+                await smart_embed(
+                    ctx,
+                    _("**{author}**, {name} has been updated with your current equipment!").format(
+                        author=self.escape(ctx.author.display_name), name=name
+                    ),
+                )
+
     @commands.group()
     @commands.guild_only()
     async def adventureset(self, ctx: Context):
