@@ -2989,7 +2989,6 @@ class Adventure(commands.Cog):
         """[Admin] Commands to add things to players' inventories."""
 
     @give.command(name="item")
-    @commands.is_owner()
     async def _give_item(self, ctx: Context, user: discord.Member, item_name: str, *, stats: Stats):
         """[Owner] Adds a custom item to a specified member.
 
@@ -3032,7 +3031,6 @@ class Adventure(commands.Cog):
         )
 
     @give.command(name="loot")
-    @commands.is_owner()
     async def _give_loot(self, ctx: Context, loot_type: str, user: discord.Member = None, number: int = 1):
         """[Owner] Give treasure chest(s) to a specified member."""
 
