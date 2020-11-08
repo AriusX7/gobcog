@@ -2990,7 +2990,7 @@ class Adventure(commands.Cog):
 
     @give.command(name="item")
     async def _give_item(self, ctx: Context, user: discord.Member, item_name: str, *, stats: Stats):
-        """[Owner] Adds a custom item to a specified member.
+        """[Admin] Adds a custom item to a specified member.
 
         Item names containing spaces must be enclosed in double quotes. `[p]give item @locastan
         "fine dagger" 1 att 1 charisma rare twohanded` will give a two handed .fine_dagger with 1
@@ -3032,7 +3032,7 @@ class Adventure(commands.Cog):
 
     @give.command(name="loot")
     async def _give_loot(self, ctx: Context, loot_type: str, user: discord.Member = None, number: int = 1):
-        """[Owner] Give treasure chest(s) to a specified member."""
+        """[Admin] Give treasure chest(s) to a specified member."""
 
         if user is None:
             user = ctx.author
