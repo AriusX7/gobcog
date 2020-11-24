@@ -63,6 +63,7 @@ from .menus import (
     ScoreboardSource,
     WeeklyScoreboardSource,
 )
+from .misc import MiscMixin
 
 _ = Translator("Adventure", __file__)
 
@@ -225,7 +226,7 @@ class AdventureResults:
 
 
 @cog_i18n(_)
-class Adventure(commands.Cog):
+class Adventure(MiscMixin, commands.Cog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
     __version__ = "3.3.8"
@@ -351,6 +352,7 @@ class Adventure(commands.Cog):
             "rebirth_cost": 100.0,
             "disallow_withdraw": True,
             "max_allowed_withdraw": 50000,
+            "error_channel": None,
         }
         default_global = {
             "god_name": _("Herbert"),
