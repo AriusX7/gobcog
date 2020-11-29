@@ -15,6 +15,7 @@ from typing import List, MutableMapping, Optional, Union
 
 import discord
 from discord.ext.commands import CheckFailure
+from discord.ext.commands.converter import Converter
 from discord.ext.commands.errors import BadArgument
 from redbot.core import Config, commands
 from redbot.core.bot import Red
@@ -129,6 +130,17 @@ def has_separated_economy():
         return True
 
     return check(predicate)
+
+
+class DynamicInt(Converter):
+    async def convert(self, ctx, argument):
+        if argument == 'all':
+            return argument
+
+        if argument.isnumeric():
+            return int(argument)
+
+        raise BadArgument(_('{} is not a valid number and is not "all".').format(argument))
 
 
 class AdventureResults:
@@ -3364,12 +3376,12 @@ class Adventure(MiscMixin, commands.Cog):
     @commands.command()
     @commands.bot_has_permissions(add_reactions=True)
     @commands.cooldown(rate=1, per=4, type=commands.BucketType.user)
-    async def loot(self, ctx: Context, box_type: str = None, number: int = 1):
+    async def loot(self, ctx: Context, box_type: str = None, number: DynamicInt = 1):
         """This opens one of your precious treasure chests.
 
         Use the box rarity type with the command: normal, rare, epic, legendary or set.
         """
-        if (not self.is_dev(ctx.author) and number > 100) or number < 1:
+        if isinstance(number, int) and ((not self.is_dev(ctx.author) and number > 100) or number < 1):
             return await smart_embed(ctx, _("Nice try :smirk:."))
         if self.in_adventure(ctx):
             return await smart_embed(
@@ -3403,16 +3415,28 @@ class Adventure(MiscMixin, commands.Cog):
                     )
                 )
             if box_type == "normal":
+                if number == 'all':
+                    number = c.treasure[0]
                 redux = 0
             elif box_type == "rare":
+                if number == 'all':
+                    number = c.treasure[1]
                 redux = 1
             elif box_type == "epic":
+                if number == 'all':
+                    number = c.treasure[2]
                 redux = 2
             elif box_type == "legendary":
+                if number == 'all':
+                    number = c.treasure[3]
                 redux = 3
             elif box_type == "ascended":
+                if number == 'all':
+                    number = c.treasure[4]
                 redux = 4
             elif box_type == "set":
+                if number == 'all':
+                    number = c.treasure[5]
                 redux = 5
             else:
                 return await smart_embed(
@@ -3476,7 +3500,7 @@ class Adventure(MiscMixin, commands.Cog):
     @commands.command(name="negaverse", aliases=["nv"], cooldown_after_parsing=True)
     @commands.cooldown(rate=1, per=3600, type=commands.BucketType.user)
     @commands.guild_only()
-    async def _negaverse(self, ctx: Context, offering: int = None):
+    async def _negaverse(self, ctx: Context, offering: DynamicInt = None):
         """This will send you to fight a nega-member!"""
         if self.in_adventure(ctx):
             ctx.command.reset_cooldown(ctx)
@@ -3495,6 +3519,8 @@ class Adventure(MiscMixin, commands.Cog):
                     "{currency_name} you are willing to offer to the gods for your success."
                 ).format(author=self.escape(ctx.author.display_name), currency_name=currency_name),
             )
+        if offering == 'all':
+            offering = int(bal)
         if offering <= 500 or bal <= 500:
             ctx.command.reset_cooldown(ctx)
             return await smart_embed(ctx, _("The gods refuse your pitiful offering."))
@@ -4117,7 +4143,7 @@ class Adventure(MiscMixin, commands.Cog):
 
     @commands.command()
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
-    async def skill(self, ctx: Context, spend: str = None, amount: int = 1):
+    async def skill(self, ctx: Context, spend: str = None, amount: DynamicInt = 1):
         """This allows you to spend skillpoints.
 
         `[p]skill attack/charisma/intelligence`
@@ -4129,7 +4155,7 @@ class Adventure(MiscMixin, commands.Cog):
             )
         if not await self.allow_in_dm(ctx):
             return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
-        if amount < 1:
+        if isinstance(amount, int) and amount < 1:
             return await smart_embed(ctx, _("Nice try :smirk:"))
         async with self.get_lock(ctx.author):
             try:
@@ -4179,6 +4205,9 @@ class Adventure(MiscMixin, commands.Cog):
                         ctx, _("Don't play games with me, {}.").format(self.escape(ctx.author.display_name)),
                     )
                 return
+
+            if amount == 'all':
+                amount = c.skill["pool"]
 
             if c.skill["pool"] <= 0:
                 return await smart_embed(
