@@ -134,7 +134,7 @@ def has_separated_economy():
 
 class DynamicInt(Converter):
     async def convert(self, ctx, argument):
-        if argument == 'all':
+        if argument == "all":
             return argument
 
         if argument.isnumeric():
@@ -3415,27 +3415,27 @@ class Adventure(MiscMixin, commands.Cog):
                     )
                 )
             if box_type == "normal":
-                if number == 'all':
+                if number == "all":
                     number = c.treasure[0]
                 redux = 0
             elif box_type == "rare":
-                if number == 'all':
+                if number == "all":
                     number = c.treasure[1]
                 redux = 1
             elif box_type == "epic":
-                if number == 'all':
+                if number == "all":
                     number = c.treasure[2]
                 redux = 2
             elif box_type == "legendary":
-                if number == 'all':
+                if number == "all":
                     number = c.treasure[3]
                 redux = 3
             elif box_type == "ascended":
-                if number == 'all':
+                if number == "all":
                     number = c.treasure[4]
                 redux = 4
             elif box_type == "set":
-                if number == 'all':
+                if number == "all":
                     number = c.treasure[5]
                 redux = 5
             else:
@@ -3519,7 +3519,7 @@ class Adventure(MiscMixin, commands.Cog):
                     "{currency_name} you are willing to offer to the gods for your success."
                 ).format(author=self.escape(ctx.author.display_name), currency_name=currency_name),
             )
-        if offering == 'all':
+        if offering == "all":
             offering = int(bal)
         if offering <= 500 or bal <= 500:
             ctx.command.reset_cooldown(ctx)
@@ -4206,7 +4206,7 @@ class Adventure(MiscMixin, commands.Cog):
                     )
                 return
 
-            if amount == 'all':
+            if amount == "all":
                 amount = c.skill["pool"]
 
             if c.skill["pool"] <= 0:
