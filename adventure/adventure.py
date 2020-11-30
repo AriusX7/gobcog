@@ -4,6 +4,7 @@ import contextlib
 import json
 import logging
 import os
+import pickle
 import random
 import re
 import time
@@ -313,7 +314,6 @@ class Adventure(MiscMixin, commands.Cog):
         self._trader_countdown = {}
         self._current_traders = {}
         self._curent_trader_stock = {}
-        self._sessions = {}
         self._react_messaged = []
         self.tasks = {}
         self.locks: MutableMapping[int, asyncio.Lock] = {}
@@ -513,6 +513,45 @@ class Adventure(MiscMixin, commands.Cog):
             adventure.charsheet.SET_BONUSES = self.SET_BONUSES
             await self._migrate_config(from_version=await self.config.schema_version(), to_version=_SCHEMA_VERSION)
             self._daily_bonus = await self.config.daily_bonus.all()
+
+            await self.bot.wait_until_ready()
+            session_path = cog_data_path(self) / "sessions.pickle"
+            if os.path.isfile(session_path):
+                with open(session_path, "rb") as f:
+                    try:
+                        self._sessions = pickle.load(f)
+                    except EOFError:
+                        self._sessions = {}
+            else:
+                self._sessions = {}
+
+            to_delete = []
+            for k, v in self._sessions.items():
+                try:
+                    await v.load_from_pickle(self.bot)
+                except discord.NotFound:
+                    to_delete.append(k)
+                    continue
+
+                async def refresh_timer():
+                    ctx = await self.bot.get_context(v.message)
+                    timer = await self._adv_countdown(ctx, v.timer, "Time remaining")
+
+                    self.tasks[v.message_id] = timer
+                    try:
+                        await asyncio.wait_for(timer, timeout=v.timeout + 5)
+                    except Exception as exc:
+                        timer.cancel()
+                        log.exception("Error with the countdown timer", exc_info=exc)
+
+                    await self._result(ctx, v.message)
+                
+                task = await self.bot.loop.create_task(refresh_timer())
+                self.tasks[v.countdown_message.id] = task
+
+            for k in to_delete:
+                del self._sesisons[k]
+
         except Exception as err:
             log.exception("There was an error starting up the cog", exc_info=err)
         else:
@@ -4929,7 +4968,7 @@ class Adventure(MiscMixin, commands.Cog):
                 adventure_msg = await ctx.send(embed=embed)
             else:
                 adventure_msg = await ctx.send(f"{adventure_msg}\n{dragon_text}")
-            timeout = 60 * 5
+            session.timeout = 60 * 5
 
         elif session.miniboss:
             if use_embeds:
@@ -4940,7 +4979,7 @@ class Adventure(MiscMixin, commands.Cog):
                 adventure_msg = await ctx.send(embed=embed)
             else:
                 adventure_msg = await ctx.send(f"{adventure_msg}\n{basilisk_text}")
-            timeout = 60 * 3
+            session.timeout = 60 * 3
         else:
             if use_embeds:
                 embed.description = f"{adventure_msg}\n{normal_text}"
@@ -4949,14 +4988,14 @@ class Adventure(MiscMixin, commands.Cog):
                 adventure_msg = await ctx.send(embed=embed)
             else:
                 adventure_msg = await ctx.send(f"{adventure_msg}\n{normal_text}")
-            timeout = 60 * 2
+            session.timeout = 60 * 2
         session.message_id = adventure_msg.id
         session.message = adventure_msg
         start_adding_reactions(adventure_msg, self._adventure_actions)
         timer = await self._adv_countdown(ctx, session.timer, "Time remaining")
         self.tasks[adventure_msg.id] = timer
         try:
-            await asyncio.wait_for(timer, timeout=timeout + 5)
+            await asyncio.wait_for(timer, timeout=session.timeout + 5)
         except Exception as exc:
             timer.cancel()
             log.exception("Error with the countdown timer", exc_info=exc)
@@ -6276,7 +6315,12 @@ class Adventure(MiscMixin, commands.Cog):
             secondint = int(seconds)
             adv_end = await self._get_epoch(secondint)
             timer, done, sremain = await self._remaining(adv_end)
-            message_adv = await ctx.send(f"⏳ [{title}] {timer}s")
+
+            message_adv = self._sessions[ctx.guild.id].countdown_message
+            if message_adv is None:
+                message_adv = await ctx.send(f"⏳ [{title}] {timer}s")
+                self._sessions[ctx.guild.id].countdown_message = message_adv
+
             deleted = False
             while not done:
                 timer, done, sremain = await self._remaining(adv_end)
@@ -6293,7 +6337,7 @@ class Adventure(MiscMixin, commands.Cog):
                 await asyncio.sleep(1)
             log.debug("Timer countdown done.")
 
-        return ctx.bot.loop.create_task(adv_countdown())
+        return self.bot.loop.create_task(adv_countdown())
 
     async def _cart_countdown(self, ctx: Context, seconds, title, room=None) -> asyncio.Task:
         room = room or ctx
@@ -6941,6 +6985,9 @@ class Adventure(MiscMixin, commands.Cog):
         for lock in self.locks.values():
             with contextlib.suppress(Exception):
                 lock.release()
+
+        with open(cog_data_path(self) / "sessions.pickle", "wb+") as f:
+            pickle.dump(self._sessions, f)
 
     async def get_leaderboard(self, positions: int = None, guild: discord.Guild = None) -> List[tuple]:
         """Gets the Adventure's leaderboard.
