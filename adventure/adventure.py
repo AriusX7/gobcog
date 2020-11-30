@@ -4658,8 +4658,6 @@ class Adventure(MiscMixin, commands.Cog):
             while ctx.guild.id in self._sessions:
                 del self._sessions[ctx.guild.id]
 
-        await ctx.bot.on_command_error(ctx, error, unhandled_by_cog=True)
-
     async def get_challenge(self, ctx: Context, monsters):
         try:
             c = await Character.from_json(self.config, ctx.author, self._daily_bonus)
