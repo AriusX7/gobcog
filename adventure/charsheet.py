@@ -390,6 +390,7 @@ class GameSession:
     challenge: str
     attribute: str
     timer: int
+    timeout: int
     guild: discord.Guild
     boss: bool
     miniboss: dict
@@ -404,6 +405,8 @@ class GameSession:
     pray: List[discord.Member] = []
     run: List[discord.Member] = []
     message: discord.Message = None
+    channel: discord.TextChannel = None
+    countdown_message: discord.Message = None
     transcended: bool = False
     insight = (0, None)
     start_time: datetime = datetime.now()
@@ -430,6 +433,34 @@ class GameSession:
         self.run: List[discord.Member] = []
         self.transcended: bool = kwargs.pop("transcended", False)
         self.start_time = datetime.now()
+        
+        if isinstance(self.message, discord.Message):
+            self.channel = self.message.channel
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state['guild'] = state['guild'].id
+        state['fight'] = [i.id for i in state['fight']]
+        state['magic'] = [i.id for i in state['magic']]
+        state['talk'] = [i.id for i in state['talk']]
+        state['pray'] = [i.id for i in state['pray']]
+        state['participants'] = {i.id for i in state['participants']}
+        state['channel'] = state['message'].channel.id
+        state['message'] = state['message'].id
+        state['countdown_message'] = state['countdown_message'].id
+        return state
+    
+    async def load_from_pickle(self, bot):
+        self.guild = bot.get_guild(self.guild)
+        self.fight = [self.guild.get_member(i) for i in self.fight]
+        self.magic = [self.guild.get_member(i) for i in self.magic]
+        self.talk = [self.guild.get_member(i) for i in self.talk]
+        self.pray = [self.guild.get_member(i) for i in self.pray]
+        self.participants = {self.guild.get_member(i) for i in self.participants}
+
+        self.channel = self.guild.get_channel(self.channel)
+        self.message = await self.channel.fetch_message(self.message)
+        self.countdown_message = await self.channel.fetch_message(self.countdown_message)
 
 
 class Character(Item):
