@@ -4547,8 +4547,10 @@ class Adventure(MiscMixin, commands.Cog):
         await self.config.guild(ctx.guild).cooldown.set(0)
         await ctx.tick()
 
+    @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
     @commands.command(name="adventure", aliases=["a"])
-    @commands.cooldown(rate=1, per=4, type=commands.BucketType.guild)
+    @commands.bot_has_permissions(add_reactions=True)
+    @commands.guild_only()
     async def _adventure(self, ctx: Context, *, challenge=None):
         """This will send you on an adventure!
 
