@@ -534,6 +534,7 @@ class Adventure(MiscMixin, commands.Cog):
                     continue
 
                 async def refresh_timer():
+                    # emulate everything after message is sent incl countdowns
                     ctx = await self.bot.get_context(v.message)
                     timer = await self._adv_countdown(ctx, v.timer, "Time remaining")
 
@@ -544,14 +545,63 @@ class Adventure(MiscMixin, commands.Cog):
                         timer.cancel()
                         log.exception("Error with the countdown timer", exc_info=exc)
 
-                    await self._result(ctx, v.message)
-                
-                task = await self.bot.loop.create_task(refresh_timer())
+                    try:
+                        await self._result(ctx, v.message)
+                        if ctx.guild.id not in self._sessions:
+                            reward = None
+                            participants = None
+                        else:
+                            reward = self._rewards
+                            participants = self._sessions[ctx.guild.id].participants
+                    except Exception as exc:
+                        await self.config.guild(ctx.guild).cooldown.set(0)
+                        log.exception("Something went wrong controlling the game", exc_info=exc)
+                        while ctx.guild.id in self._sessions:
+                            del self._sessions[ctx.guild.id]
+                        return
+                    if not reward and not participants:
+                        await self.config.guild(ctx.guild).cooldown.set(0)
+                        while ctx.guild.id in self._sessions:
+                            del self._sessions[ctx.guild.id]
+                        return
+                    reward_copy = reward.copy()
+                    send_message = ""
+                    for (userid, rewards) in reward_copy.items():
+                        if rewards:
+                            user = ctx.guild.get_member(userid)  # bot.get_user breaks sometimes :ablobsweats:
+                            if user is None:
+                                # sorry no rewards if you leave the server
+                                continue
+                            msg = await self._add_rewards(ctx, user, rewards["xp"], rewards["cp"], rewards["special"])
+                            if msg:
+                                send_message += f"{msg}\n"
+                            self._rewards[userid] = {}
+                    if send_message:
+                        for page in pagify(send_message):
+                            await smart_embed(ctx, page, success=True)
+                    if participants:
+                        for user in participants:  # reset activated abilities
+                            async with self.get_lock(user):
+                                try:
+                                    c = await Character.from_json(self.config, user, self._daily_bonus)
+                                except Exception as exc:
+                                    log.exception("Error with the new character sheet", exc_info=exc)
+                                    continue
+                                if c.heroclass["name"] != "Ranger" and c.heroclass["ability"]:
+                                    c.heroclass["ability"] = False
+                                if c.last_currency_check + 600 < time.time() or c.bal > c.last_known_currency:
+                                    c.last_known_currency = await bank.get_balance(user)
+                                    c.last_currency_check = time.time()
+                                await self.config.user(user).set(await c.to_json(self.config))
+
+                    while ctx.guild.id in self._sessions:
+                        del self._sessions[ctx.guild.id]
+
+                task = self.bot.loop.create_task(refresh_timer())
                 self.tasks[v.countdown_message.id] = task
 
             for k in to_delete:
                 del self._sessions[k]
-
         except Exception as err:
             log.exception("There was an error starting up the cog", exc_info=err)
         else:
@@ -4697,6 +4747,9 @@ class Adventure(MiscMixin, commands.Cog):
             while ctx.guild.id in self._sessions:
                 del self._sessions[ctx.guild.id]
 
+
+        await ctx.bot.on_command_error(ctx, error, unhandled_by_cog=True)
+
     async def get_challenge(self, ctx: Context, monsters):
         try:
             c = await Character.from_json(self.config, ctx.author, self._daily_bonus)
@@ -7211,6 +7264,7 @@ class Adventure(MiscMixin, commands.Cog):
     @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
     async def commands_apayday(self, ctx: commands.Context):
         """Get some free gold."""
+        print('f')
         author = ctx.author
         adventure_credits_name = await bank.get_currency_name(ctx.guild)
         amount = 500  # Make Customizable?
@@ -7440,3 +7494,17 @@ class Adventure(MiscMixin, commands.Cog):
                 name=await bank.get_currency_name(ctx.guild),
             ),
         )
+
+
+    # @commands.group(name="aping")
+    # @commands.bot_has_permissions(manage_roles=True)
+    # @commands.guild_only()
+    # async def aping(self, ctx: Context):
+    #     """Toggles the ping roles."""
+
+    # @aping.command()
+    # @commands.bot_has_permissions(manage_roles=True)
+    # @commands.guild_only()
+    # async def boss(self, ctx: Context):
+    #     await ctx.author.add_roles()
+    #     await ctx.send('Role added!')
