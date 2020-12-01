@@ -2058,10 +2058,10 @@
         "color": ""
     },
     "Ascended 4JR": {
-        "hp": 4650.0,
-        "pdef": 1.24,
-        "mdef": 2.11,
-        "dipl": 1900.0,
+        "hp": 4999.0,
+        "pdef": 40,
+        "mdef": 40,
+        "dipl": 4999.0,
         "image": "https://i.redd.it/4u3vdngfqy2y.png",
         "boss": true,
         "miniboss": {},
