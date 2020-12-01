@@ -2059,10 +2059,10 @@
     },
     "Ascended 4JR": {
         "hp": 4999.0,
-        "pdef": 40,
-        "mdef": 40,
+        "pdef": 50,
+        "mdef": 50,
         "dipl": 4999.0,
-        "image": "https://i.redd.it/4u3vdngfqy2y.png",
+        "image": "https://cdn.discordapp.com/attachments/385068337123688450/783320854582001664/fire.png",
         "boss": true,
         "miniboss": {},
         "color": ""
