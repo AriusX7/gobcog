@@ -550,7 +550,7 @@ class Adventure(MiscMixin, commands.Cog):
                 self.tasks[v.countdown_message.id] = task
 
             for k in to_delete:
-                del self._sesisons[k]
+                del self._sessions[k]
 
         except Exception as err:
             log.exception("There was an error starting up the cog", exc_info=err)
@@ -3787,7 +3787,7 @@ class Adventure(MiscMixin, commands.Cog):
                     await self.config.user(ctx.author).set(await character.to_json(self.config))
 
     @commands.group(autohelp=False)
-    @commands.cooldown(rate=1, per=5, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=60, type=commands.BucketType.user)
     async def pet(self, ctx: Context):
         """[Ranger Class Only]
 
@@ -4587,7 +4587,7 @@ class Adventure(MiscMixin, commands.Cog):
         await ctx.tick()
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
-    @commands.command(name="adventure", aliases=["a"])
+    @commands.command(name="adventure", aliases=["a"], cooldown_after_parsing=True)
     @commands.bot_has_permissions(add_reactions=True)
     @commands.guild_only()
     async def _adventure(self, ctx: Context, *, challenge=None):
