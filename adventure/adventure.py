@@ -535,6 +535,10 @@ class Adventure(MiscMixin, commands.Cog):
 
                 async def refresh_timer():
                     # emulate everything after message is sent incl countdowns
+                    if not isinstance(v.message, discord.Message):
+                        # something went wrong in parsing the pickle
+                        return
+
                     ctx = await self.bot.get_context(v.message)
                     timer = await self._adv_countdown(ctx, v.timer, "Time remaining")
 
