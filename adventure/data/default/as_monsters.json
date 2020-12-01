@@ -1,10 +1,10 @@
 {
-    "Ascended Tame Dove": {
+    "Ascended Arcade Machine": {
         "hp": 546.5,
         "pdef": 1.2,
         "mdef": 1.2,
         "dipl": 530.5,
-        "image": "https://cdn.pixabay.com/photo/2016/02/23/20/31/dove-1218474_960_720.jpg",
+        "image": "https://cdn.discordapp.com/attachments/256676158458822656/783142293074345984/8-bit-win-anim.gif",
         "boss": false,
         "miniboss": {},
         "color": ""
