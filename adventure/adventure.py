@@ -4751,9 +4751,6 @@ class Adventure(MiscMixin, commands.Cog):
             while ctx.guild.id in self._sessions:
                 del self._sessions[ctx.guild.id]
 
-
-        await ctx.bot.on_command_error(ctx, error, unhandled_by_cog=True)
-
     async def get_challenge(self, ctx: Context, monsters):
         try:
             c = await Character.from_json(self.config, ctx.author, self._daily_bonus)
@@ -7268,7 +7265,6 @@ class Adventure(MiscMixin, commands.Cog):
     @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
     async def commands_apayday(self, ctx: commands.Context):
         """Get some free gold."""
-        print('f')
         author = ctx.author
         adventure_credits_name = await bank.get_currency_name(ctx.guild)
         amount = 500  # Make Customizable?
@@ -7279,7 +7275,7 @@ class Adventure(MiscMixin, commands.Cog):
             await smart_embed(
                 ctx,
                 _(
-                    "You're struggling to move under the weight of all your {currency}!"
+                    "You're struggling to move under the weight of all your {currency}! "
                     "Please spend some more \N{GRIMACING FACE}\n\n"
                     "You currently have {new_balance} {currency}."
                 ).format(currency=adventure_credits_name, new_balance=humanize_number(exc.max_balance)),
@@ -7288,7 +7284,7 @@ class Adventure(MiscMixin, commands.Cog):
             await smart_embed(
                 ctx,
                 _(
-                    "You receive a letter by post from the town's courier!"
+                    "You receive a letter by post from the town's courier! "
                     "{author.mention}, you've gained some interest on your {currency}. "
                     "You've been paid +{amount} {currency}!\n\n"
                     "You currently have {new_balance} {currency}."
