@@ -17,6 +17,8 @@ class MiscMixin(commands.Cog):
     @commands.group(name="errorch", autohelp=False)
     @commands.guild_only()
     async def _errorch(self, ctx: Context):
+        """Configure channel for logging all adventure errors."""
+
         if not ctx.invoked_subcommand:
             channel_id = await self.config.guild(ctx.guild).error_channel()
             if not channel_id:
@@ -30,6 +32,8 @@ class MiscMixin(commands.Cog):
 
     @_errorch.command(name="show", aliases=["get"])
     async def _errorch_show(self, ctx: Context):
+        """Shows channel set for logging all adventure errors."""
+
         channel_id = await self.config.guild(ctx.guild).error_channel()
         if not channel_id:
             return await ctx.send("Error channel not set.")
@@ -42,12 +46,16 @@ class MiscMixin(commands.Cog):
 
     @_errorch.command(name="set")
     async def _errorch_set(self, ctx: Context, channel: discord.TextChannel):
+        """Sets channel for logging all adventure errors."""
+
         await self.config.guild(ctx.guild).error_channel.set(channel.id)
 
         await ctx.send(f"Set error channel to {channel.mention}.")
 
     @_errorch.command(name="clear")
     async def _errorch_clear(self, ctx: Context):
+        """Clears channel set for logging all adventure errors."""
+
         await self.config.guild(ctx.guild).error_channel.clear()
 
         await ctx.send(f"Cleared error channel.")
