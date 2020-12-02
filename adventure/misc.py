@@ -14,21 +14,10 @@ class MiscMixin(commands.Cog):
 
         self.config: Config
 
-    @commands.group(name="errorch", autohelp=False)
+    @commands.group(name="errorch")
     @commands.guild_only()
     async def _errorch(self, ctx: Context):
         """Configure channel for logging all adventure errors."""
-
-        if not ctx.invoked_subcommand:
-            channel_id = await self.config.guild(ctx.guild).error_channel()
-            if not channel_id:
-                return await ctx.send("Error channel not set.")
-
-            channel = self.bot.get_channel(channel_id)
-            if not channel:
-                return await ctx.send(f"No channel found with ID: {channel_id}")
-
-            await ctx.send(f"Error channel is set to {channel.mention}.")
 
     @_errorch.command(name="show", aliases=["get"])
     async def _errorch_show(self, ctx: Context):
