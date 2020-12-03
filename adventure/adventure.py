@@ -7438,6 +7438,21 @@ class Adventure(MiscMixin, commands.Cog):
                     author=ctx.author, name=await bank.get_currency_name(ctx.guild)
                 ),
             )
+
+        try:
+            c = await Character.from_json(self.config, ctx.author, self._daily_bonus)
+        except Exception as exc:
+            log.exception("Error with the new character sheet", exc_info=exc)
+            return
+        if c.lvl == c.maxlevel:
+            ctx.command.reset_cooldown(ctx)
+            return await smart_embed(
+                ctx,
+                _("{author.mention} you can't transfer money when you're at the max level.").format(
+                    author=ctx.author, name=await bank.get_currency_name(ctx.guild)
+                ),
+            )
+        
         tax = await self.config.tax_brackets.all()
         highest = 0
         for tax, percent in tax.items():
