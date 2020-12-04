@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import asyncio
 import contextlib
+import io
 import json
 import logging
 import os
-import pickle
 import random
 import re
 import time
@@ -3940,7 +3940,8 @@ class Adventure(MiscMixin, commands.Cog):
         if file.filename.endswith(".json"):
             data = (await file.read()).decode()
             try:
-                data = json.dumps(json.loads(data))  # minify data
+                self.PERMS = json.loads(data)
+                data = json.dumps(self.PERMS)  # minify data
             except json.JSONDecodeError:
                 await smart_embed(ctx, _("Invalid JSON format, send a json file."), success=False)
             else:
@@ -3955,6 +3956,6 @@ class Adventure(MiscMixin, commands.Cog):
     @commands.is_owner()
     async def _export(self, ctx: commands.Context):
         """Exports permissions from Adventure"""
-        with open(cog_data_path(self) / "perms.json", "rb") as f:
-            await ctx.author.send(file=discord.File(f))
+        with io.StringIO(json.dumps(self.PERMS, indent=4)) as stream:
+            await ctx.author.send(file=discord.File(stream, filename='perms.json'))
         await smart_embed(ctx, _("Sent to your DM"), success=True)
