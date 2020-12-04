@@ -2926,28 +2926,30 @@ class MiscMixin(commands.Cog):
         if ctx.author.id in self.locks and self.locks[ctx.author.id].locked():
             raise AdventureCheckFailure(f"There's an active lock for {ctx.author.mention}")
 
-        if self.__class__.__name__ in self.PERMS.get("cog", {}):
-            perms_data = copy.copy(self.PERMS["cog"][self.__class__.__name__])
-        else:
-            perms_data = {}
+        if ctx.guild:
+            guild_perms = self.PERMS.get(str(ctx.guild.id), {})
+            if self.__class__.__name__ in guild_perms.get("cog", {}):
+                perms_data = copy.copy(guild_perms["cog"][self.__class__.__name__])
+            else:
+                perms_data = {}
 
-        if ctx.command.qualified_name in self.PERMS.get("command", {}):
-            perms_data.update(self.PERMS["command"][ctx.command.qualified_name])
+            if ctx.command.qualified_name in guild_perms.get("command", {}):
+                perms_data.update(guild_perms["command"][ctx.command.qualified_name])
 
-        # override if its an owner command
-        if ctx.command.requires.privilege_level != PrivilegeLevel.BOT_OWNER:
-            # 3 things, user, role, channel
-            for i in ctx.author.roles:
-                if not perms_data.get(str(i.id), True):
+            # override if its an owner command
+            if ctx.command.requires.privilege_level != PrivilegeLevel.BOT_OWNER:
+                # 3 things, user, role, channel
+                for i in ctx.author.roles:
+                    if not perms_data.get(str(i.id), True):
+                        raise AdventureCheckFailure("You are not allowed to use this command.")
+
+                if not perms_data.get(str(ctx.author.id), True):
                     raise AdventureCheckFailure("You are not allowed to use this command.")
 
-            if not perms_data.get(str(ctx.author.id), True):
-                raise AdventureCheckFailure("You are not allowed to use this command.")
-
-            default = perms_data.get('default', True)
-            if not perms_data.get(str(ctx.channel.id), default):
-                channels = [ctx.bot.get_channel(int(x)).mention for x in perms_data if x.isdigit() and perms_data[x] and ctx.bot.get_channel(int(x))]
-                raise AdventureCheckFailure(f"Try this in {', '.join(channels)}.")
+                default = perms_data.get('default', True)
+                if not perms_data.get(str(ctx.channel.id), default):
+                    channels = [ctx.bot.get_channel(int(x)).mention for x in perms_data if x.isdigit() and perms_data[x] and ctx.bot.get_channel(int(x))]
+                    raise AdventureCheckFailure(f"Try this in {', '.join(channels)}.")
 
         return True
 
