@@ -1879,7 +1879,7 @@ class MiscMixin(commands.Cog):
         lock = self.get_lock(user)
         if not lock.locked():
             await lock.acquire()
-        c = await self.get_character_from_json(user)
+        c = await self.get_character_from_json(user, release_lock=True)
         rebirth_text = ""
         c.exp += exp
         member = ctx.guild.get_member(user.id)
@@ -1943,9 +1943,9 @@ class MiscMixin(commands.Cog):
         if special is not False:
             c.treasure = [sum(x) for x in zip(c.treasure, special)]
         await self.config.user(user).set(await c.to_json(self.config))
-        return rebirth_text
         with contextlib.suppress(Exception):
             lock.release()
+        return rebirth_text
 
     async def _adv_countdown(self, ctx: Context, seconds, title) -> asyncio.Task:
         await self._data_check(ctx)
@@ -3010,6 +3010,7 @@ class MiscMixin(commands.Cog):
                 await self._trader(ctx)
 
     async def cog_command_error(self, ctx: Context, error: Exception):
+        ctx.command.reset_cooldown(ctx)
         if isinstance(error, commands.CheckFailure):
             await smart_embed(ctx, str(error), success=False)
         else:
