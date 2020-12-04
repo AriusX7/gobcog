@@ -1,36 +1,36 @@
-import logging
-import random
 import asyncio
+import copy
+import contextlib
 import json
+import logging
 import os
 import pickle
+import random
+import re
 import time
 import traceback
-import contextlib
-import re
 from datetime import date, datetime, timedelta
-from typing import List, Union, MutableMapping
+from typing import List, MutableMapping, Union
 
 import discord
-
-from redbot.core.i18n import Translator
-from redbot.core import commands, Config
+from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.commands import Context
-from redbot.core.errors import BalanceTooHigh
+from redbot.core.commands.requires import PrivilegeLevel
 from redbot.core.data_manager import bundled_data_path, cog_data_path
+from redbot.core.errors import BalanceTooHigh
+from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
-from redbot.core.utils.chat_formatting import box, escape, pagify, humanize_list, humanize_number
+from redbot.core.utils.chat_formatting import box, escape, humanize_list, humanize_number, pagify
 from redbot.core.utils.common_filters import filter_various_mentions
 from redbot.core.utils.menus import DEFAULT_CONTROLS, menu, start_adding_reactions
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 
 import adventure.charsheet
 from . import bank
-from .charsheet import (
-    ORDER, RARITIES, Character, Item, can_equip, equip_level, has_funds, GameSession, calculate_sp
-)
+from .charsheet import ORDER, RARITIES, Character, GameSession, Item, calculate_sp, can_equip, equip_level, has_funds
 from .utils import AdventureCheckFailure, smart_embed
+
 DEV_LIST = [208903205982044161, 154497072148643840, 218773382617890828]
 REBIRTH_LVL = 20
 REBIRTH_STEP = 10
@@ -122,6 +122,12 @@ class MiscMixin(commands.Cog):
                 self.SUFFIXES = json.load(f)
             with files["set_bonuses"].open("r") as f:
                 self.SET_BONUSES = json.load(f)
+            
+            try:
+                with open(cog_data_path(self) / "perms.json") as f:
+                    self.PERMS = json.load(f)
+            except FileNotFoundError:
+                self.PERMS = {}
 
             if not all(
                 i
@@ -2919,6 +2925,30 @@ class MiscMixin(commands.Cog):
         await self._ready_event.wait()
         if ctx.author.id in self.locks and self.locks[ctx.author.id].locked():
             raise AdventureCheckFailure(f"There's an active lock for {ctx.author.mention}")
+
+        if self.__class__.__name__ in self.PERMS.get("cog", {}):
+            perms_data = copy.copy(self.PERMS["cog"][self.__class__.__name__])
+        else:
+            perms_data = {}
+
+        if ctx.command.qualified_name in self.PERMS.get("command", {}):
+            perms_data.update(self.PERMS["command"][ctx.command.qualified_name])
+
+        # override if its an owner command
+        if ctx.command.requires.privilege_level != PrivilegeLevel.BOT_OWNER:
+            # 3 things, user, role, channel
+            for i in ctx.author.roles:
+                if not perms_data.get(str(i.id), True):
+                    raise AdventureCheckFailure("You are not allowed to use this command.")
+
+            if not perms_data.get(str(ctx.author.id), True):
+                raise AdventureCheckFailure("You are not allowed to use this command.")
+
+            default = perms_data.get('default', True)
+            if not perms_data.get(str(ctx.channel.id), default):
+                channels = [ctx.bot.get_channel(int(x)).mention for x in perms_data if x.isdigit() and perms_data[x] and ctx.bot.get_channel(int(x))]
+                raise AdventureCheckFailure(f"Try this in {', '.join(channels)}.")
+
         return True
 
     @commands.group(name="errorch")
