@@ -7495,6 +7495,18 @@ class Adventure(MiscMixin, commands.Cog):
             ),
         )
 
+    @commands.command(name="balance", aliases=["bal", "credits"])
+    async def _balance(self, ctx: commands.Context):
+        bal = await bank.get_balance(ctx.author)
+
+        await smart_embed(
+            ctx,
+            _("{author.mention} You currently have {new_balance} {currency}.").format(
+                author=ctx.author,
+                new_balance=humanize_number(bal),
+                currency=await bank.get_currency_name(ctx.guild),
+            ),
+        )
 
     # @commands.group(name="aping")
     # @commands.bot_has_permissions(manage_roles=True)
