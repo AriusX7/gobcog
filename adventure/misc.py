@@ -564,6 +564,11 @@ class MiscMixin(commands.Cog):
         self.bot.dispatch("adventure", ctx)
         text = ""
         monster_roster, monster_stats, transcended = await self.update_monster_roster(ctx.author)
+        if challenge and challenge not in monster_roster:
+            for m in monster_roster:
+                if challenge.lower() == m.lower():
+                    challenge = m
+
         if not challenge or challenge not in monster_roster:
             challenge = await self.get_challenge(ctx, monster_roster)
 
