@@ -2929,7 +2929,7 @@ class MiscMixin(commands.Cog):
     async def cog_before_invoke(self, ctx: Context):
         await self._ready_event.wait()
         if ctx.author.id in self.locks and self.locks[ctx.author.id].locked():
-            raise AdventureCheckFailure(f"Another operation is currently executing for {ctx.author.mention}. Try again in a few seconds.")
+            raise AdventureCheckFailure(f"Another operation is currently executing for {ctx.author.mention}. Try again later.")
 
         if ctx.guild:
             guild_perms = self.PERMS.get(str(ctx.guild.id), {})
