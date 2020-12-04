@@ -3103,3 +3103,12 @@ class MiscMixin(commands.Cog):
                         if guild_id in self._sessions:
                             del self._sessions[guild_id]
                 await asyncio.sleep(5)
+
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx: Context, error: Exception):
+        if isinstance(error, commands.CommandNotFound):
+            # case insentivity
+            command = ctx.bot.get_command(ctx.invoked_with.lower())
+            if command and command.cog == self:
+                ctx.message.content = ctx.message.content.lower()
+                await self.bot.process_commands(ctx.message)
