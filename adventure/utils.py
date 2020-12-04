@@ -4,7 +4,7 @@ from typing import List, MutableMapping
 import discord
 from discord.ext import commands
 from discord.ext.commands import BadArgument, CheckFailure, Converter
-from redbot.core.commands import check, Context
+from redbot.core.commands import Context, check
 from redbot.core.i18n import Translator
 
 from . import bank
