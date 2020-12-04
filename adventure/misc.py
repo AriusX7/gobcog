@@ -12,8 +12,6 @@ from datetime import date, datetime, timedelta
 from typing import List, Union, MutableMapping
 
 import discord
-from discord.ext.commands import CheckFailure
-from discord.ext.commands.converter import Converter
 
 from redbot.core.i18n import Translator
 from redbot.core import commands, Config
@@ -32,7 +30,7 @@ from . import bank
 from .charsheet import (
     ORDER, RARITIES, Character, Item, can_equip, equip_level, has_funds, GameSession, calculate_sp
 )
-from .utils import smart_embed
+from .utils import AdventureCheckFailure, smart_embed
 DEV_LIST = [208903205982044161, 154497072148643840, 218773382617890828]
 REBIRTH_LVL = 20
 REBIRTH_STEP = 10
@@ -2920,7 +2918,7 @@ class MiscMixin(commands.Cog):
     async def cog_before_invoke(self, ctx: Context):
         await self._ready_event.wait()
         if ctx.author.id in self.locks and self.locks[ctx.author.id].locked():
-            raise CheckFailure(f"There's an active lock for {ctx.author.mention}")
+            raise AdventureCheckFailure(f"There's an active lock for {ctx.author.mention}")
         return True
 
     @commands.group(name="errorch")
@@ -3011,7 +3009,7 @@ class MiscMixin(commands.Cog):
 
     async def cog_command_error(self, ctx: Context, error: Exception):
         ctx.command.reset_cooldown(ctx)
-        if isinstance(error, commands.CheckFailure):
+        if isinstance(error, AdventureCheckFailure):
             await smart_embed(ctx, str(error), success=False)
         else:
             if ctx.guild:

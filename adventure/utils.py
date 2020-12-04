@@ -165,3 +165,7 @@ class AdventureResults:
 
     def __str__(self):
         return str(self._last_raids)
+
+
+class AdventureCheckFailure(commands.CheckFailure):
+    pass
