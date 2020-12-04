@@ -2936,8 +2936,8 @@ class MiscMixin(commands.Cog):
             if ctx.command.qualified_name in guild_perms.get("command", {}):
                 perms_data.update(guild_perms["command"][ctx.command.qualified_name])
 
-            # override if its an owner command
-            if ctx.command.requires.privilege_level != PrivilegeLevel.BOT_OWNER:
+            # override if owner
+            if not await ctx.bot.is_owner(ctx.author):
                 # 3 things, user, role, channel
                 for i in ctx.author.roles:
                     if not perms_data.get(str(i.id), True):
