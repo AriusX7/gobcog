@@ -3669,10 +3669,6 @@ class Adventure(MiscMixin, commands.Cog):
             # Only let the bot owner specify a specific challenge
             challenge = None
 
-        if challenge:
-            challenge = challenge.title()
-            
-
         adventure_msg = _("You feel adventurous, **{}**?").format(self.escape(ctx.author.display_name))
         try:
             reward, participants = await self._simple(ctx, adventure_msg, challenge)
