@@ -3531,11 +3531,17 @@ class Adventure(MiscMixin, commands.Cog):
                 if number == "all":
                     number = c.treasure[5]
                 redux = 5
-            else:
+            elif box_type != "all":
                 return await smart_embed(
                     ctx, _("There is talk of a {} treasure chest but nobody ever saw one.").format(box_type),
                 )
-            treasure = c.treasure[redux]
+            
+            if box_type == "all":
+                treasure = sum(i for i in c.treasure)
+                number = treasure # min
+            else:
+                treasure = c.treasure[redux]
+
             if treasure < 1 or treasure < number:
                 await smart_embed(
                     ctx,
@@ -3548,34 +3554,47 @@ class Adventure(MiscMixin, commands.Cog):
                     async with ctx.typing():
                         # atomically save reduced loot count then lock again when saving inside
                         # open chests
-                        c.treasure[redux] -= number
-                        await self.config.user(ctx.author).set(await c.to_json(self.config))
-                        items = await self._open_chests(ctx, ctx.author, box_type, number, character=c)
+                        if box_type == "all":
+                            box_types = ["normal", "rare", "epic", "legendary", "ascended", "set"]
+                        else:
+                            box_types = [box_type]
+
                         msg = _(
                             "{}, you've opened the following items:\n"
                             "( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | LOOTED | SET (SET PIECES)"
                         ).format(self.escape(ctx.author.display_name))
-                        rjust = max([len(str(i)) for i in items.values()])
-                        async for item in AsyncIter(items.values()):
-                            settext = ""
-                            att_space = " " if len(str(item.att)) >= 1 else ""
-                            cha_space = " " if len(str(item.cha)) >= 1 else ""
-                            int_space = " " if len(str(item.int)) >= 1 else ""
-                            dex_space = " " if len(str(item.dex)) >= 1 else ""
-                            luck_space = " " if len(str(item.luck)) >= 1 else ""
-                            owned = f" | {item.owned}"
-                            if item.set:
-                                settext += f" | Set `{item.set}` ({item.parts}pcs)"
-                            msg += (
-                                f"\n{str(item):<{rjust}} - "
-                                f"({att_space}{item.att} |"
-                                f"{cha_space}{item.cha} |"
-                                f"{int_space}{item.int} |"
-                                f"{dex_space}{item.dex} |"
-                                f"{luck_space}{item.luck} )"
-                                f" | Lv {equip_level(c, item):<3}"
-                                f"{owned}{settext}"
-                            )
+
+                        for type_ in box_types:
+                            if len(box_types) > 1:
+                                redux = box_types.index(type_)
+                                number = c.treasure[redux]
+
+                            if number > 0:
+                                c.treasure[redux] -= number
+                                items = await self._open_chests(ctx, ctx.author, type_, number, character=c)
+                                rjust = max([len(str(i)) for i in items.values()])
+                                async for item in AsyncIter(items.values()):
+                                    settext = ""
+                                    att_space = " " if len(str(item.att)) >= 1 else ""
+                                    cha_space = " " if len(str(item.cha)) >= 1 else ""
+                                    int_space = " " if len(str(item.int)) >= 1 else ""
+                                    dex_space = " " if len(str(item.dex)) >= 1 else ""
+                                    luck_space = " " if len(str(item.luck)) >= 1 else ""
+                                    owned = f" | {item.owned}"
+                                    if item.set:
+                                        settext += f" | Set `{item.set}` ({item.parts}pcs)"
+                                    msg += (
+                                        f"\n{str(item):<{rjust}} - "
+                                        f"({att_space}{item.att} |"
+                                        f"{cha_space}{item.cha} |"
+                                        f"{int_space}{item.int} |"
+                                        f"{dex_space}{item.dex} |"
+                                        f"{luck_space}{item.luck} )"
+                                        f" | Lv {equip_level(c, item):<3}"
+                                        f"{owned}{settext}"
+                                    )
+
+                        await self.config.user(ctx.author).set(await c.to_json(self.config))
                         msgs = []
                         async for page in AsyncIter(pagify(msg, page_length=1900)):
                             msgs.append(box(page, lang="css"))
@@ -3583,7 +3602,12 @@ class Adventure(MiscMixin, commands.Cog):
                     msgs = []
                     # atomically save reduced loot count then lock again when saving inside
                     # open chests
-                    c.treasure[redux] -= 1
+                    if box_type == 'all':
+                        for redux in range(6):
+                            if c.treasure[redux]:
+                                c.treasure[redux] -= 1
+                    else:
+                        c.treasure[redux] -= 1
                     await self.config.user(ctx.author).set(await c.to_json(self.config))
 
                     await self._open_chest(ctx, ctx.author, box_type, character=c)  # returns item and msg
@@ -7438,6 +7462,21 @@ class Adventure(MiscMixin, commands.Cog):
                     author=ctx.author, name=await bank.get_currency_name(ctx.guild)
                 ),
             )
+
+        try:
+            c = await Character.from_json(self.config, ctx.author, self._daily_bonus)
+        except Exception as exc:
+            log.exception("Error with the new character sheet", exc_info=exc)
+            return
+        if c.lvl == c.maxlevel:
+            ctx.command.reset_cooldown(ctx)
+            return await smart_embed(
+                ctx,
+                _("{author.mention} you can't transfer money when you're at the max level.").format(
+                    author=ctx.author, name=await bank.get_currency_name(ctx.guild)
+                ),
+            )
+        
         tax = await self.config.tax_brackets.all()
         highest = 0
         for tax, percent in tax.items():
