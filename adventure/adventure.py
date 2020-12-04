@@ -2608,7 +2608,7 @@ class Adventure(MiscMixin, commands.Cog):
                     msgs = []
                     # atomically save reduced loot count then lock again when saving inside
                     # open chests
-                    if box_type == 'all':
+                    if box_type == "all":
                         for redux in range(6):
                             if c.treasure[redux]:
                                 c.treasure[redux] -= 1
@@ -3926,3 +3926,35 @@ class Adventure(MiscMixin, commands.Cog):
                 currency=await bank.get_currency_name(ctx.guild),
             ),
         )
+
+    @commands.group()
+    @commands.is_owner()
+    async def aperms(self, ctx: commands.Context):
+        """Configures permissions within Adventure"""
+
+    @aperms.command(name="import")
+    @commands.is_owner()
+    async def _import(self, ctx: commands.Context):
+        """Imports permissions into Adventure"""
+        file = ctx.message.attachments[0]
+        if file.filename.endswith(".json"):
+            data = (await file.read()).decode()
+            try:
+                data = json.dumps(json.loads(data))  # minify data
+            except json.JSONDecodeError:
+                await smart_embed(ctx, _("Invalid JSON format, send a json file."), success=False)
+            else:
+                with open(cog_data_path(self) / "perms.json", "w+") as f:
+                    f.write(data)
+
+                await smart_embed(ctx, _("File Saved"), success=True)
+        else:
+            await smart_embed(ctx, _("Invalid file format, send a json file."), success=False)
+
+    @aperms.command(name="export")
+    @commands.is_owner()
+    async def _export(self, ctx: commands.Context):
+        """Exports permissions from Adventure"""
+        with open(cog_data_path(self) / "perms.json", "rb") as f:
+            await ctx.author.send(file=discord.File(f))
+        await smart_embed(ctx, _("Sent to your DM"), success=True)
