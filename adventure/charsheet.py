@@ -225,9 +225,11 @@ class Item:
         return max(int(lvl), 1)
 
     @staticmethod
-    def remove_markdowns(item):
+    def remove_markdowns(item, skip_underscore=False):
+        if not skip_underscore and "_" in item:
+            item = item.replace("_", " ")
         if item.startswith(".") or "_" in item:
-            item = item.replace("_", " ").replace(".", "")
+            item = item.replace(".", "")
         if item.startswith("["):
             item = item.replace("[", "").replace("]", "")
         if item.startswith("{Legendary:'"):
@@ -1480,6 +1482,72 @@ class EquipmentConverter(Converter):
             if len(lookup) > 10:
                 raise BadArgument(
                     _("You have too many items matching the name `{}`, please be more specific").format(argument)
+                )
+            items = ""
+            for (number, item) in enumerate(lookup):
+                items += f"{number}. {str(item)} (owned {item.owned})\n"
+
+            msg = await ctx.send(
+                _("Multiple items share that name, which one would you like?\n{items}").format(
+                    items=box(items, lang="css")
+                )
+            )
+            emojis = ReactionPredicate.NUMBER_EMOJIS[: len(lookup)]
+            start_adding_reactions(msg, emojis)
+            pred = ReactionPredicate.with_emojis(emojis, msg, user=ctx.author)
+            try:
+                await ctx.bot.wait_for("reaction_add", check=pred, timeout=30)
+            except asyncio.TimeoutError:
+                raise BadArgument(_("Alright then."))
+            return lookup[pred.result]
+
+
+class AllItemConverter(Converter):
+    """Converts string into an `Item` if possible.
+
+    Unlike `ItemConverter`, this converter considers all items the user owns,
+    that is, those in backpack and those equipped.
+    """
+
+    async def convert(self, ctx, argument) -> Item:
+        try:
+            c = await Character.from_json(
+                ctx.bot.get_cog("Adventure").config, ctx.author, ctx.bot.get_cog("Adventure")._daily_bonus,
+            )
+        except Exception as exc:
+            log.exception("Error with the new character sheet", exc_info=exc)
+            raise BadArgument
+        no_markdown = Item.remove_markdowns(argument, skip_underscore=True)
+        print(no_markdown)
+
+        all_items = c.get_current_equipment() + list(c.backpack.values())
+
+
+        lookup = list(i for i in all_items if no_markdown.lower() in i.name.lower())
+        lookup_m = list(i for i in all_items if no_markdown.lower() == str(i).lower() and str(i))
+        lookup_e = list(i for i in all_items if no_markdown == str(i))
+
+        _temp_items = set()
+        for i in lookup:
+            _temp_items.add(str(i))
+        for i in lookup_m:
+            _temp_items.add(str(i))
+        for i in lookup_e:
+            _temp_items.add(str(i))
+
+        if len(lookup_e) == 1:
+            return lookup_e[0]
+        if len(lookup) == 1:
+            return lookup[0]
+        elif len(lookup_m) == 1:
+            return lookup_m[0]
+        elif len(lookup) == 0 and len(lookup_m) == 0:
+            raise BadArgument(_("`{}` doesn't seem to match any items you own.").format(argument))
+        else:
+            lookup = list(i for i in all_items if str(i) in _temp_items)
+            if len(lookup) > 10:
+                raise BadArgument(
+                    _("You have too many items matching the name `{}`, please be more specific.").format(argument)
                 )
             items = ""
             for (number, item) in enumerate(lookup):
