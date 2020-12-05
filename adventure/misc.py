@@ -3117,3 +3117,36 @@ class MiscMixin(commands.Cog):
             if command and command.cog == self:
                 ctx.message.content = ctx.message.content.lower()
                 await self.bot.process_commands(ctx.message)
+
+    def display_item(self, item: Item, character: Character, equipped=False) -> str:
+        """Returns a formatted string to display item's stats based on the provided character."""
+
+        slot = item.slot[0]
+
+        if len(item.slot) > 1:
+            slot = _("two handed")
+            att = item.att * 2
+            cha = item.cha * 2
+            intel = item.int * 2
+            luck = item.luck * 2
+            dex = item.dex * 2
+        else:
+            att = item.att
+            cha = item.cha
+            intel = item.int
+            luck = item.luck
+            dex = item.dex
+
+        msg = (
+            _("{item} [{slot}] | Lvl req {lv}{equipped}").format(
+                item=str(item), slot=slot, lv=equip_level(character, item),
+                equipped=_(" | Equipped") if equipped else ""
+            )
+            + f"\n\nATT: {str(att)}, "
+            f"CHA: {str(cha)}, "
+            f"INT: {str(intel)}, "
+            f"DEX: {str(dex)}, "
+            f"LUCK: {str(luck)}"
+        )
+
+        return msg

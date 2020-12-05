@@ -32,6 +32,7 @@ from . import bank
 from .charsheet import (
     ORDER,
     RARITIES,
+    AllItemConverter,
     Character,
     DayConverter,
     EquipableItemConverter,
@@ -3978,3 +3979,44 @@ class Adventure(MiscMixin, commands.Cog):
         with io.StringIO(json.dumps(self.PERMS, indent=4)) as stream:
             await ctx.author.send(file=discord.File(stream, filename='perms.json'))
         await smart_embed(ctx, _("Sent to your DM"), success=True)
+
+    @commands.command(name="lookup")
+    async def _lookup_item(self, ctx: commands.Context, *, item: AllItemConverter):
+        """Looks up item you own matching given name and displays its stats."""
+
+        msg = self.display_item(item, await self.get_character_from_json(ctx.author))
+        await ctx.send(box(msg, lang="css"))
+
+    @commands.command()
+    async def compare(
+        self,
+        ctx: commands.Context,
+        item_one: AllItemConverter,
+        *,
+        item_two: Optional[AllItemConverter] = None
+    ):
+        """Compares two items by displaying their stats one-after-another.
+
+        If second item is not specified, the first item is compared
+        to the equipped item of the same slot.
+        """
+
+        character = await self.get_character_from_json(ctx.author)
+        equipped = False
+
+        if not item_two:
+            # Get item equipped by user in `item_one`'s slot.
+            item_two = getattr(character, item_one.slot[0], None)
+            if not item_two:
+                return await smart_embed(ctx, _("I need another item to compare to!"))
+            if item_one.name == item_two.name:
+                return await ctx.send(box(self.display_item(item_one, character, True), lang="css"))
+            equipped = True
+
+        await ctx.send(box(
+            _("[ITEM ONE]\n{item_one}\n\n[ITEM TWO]\n{item_two}").format(
+                item_one=self.display_item(item_one, character),
+                item_two=self.display_item(item_two, character, equipped),
+            ),
+            lang="css"
+        ))
