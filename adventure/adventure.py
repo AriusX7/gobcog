@@ -3935,13 +3935,14 @@ class Adventure(MiscMixin, commands.Cog):
         )
 
     @commands.command(name="balance", aliases=["bal", "credits"])
-    async def _balance(self, ctx: commands.Context):
-        bal = await bank.get_balance(ctx.author)
+    async def _balance(self, ctx: commands.Context, member: discord.Member=None):
+        member = member or ctx.author
+        bal = await bank.get_balance(member)
 
         await smart_embed(
             ctx,
-            _("{author.mention} You currently have {new_balance} {currency}.").format(
-                author=ctx.author,
+            _("{member.mention} currently has {new_balance} {currency}.").format(
+                member=member,
                 new_balance=humanize_number(bal),
                 currency=await bank.get_currency_name(ctx.guild),
             ),
