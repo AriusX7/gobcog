@@ -3935,7 +3935,7 @@ class Adventure(MiscMixin, commands.Cog):
         )
 
     @commands.command(name="balance", aliases=["bal", "credits"])
-    async def _balance(self, ctx: commands.Context, member: discord.Member=None):
+    async def _balance(self, ctx: commands.Context, *, member: discord.Member = None):
         member = member or ctx.author
         bal = await bank.get_balance(member)
 
