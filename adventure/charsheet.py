@@ -873,6 +873,7 @@ class Character(Item):
         slot=None,
         show_delta=False,
         equippable=False,
+        unequippable=False,
         set_name: str = None,
         clean: bool = False,
     ):
@@ -902,6 +903,8 @@ class Character(Item):
                 if rarity is not None and rarity != item[1].rarity:
                     continue
                 if equippable and not can_equip(self, item[1]):
+                    continue
+                if unequippable and can_equip(self, item[1]):
                     continue
                 if set_name is not None and set_name != item[1].set:
                     continue
