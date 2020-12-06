@@ -4076,43 +4076,61 @@ class Adventure(MiscMixin, commands.Cog):
                     lang="css"
                 )
             )
+        elif item.name == other.name:
+            # This is actually reachable in case of multiple items with same name.
+            return await ctx.send(box(self.display_item(item, character, True), lang="css"))
+        else:
+            sep = f"\n\n#{'-' * 40}\n\n"
 
-            start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-            pred = ReactionPredicate.yes_or_no(msg, ctx.author)
+            msg = await ctx.send(
+                box(
+                    _("{item_one}{sep}{item_two}{sep}Do you want to equip {item_one_name}?").format(
+                        item_one=self.display_item(item, character),
+                        item_two=self.display_item(other, character, True),
+                        sep=sep,
+                        item_one_name=str(item)
+                    ),
+                    lang="css"
+                )
+            )
 
-            try:
-                await self.bot.wait_for("reaction_add", check=pred, timeout=60)
-            except asyncio.TimeoutError:
-                await self._clear_react(msg)
-                return
+        start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+        pred = ReactionPredicate.yes_or_no(msg, ctx.author)
 
-            if pred.result:
-                equiplevel = equip_level(character, item)
-                if self.is_dev(ctx.author):
-                    equiplevel = 0
-                if not can_equip(character, item):
-                    return await smart_embed(
-                        ctx,
-                        f"**{self.escape(ctx.author.display_name)}**, you need to be level "
-                        f"`{equiplevel}` to equip this item.",
-                    )
+        try:
+            await self.bot.wait_for("reaction_add", check=pred, timeout=60)
+        except asyncio.TimeoutError:
+            await self._clear_react(msg)
+            return
+
+        if pred.result:
+            equiplevel = equip_level(character, item)
+            if self.is_dev(ctx.author):
+                equiplevel = 0
+            if not can_equip(character, item):
+                return await smart_embed(
+                    ctx,
+                    f"**{self.escape(ctx.author.display_name)}**, you need to be level "
+                    f"`{equiplevel}` to equip this item.",
+                )
+            if not other:
                 equip_msg = box(
                     _("{user} equipped {item} ({slot} slot).").format(
                         user=self.escape(ctx.author.display_name), item=item, slot=slot
                     ),
                     lang="css",
                 )
-                await msg.edit(content=equip_msg)
-                character = await character.equip_item(item, False, self.is_dev(ctx.author))
-                await self.config.user(ctx.author).set(await character.to_json(self.config))
-            await self._clear_react(msg)
-        elif item.name == other.name:
-            await ctx.send(box(self.display_item(item, character, True), lang="css"))
-        else:
-            await ctx.send(box(
-                _("[ITEM ONE]\n{item_one}\n\n[ITEM TWO]\n{item_two}").format(
-                    item_one=self.display_item(item, character),
-                    item_two=self.display_item(other, character, True),
-                ),
-                lang="css"
-            ))
+            else:
+                equip_msg = box(
+                    _("{user} equipped {item} ({slot} slot) and put {old_item} into their backpack.").format(
+                        user=self.escape(ctx.author.display_name),
+                        item=item,
+                        slot=slot,
+                        old_item=other,
+                    ),
+                    lang="css",
+                )
+            await msg.edit(content=equip_msg)
+            character = await character.equip_item(item, False, self.is_dev(ctx.author))
+            await self.config.user(ctx.author).set(await character.to_json(self.config))
+        await self._clear_react(msg)
