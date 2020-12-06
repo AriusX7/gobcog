@@ -334,7 +334,7 @@ class Adventure(MiscMixin, commands.Cog):
         *,
         slot: Optional[SlotConverter] = None,
     ):
-        """This shows the contents of your backpack that can be equipped.
+        """This shows the contents of your backpack that cannot be equipped.
 
         Give it a rarity and/or slot to filter what backpack items to show.
 
