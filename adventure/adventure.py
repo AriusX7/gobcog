@@ -60,7 +60,7 @@ from .menus import (
     WeeklyScoreboardSource,
 )
 from .misc import MiscMixin
-from .utils import AdventureResults, DynamicInt, check_global_setting_admin, has_separated_economy, smart_embed
+from .utils import AdventureResults, DynamicInt, check_global_setting_admin, has_separated_economy, smart_embed, Member
 
 _ = Translator("Adventure", __file__)
 
@@ -648,7 +648,7 @@ class Adventure(MiscMixin, commands.Cog):
 
     @_backpack.command(name="trade")
     async def backpack_trade(
-        self, ctx: Context, buyer: discord.Member, asking: Optional[int] = 1000, *, item: ItemConverter,
+        self, ctx: Context, buyer: Member, asking: Optional[int] = 1000, *, item: ItemConverter,
     ):
         """Trade an item from your backpack to another user."""
         if ctx.author == buyer:
@@ -899,7 +899,7 @@ class Adventure(MiscMixin, commands.Cog):
     @commands.bot_has_permissions(add_reactions=True)
     @commands.is_owner()
     async def devrebirth(
-        self, ctx: Context, rebirth_level: int = 1, character_level: int = 1, user: discord.Member = None,
+        self, ctx: Context, rebirth_level: int = 1, character_level: int = 1, user: Member = None,
     ):
         """[Dev] Set a users rebirth level."""
         if not await no_dev_prompt(ctx):
@@ -945,7 +945,7 @@ class Adventure(MiscMixin, commands.Cog):
     @commands.command()
     @commands.bot_has_permissions(add_reactions=True)
     @commands.is_owner()
-    async def devreset(self, ctx: commands.Context, user: discord.Member = None):
+    async def devreset(self, ctx: commands.Context, user: Member = None):
         """[Dev] Reset the skill cooldown for this user."""
         if not await no_dev_prompt(ctx):
             return
@@ -1388,7 +1388,7 @@ class Adventure(MiscMixin, commands.Cog):
 
     @adventureset.command(name="remove")
     @commands.is_owner()
-    async def remove_item(self, ctx: Context, user: discord.Member, *, full_item_name: str):
+    async def remove_item(self, ctx: Context, user: Member, *, full_item_name: str):
         """[Owner] Lets you remove an item from a user.
 
         Use the full name of the item including the rarity characters like . or []  or {}.
@@ -2142,7 +2142,7 @@ class Adventure(MiscMixin, commands.Cog):
         """[Admin] Commands to add things to players' inventories."""
 
     @give.command(name="item")
-    async def _give_item(self, ctx: Context, user: discord.Member, item_name: str, *, stats: Stats):
+    async def _give_item(self, ctx: Context, user: Member, item_name: str, *, stats: Stats):
         """[Admin] Adds a custom item to a specified member.
 
         Item names containing spaces must be enclosed in double quotes. `[p]give item @locastan
@@ -2180,7 +2180,7 @@ class Adventure(MiscMixin, commands.Cog):
         )
 
     @give.command(name="loot")
-    async def _give_loot(self, ctx: Context, loot_type: str, user: discord.Member = None, number: int = 1):
+    async def _give_loot(self, ctx: Context, loot_type: str, user: Member = None, number: int = 1):
         """[Admin] Give treasure chest(s) to a specified member."""
 
         if user is None:
@@ -3505,7 +3505,7 @@ class Adventure(MiscMixin, commands.Cog):
 
     @commands.command()
     @commands.bot_has_permissions(add_reactions=True)
-    async def stats(self, ctx: Context, *, user: discord.Member = None):
+    async def stats(self, ctx: Context, *, user: Member = None):
         """This draws up a character sheet of you or an optionally specified member."""
         if not await self.allow_in_dm(ctx):
             return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
@@ -3964,7 +3964,7 @@ class Adventure(MiscMixin, commands.Cog):
         )
 
     @commands.command(name="balance", aliases=["bal", "credits"])
-    async def _balance(self, ctx: commands.Context, *, member: discord.Member = None):
+    async def _balance(self, ctx: commands.Context, *, member: Member = None):
         member = member or ctx.author
         bal = await bank.get_balance(member)
 
