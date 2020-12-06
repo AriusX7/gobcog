@@ -1521,7 +1521,6 @@ class AllItemConverter(Converter):
             log.exception("Error with the new character sheet", exc_info=exc)
             raise BadArgument
         no_markdown = Item.remove_markdowns(argument, skip_underscore=True)
-        print(no_markdown)
 
         all_items = c.get_current_equipment() + list(c.backpack.values())
 
