@@ -340,7 +340,6 @@ class Adventure(MiscMixin, commands.Cog):
 
         Note: An item **degrade** level is how many rebirths it will last, before it is broken down.
         """
-        print(show_diff)
         assert isinstance(rarity, str) or rarity is None
         assert isinstance(slot, str) or slot is None
         if not await self.allow_in_dm(ctx):
