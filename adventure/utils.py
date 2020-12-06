@@ -80,11 +80,17 @@ class Member(commands.converter.MemberConverter):
     """Overwrites original memberconverter to be case insensitive"""
 
     async def query_member_named(self, guild, argument):
-        # try to get it by using case insensitivity first
-        result = discord.utils.find(lambda m: m.name.lower() == argument or getattr(m.nick, 'lower', None) == argument, guild.members)
-
-        # else fallback to original (w case insensitivty)
+        # try to get it by using case insensitivity first and weak connection
         argument = argument.lower()
+        result = discord.utils.find(
+            lambda m: m.name.lower() == argument or getattr(m.nick, 'lower', lambda: '')() == argument
+                   or m.name.lower().startswith(argument) or getattr(m.nick, 'lower', lambda: '')().startswith(argument),
+            guild.members
+        )
+        if result:
+            return result
+
+        # else fallback to original (with case insensitivty)
         cache = guild._state._member_cache_flags.joined
         if len(argument) > 5 and argument[-5] == '#':
             username, _, discriminator = argument.rpartition('#')
