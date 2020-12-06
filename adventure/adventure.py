@@ -2538,42 +2538,42 @@ class Adventure(MiscMixin, commands.Cog):
                     number = c.treasure[0]
                 elif isinstance(number, str) and number.endswith("%"):
                     percent = int(number[:-1]) / 100
-                    number = int(percent * c.treasure[0])
+                    number = round(percent * c.treasure[0])
                 redux = 0
             elif box_type == "rare":
                 if number == "all":
                     number = c.treasure[1]
                 elif isinstance(number, str) and number.endswith("%"):
                     percent = int(number[:-1]) / 100
-                    number = int(percent * c.treasure[1])
+                    number = round(percent * c.treasure[1])
                 redux = 1
             elif box_type == "epic":
                 if number == "all":
                     number = c.treasure[2]
                 elif isinstance(number, str) and number.endswith("%"):
                     percent = int(number[:-1]) / 100
-                    number = int(percent * c.treasure[2])
+                    number = round(percent * c.treasure[2])
                 redux = 2
             elif box_type == "legendary":
                 if number == "all":
                     number = c.treasure[3]
                 elif isinstance(number, str) and number.endswith("%"):
                     percent = int(number[:-1]) / 100
-                    number = int(percent * c.treasure[3])
+                    number = round(percent * c.treasure[3])
                 redux = 3
             elif box_type == "ascended":
                 if number == "all":
                     number = c.treasure[4]
                 elif isinstance(number, str) and number.endswith("%"):
                     percent = int(number[:-1]) / 100
-                    number = int(percent * c.treasure[4])
+                    number = round(percent * c.treasure[4])
                 redux = 4
             elif box_type == "set":
                 if number == "all":
                     number = c.treasure[5]
                 elif isinstance(number, str) and number.endswith("%"):
                     percent = int(number[:-1]) / 100
-                    number = int(percent * c.treasure[5])
+                    number = round(percent * c.treasure[5])
                 redux = 5
             elif box_type != "all":
                 return await smart_embed(
@@ -2684,7 +2684,7 @@ class Adventure(MiscMixin, commands.Cog):
             offering = int(bal)
         elif isinstance(offering, str) and offering.endswith("%"):
             percent = int(offering[:-1]) / 100
-            offering = int(percent * int(bal))
+            offering = round(percent * int(bal))
 
         if offering <= 500 or bal <= 500:
             ctx.command.reset_cooldown(ctx)
@@ -3333,7 +3333,7 @@ class Adventure(MiscMixin, commands.Cog):
                 amount = c.skill["pool"]
             elif isinstance(amount, str) and amount.endswith("%"):
                 percent = int(amount[:-1]) / 100
-                amount = int(percent * c.skill["pool"])
+                amount = round(percent * c.skill["pool"])
                 
 
             if c.skill["pool"] <= 0:
