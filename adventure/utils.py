@@ -66,11 +66,14 @@ class DynamicInt(Converter):
     async def convert(self, ctx, argument):
         if argument == "all":
             return argument
+        elif argument.endswith("%"):
+            if argument[:-1].isnumeric():
+                return argument
 
         if argument.isnumeric():
             return int(argument)
 
-        raise BadArgument(_('{} is not a valid number and is not "all".').format(argument))
+        raise BadArgument(_('{} is not a valid number and is not "all" or a percentage.').format(argument))
 
 
 class AdventureResults:
