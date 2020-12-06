@@ -3650,6 +3650,7 @@ class Adventure(MiscMixin, commands.Cog):
             adventure_obj = self._sessions[ctx.guild.id]
             link = adventure_obj.message.jump_url
 
+            ctx.command.reset_cooldown(ctx)
             return await smart_embed(
                 ctx,
                 _(
@@ -3660,6 +3661,7 @@ class Adventure(MiscMixin, commands.Cog):
 
         if not await has_funds(ctx.author, 250):
             currency_name = await bank.get_currency_name(ctx.guild,)
+            ctx.command.reset_cooldown(ctx)
             extra = (
                 _("\nRun `{ctx.clean_prefix}apayday` to get some gold.").format(ctx=ctx)
                 if self._separate_economy
@@ -3678,6 +3680,7 @@ class Adventure(MiscMixin, commands.Cog):
 
         if cooldown + cooldown_time > time.time():
             cooldown_time = cooldown + cooldown_time - time.time()
+            ctx.command.reset_cooldown(ctx)
             return await smart_embed(
                 ctx,
                 _("No heroes are ready to depart in an adventure, try again in {}.").format(
