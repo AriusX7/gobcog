@@ -4055,43 +4055,64 @@ class Adventure(MiscMixin, commands.Cog):
             await ctx.author.send(file=discord.File(stream, filename='perms.json'))
         await smart_embed(ctx, _("Sent to your DM"), success=True)
 
-    @commands.command(name="lookup")
-    async def _lookup_item(self, ctx: commands.Context, *, item: AllItemConverter):
-        """Looks up item you own matching given name and displays its stats."""
-
-        msg = self.display_item(item, await self.get_character_from_json(ctx.author))
-        await ctx.send(box(msg, lang="css"))
-
     @commands.command()
     async def compare(
         self,
         ctx: commands.Context,
-        item_one: AllItemConverter,
-        *,
-        item_two: Optional[AllItemConverter] = None
+        item: ItemConverter,
     ):
-        """Compares two items by displaying their stats one-after-another.
-
-        If second item is not specified, the first item is compared
-        to the equipped item of the same slot.
-        """
+        """Compares given item with equipped item of same slot."""
 
         character = await self.get_character_from_json(ctx.author)
-        equipped = False
+        slot = item.slot[0]
+        other = getattr(character, item.slot[0], None)
 
-        if not item_two:
-            # Get item equipped by user in `item_one`'s slot.
-            item_two = getattr(character, item_one.slot[0], None)
-            if not item_two:
-                return await smart_embed(ctx, _("I need another item to compare to!"))
-            if item_one.name == item_two.name:
-                return await ctx.send(box(self.display_item(item_one, character, True), lang="css"))
-            equipped = True
+        if not other:
+            msg = await ctx.send(
+                box(
+                    _("{item}\n\nYou don't have any [{slot}] item equipped. Equip this?".format(
+                        item=self.display_item(item, character), slot=slot
+                    )),
+                    lang="css"
+                )
+            )
 
-        await ctx.send(box(
-            _("[ITEM ONE]\n{item_one}\n\n[ITEM TWO]\n{item_two}").format(
-                item_one=self.display_item(item_one, character),
-                item_two=self.display_item(item_two, character, equipped),
-            ),
-            lang="css"
-        ))
+            start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+            pred = ReactionPredicate.yes_or_no(msg, ctx.author)
+
+            try:
+                await self.bot.wait_for("reaction_add", check=pred, timeout=60)
+            except asyncio.TimeoutError:
+                await self._clear_react(msg)
+                return
+
+            if pred.result:
+                equiplevel = equip_level(character, item)
+                if self.is_dev(ctx.author):
+                    equiplevel = 0
+                if not can_equip(character, item):
+                    return await smart_embed(
+                        ctx,
+                        f"**{self.escape(ctx.author.display_name)}**, you need to be level "
+                        f"`{equiplevel}` to equip this item.",
+                    )
+                equip_msg = box(
+                    _("{user} equipped {item} ({slot} slot).").format(
+                        user=self.escape(ctx.author.display_name), item=item, slot=slot
+                    ),
+                    lang="css",
+                )
+                await msg.edit(content=equip_msg)
+                character = await character.equip_item(item, False, self.is_dev(ctx.author))
+                await self.config.user(ctx.author).set(await character.to_json(self.config))
+            await self._clear_react(msg)
+        elif item.name == other.name:
+            await ctx.send(box(self.display_item(item, character, True), lang="css"))
+        else:
+            await ctx.send(box(
+                _("[ITEM ONE]\n{item_one}\n\n[ITEM TWO]\n{item_two}").format(
+                    item_one=self.display_item(item, character),
+                    item_two=self.display_item(other, character, True),
+                ),
+                lang="css"
+            ))
