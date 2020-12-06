@@ -76,6 +76,25 @@ class DynamicInt(Converter):
         raise BadArgument(_('{} is not a valid number and is not "all" or a percentage.').format(argument))
 
 
+class Member(commands.converter.MemberConverter):
+    """Overwrites original memberconverter to be case insensitive"""
+
+    async def query_member_named(self, guild, argument):
+        # try to get it by using case insensitivity first
+        result = discord.utils.find(lambda m: m.name.lower() == argument or getattr(m.nick, 'lower', None) == argument, guild.members)
+
+        # else fallback to original (w case insensitivty)
+        argument = argument.lower()
+        cache = guild._state._member_cache_flags.joined
+        if len(argument) > 5 and argument[-5] == '#':
+            username, _, discriminator = argument.rpartition('#')
+            members = await guild.query_members(username, limit=100, cache=cache)
+            return discord.utils.find(lambda m: m.name.lower() == username and m.discriminator == discriminator, members)
+        else:
+            members = await guild.query_members(argument, limit=100, cache=cache)
+            return discord.utils.find(lambda m: m.name.lower() == argument or getattr(m.nick, 'lower', None) == argument, members)
+
+
 class AdventureResults:
     """Object to store recent adventure results."""
 
