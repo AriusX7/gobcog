@@ -170,7 +170,7 @@ class RoleMixin(commands.Cog):
     async def add_ping_role(self, ctx: Context, role: discord.Role, duration: Optional[str], role_type: str):
         async def add_role():
             try:
-                await ctx.author.add_roles(*[role])
+                await ctx.author.add_roles(role)
             except discord.HTTPException:
                 log.exception(_("Adding role failed for unknown reason."))
                 return False
@@ -236,7 +236,7 @@ class RoleMixin(commands.Cog):
 
     async def remove_ping_role(self, user: discord.Member, role: discord.Role):
         try:
-            await user.remove_roles(*[role])
+            await user.remove_roles(role)
         except discord.HTTPException:
             log.exception(_("Removing role failed for unknown reason."))
         except discord.Forbidden:
