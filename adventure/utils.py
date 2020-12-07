@@ -151,7 +151,7 @@ class AdventureResults:
         num_wins = 0
         stat_type = "hp"
         avg_amount = 0
-        raids = self._last_raids.get(ctx.guild.id, [])
+        raids = self._last_raids.get(ctx.guild.id, [])[-3:]  # only use last 3 raids for stat measurement
         raid_count = len(raids)
         if raid_count == 0:
             num_wins = self._num_raids // 2
