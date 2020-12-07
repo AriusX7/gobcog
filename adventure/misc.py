@@ -439,7 +439,7 @@ class MiscMixin(commands.Cog):
         async for (e, (m, stats)) in AsyncIter(monsters.items()).enumerate(start=1):
             appropriate_range = max(stats["hp"], stats["dipl"]) <= (max(c.att, c.int, c.cha) * 5)
             if stat_range["max_stat"] > 0:
-                main_stat = stats["hp"] if (stat_range["stat_type"] == "attack") else stats["dipl"]
+                main_stat = stats["hp"] if (stat_range["stat_type"] == "hp") else stats["dipl"]
                 appropriate_range = (stat_range["min_stat"] * 0.75) <= main_stat <= (stat_range["max_stat"] * 1.2)
             if not appropriate_range:
                 continue
