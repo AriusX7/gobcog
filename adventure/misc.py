@@ -3045,7 +3045,6 @@ class MiscMixin(commands.Cog):
                 await self._trader(ctx)
 
     async def cog_command_error(self, ctx: Context, error: Exception):
-        ctx.command.reset_cooldown(ctx)
         if isinstance(error, AdventureCheckFailure):
             await smart_embed(ctx, str(error), success=False)
         else:
