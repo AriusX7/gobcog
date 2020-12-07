@@ -205,8 +205,7 @@ class FilterInt:
         self.sign = sign
 
     @classmethod
-    async def convert(cls, ctx: commands.Context, argument: str):
-        print(argument)
+    async def convert(cls, _: commands.Context, argument: str):
         if argument.endswith("+") or argument.endswith("-"):
             if argument[0:-1].isnumeric:
                 return cls(int(argument[0:-1]), argument[-1])
