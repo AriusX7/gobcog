@@ -42,7 +42,7 @@ class RoleMixin(commands.Cog):
         else:
             await smart_embed(
                 ctx,
-                _("Set {role} as all adventures role.".format(role=role.mention)),
+                _("Set {role} as all adventures role.").format(role=role.mention),
                 True
             )
 
@@ -57,7 +57,7 @@ class RoleMixin(commands.Cog):
         else:
             await smart_embed(
                 ctx,
-                _("Set {role} as boss-only adventures role.".format(role=role.mention)),
+                _("Set {role} as boss-only adventures role.").format(role=role.mention),
                 True
             )
 
