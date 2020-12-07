@@ -60,6 +60,7 @@ from .menus import (
     WeeklyScoreboardSource,
 )
 from .misc import MiscMixin
+from .role import RoleMixin
 from .utils import AdventureResults, DynamicInt, check_global_setting_admin, has_separated_economy, smart_embed, Member
 
 _ = Translator("Adventure", __file__)
@@ -70,7 +71,7 @@ TaxesConverter = get_dict_converter(delims=[" ", ",", ";"])
 
 
 @cog_i18n(_)
-class Adventure(MiscMixin, commands.Cog):
+class Adventure(MiscMixin, RoleMixin, commands.Cog):
     """Adventure, derived from the Goblins Adventure cog by locastan."""
 
     __version__ = "3.3.8"
@@ -196,6 +197,13 @@ class Adventure(MiscMixin, commands.Cog):
             "disallow_withdraw": True,
             "max_allowed_withdraw": 50000,
             "error_channel": None,
+            "general_ping_role": None,
+            "boss_ping_role": None,
+            "timed_roles": {
+                # The dictionaries are of the type `"user_id": timestamp`
+                "general": {},
+                "boss": {}
+            },
         }
         default_global = {
             "god_name": _("Herbert"),
@@ -232,6 +240,7 @@ class Adventure(MiscMixin, commands.Cog):
         self.cleanup_loop = self.bot.loop.create_task(self.cleanup_tasks())
         log.debug("Creating Task")
         self._init_task = self.bot.loop.create_task(self.initialize())
+        self._timed_roles_task = self.timed_roles_task.start()
         self._ready_event = asyncio.Event()
 
     @commands.command()
