@@ -32,7 +32,7 @@ class RoleMixin(commands.Cog):
         """Set roles for adventure pings."""
 
     @_roleset.command(name="general")
-    async def _roleset_general(self, ctx: Context, *, role: Optional[discord.Role]):
+    async def _roleset_general(self, ctx: Context, *, role: discord.Role = None):
         """Set role for all adventure pings."""
 
         await self.config.guild(ctx.guild).general_ping_role.set(getattr(role, "id", None))
@@ -47,7 +47,7 @@ class RoleMixin(commands.Cog):
             )
 
     @_roleset.command(name="boss")
-    async def _roleset_boss(self, ctx: Context, *, role: Optional[discord.Role] = None):
+    async def _roleset_boss(self, ctx: Context, *, role: discord.Role = None):
         """Set role for boss-only adventure pings."""
 
         await self.config.guild(ctx.guild).boss_ping_role.set(getattr(role, "id", None))
@@ -199,7 +199,7 @@ class RoleMixin(commands.Cog):
     @commands.command()
     @commands.guild_only()
     @commands.bot_has_permissions(manage_roles=True)
-    async def advrole(self, ctx: Context, *, duration: Optional[str]):
+    async def advrole(self, ctx: Context, *, duration: str = None):
         """Adds the all adventure role for optionally specified duration.
 
         Duration can be specified like `2days 4h5m 2sec` to mean 2 days, 4 hours,
@@ -218,7 +218,7 @@ class RoleMixin(commands.Cog):
     @commands.command()
     @commands.guild_only()
     @commands.bot_has_permissions(manage_roles=True)
-    async def bossrole(self, ctx: Context, *, duration: Optional[str]):
+    async def bossrole(self, ctx: Context, *, duration: str = None):
         """Adds the boss-only adventure role for optionally specified duration.
 
         Duration can be specified like `2days 4h5m 2sec` to mean 2 days, 4 hours,
