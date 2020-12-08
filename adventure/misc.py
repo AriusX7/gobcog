@@ -436,12 +436,15 @@ class MiscMixin(commands.Cog):
         c = await self.get_character_from_json(ctx.author)
         possible_monsters = []
         stat_range = self._adv_results.get_stat_range(ctx)
+        can_spawn_boss = self._adv_results.can_spawn_boss(ctx)
         async for (e, (m, stats)) in AsyncIter(monsters.items()).enumerate(start=1):
             appropriate_range = max(stats["hp"], stats["dipl"]) <= (max(c.att, c.int, c.cha) * 5)
             if stat_range["max_stat"] > 0:
                 main_stat = stats["hp"] if (stat_range["stat_type"] == "hp") else stats["dipl"]
                 appropriate_range = (stat_range["min_stat"] * 0.75) <= main_stat <= (stat_range["max_stat"] * 1.2)
             if not appropriate_range:
+                continue
+            if stats["boss"] and not can_spawn_boss:
                 continue
             if not stats["boss"] and not stats["miniboss"]:
                 count = 0
@@ -972,9 +975,9 @@ class MiscMixin(commands.Cog):
                 int_dipl=humanize_number(dipl),
             )
         if dmg_dealt >= diplomacy:
-            self._adv_results.add_result(ctx, "attack", dmg_dealt, people, slain)
+            self._adv_results.add_result(ctx, "attack", dmg_dealt, people, slain, session.boss)
         else:
-            self._adv_results.add_result(ctx, "talk", diplomacy, people, persuaded)
+            self._adv_results.add_result(ctx, "talk", diplomacy, people, persuaded, session.boss)
         result_msg = result_msg + "\n" + damage_str + diplo_str
 
         fight_name_list = []

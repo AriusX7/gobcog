@@ -108,7 +108,7 @@ class AdventureResults:
         self._num_raids = num_raids
         self._last_raids: MutableMapping[int, List] = {}
 
-    def add_result(self, ctx: Context, main_action, amount, num_ppl, success):
+    def add_result(self, ctx: Context, main_action, amount, num_ppl, success, boss):
         """Add result to this object.
         :main_action: Main damage action taken by the adventurers
             (highest amount dealt). Should be either "attack" or
@@ -124,7 +124,7 @@ class AdventureResults:
             if ctx.guild.id in self._last_raids:
                 self._last_raids[ctx.guild.id].pop(0)
         raid_dict = {}
-        for var in ("main_action", "amount", "num_ppl", "success"):
+        for var in ("main_action", "amount", "num_ppl", "success", "boss"):
             raid_dict[var] = locals()[var]
         self._last_raids[ctx.guild.id].append(raid_dict)
 
@@ -151,7 +151,7 @@ class AdventureResults:
         num_wins = 0
         stat_type = "hp"
         avg_amount = 0
-        raids = self._last_raids.get(ctx.guild.id, [])  # only use last 3 raids for stat measurement
+        raids = self._last_raids.get(ctx.guild.id, [])
         raid_count = len(raids)
         if raid_count == 0:
             num_wins = self._num_raids // 2
@@ -195,6 +195,13 @@ class AdventureResults:
         for var in ("stat_type", "min_stat", "max_stat", "win_percent"):
             stats_dict[var] = locals()[var]
         return stats_dict
+
+    def can_spawn_boss(self, ctx):
+        """Ensures that the last 2 monsters are not bosses"""
+        raids = self._last_raids.get(ctx.guild.id, [])[-2:]
+        if any(i["boss"] for i in raids):
+            return False
+        return True
 
     def __str__(self):
         return str(self._last_raids)
