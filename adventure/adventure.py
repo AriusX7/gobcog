@@ -2703,6 +2703,13 @@ class Adventure(MiscMixin, commands.Cog):
                                     owned = f" | {item.owned}"
                                     if item.set:
                                         settext += f" | Set `{item.set}` ({item.parts}pcs)"
+
+                                    equip_lvl = equip_level(c, item)
+                                    if c.lvl < equip_lvl:
+                                        lv_str = f"[{equip_lvl}]"
+                                    else:
+                                        lv_str = f"{equip_lvl}"
+
                                     msg += (
                                         f"\n{str(item):<{rjust}} - "
                                         f"({att_space}{item.att} |"
@@ -2710,7 +2717,7 @@ class Adventure(MiscMixin, commands.Cog):
                                         f"{int_space}{item.int} |"
                                         f"{dex_space}{item.dex} |"
                                         f"{luck_space}{item.luck} )"
-                                        f" | Lv {equip_level(c, item):<3}"
+                                        f" | Lv {lv_str:<3}"
                                         f"{owned}{settext}"
                                     )
 
