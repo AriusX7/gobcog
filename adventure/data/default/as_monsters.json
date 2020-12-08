@@ -2066,5 +2066,45 @@
         "boss": false,
         "miniboss": {},
         "color": ""
+    },
+    "Ascended King Lou": {
+        "hp": 839,
+        "pdef": 999,
+        "mdef": 999,
+        "dipl": 2000,
+        "image": "https://i.imgur.com/Jhgykymh.jpg",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Crow of the Past": {
+        "hp": 3360,
+        "pdef": 5,
+        "mdef": 5,
+        "dipl": 3261,
+        "image": "https://i.imgur.com/mfuvO7Rh.jpg",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Crow": {
+        "hp": 2659,
+        "pdef": 1.86,
+        "mdef": 2.19,
+        "dipl": 3360,
+        "image": "https://i.imgur.com/n4XLYWmh.jpg",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Mortis of the Past": {
+        "hp": 2791.8,
+        "pdef": 4.3,
+        "mdef": 2,
+        "dipl": 1570,
+        "image": "https://i.imgur.com/r24QyJRh.jpg",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
     }
 }
