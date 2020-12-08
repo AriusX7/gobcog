@@ -151,33 +151,38 @@ class AdventureResults:
         num_wins = 0
         stat_type = "hp"
         avg_amount = 0
-        raids = self._last_raids.get(ctx.guild.id, [])[-3:]  # only use last 3 raids for stat measurement
+        raids = self._last_raids.get(ctx.guild.id, [])  # only use last 3 raids for stat measurement
         raid_count = len(raids)
         if raid_count == 0:
             num_wins = self._num_raids // 2
             raid_count = self._num_raids
             win_percent = 0.5
         else:
+            n = 0
+            avg_count = 3
+            winrate_count = 5
+
             for raid in raids:
-                if raid["main_action"] == "attack":
-                    num_attack += 1
-                    dmg_amount += raid["amount"]
-                    if raid["num_ppl"] == 1:
-                        dmg_amount += raid["amount"] * SOLO_RAID_SCALE
-                else:
-                    num_talk += 1
-                    talk_amount += raid["amount"]
-                    if raid["num_ppl"] == 1:
-                        talk_amount += raid["amount"] * SOLO_RAID_SCALE
-                log.debug(f"raid dmg: {raid['amount']}")
-                if raid["success"]:
+                if n < avg_count:
+                    if raid["main_action"] == "attack":
+                        num_attack += 1
+                        dmg_amount += raid["amount"]
+                        if raid["num_ppl"] == 1:
+                            dmg_amount += raid["amount"] * SOLO_RAID_SCALE
+                    else:
+                        num_talk += 1
+                        talk_amount += raid["amount"]
+                        if raid["num_ppl"] == 1:
+                            talk_amount += raid["amount"] * SOLO_RAID_SCALE
+                    log.debug(f"raid dmg: {raid['amount']}")
+                if raid["success"] and n < winrate_count:
                     num_wins += 1
             if num_attack > 0:
                 avg_amount = dmg_amount / num_attack
             if dmg_amount < talk_amount:
                 stat_type = "dipl"
                 avg_amount = talk_amount / num_talk
-            win_percent = num_wins / raid_count
+            win_percent = num_wins / winrate_count
             min_stat = avg_amount * 0.75
             max_stat = avg_amount * 2
             # want win % to be at least 50%, even when solo
