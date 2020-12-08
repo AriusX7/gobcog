@@ -2106,5 +2106,15 @@
         "boss": false,
         "miniboss": {},
         "color": ""
+    },
+    "Ascended Infected Arcade Machine": {
+        "hp": 1800,
+        "pdef": 10,
+        "mdef": 10,
+        "dipl": 5410,
+        "image": "https://imgur.com/gallery/7KHVvCB.png",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
     }
 }
