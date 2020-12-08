@@ -2483,10 +2483,17 @@ class MiscMixin(commands.Cog):
             intel = item.int
             luck = item.luck
             dex = item.dex
+
+        equip_lvl = equip_level(character, item)
+        if character.lvl < equip_lvl:
+            lv_str = f"[{equip_lvl}]"
+        else:
+            lv_str = f"{equip_lvl}"
+
         if hasattr(user, "display_name"):
             chest_msg2 = (
                 _("{user} found {item} [{slot}] | Lvl req {lv}.").format(
-                    user=self.escape(user.display_name), item=str(item), slot=slot, lv=equip_level(character, item),
+                    user=self.escape(user.display_name), item=str(item), slot=slot, lv=lv_str,
                 )
                 + f" (ATT: {str(att)}, "
                 f"CHA: {str(cha)}, "
@@ -2508,7 +2515,7 @@ class MiscMixin(commands.Cog):
         else:
             chest_msg2 = (
                 _("The {user} found {item} [{slot}] | Lvl req {lv}.").format(
-                    user=user, item=str(item), slot=slot, lv=equip_level(character, item)
+                    user=user, item=str(item), slot=slot, lv=lv_str
                 )
                 + f" (ATT: {str(att)}, "
                 f"CHA: {str(cha)}, "
@@ -3045,7 +3052,6 @@ class MiscMixin(commands.Cog):
                 await self._trader(ctx)
 
     async def cog_command_error(self, ctx: Context, error: Exception):
-        ctx.command.reset_cooldown(ctx)
         if isinstance(error, AdventureCheckFailure):
             await smart_embed(ctx, str(error), success=False)
         else:

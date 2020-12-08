@@ -60,7 +60,15 @@ from .menus import (
     WeeklyScoreboardSource,
 )
 from .misc import MiscMixin
-from .utils import AdventureResults, DynamicInt, check_global_setting_admin, has_separated_economy, smart_embed, Member
+from .utils import (
+    AdventureResults,
+    DynamicInt,
+    FilterInt,
+    Member,
+    check_global_setting_admin,
+    has_separated_economy,
+    smart_embed,
+)
 
 _ = Translator("Adventure", __file__)
 
@@ -529,9 +537,14 @@ class Adventure(MiscMixin, commands.Cog):
 
     @_backpack.command(name="sellall")
     async def backpack_sellall(
-        self, ctx: Context, rarity: Optional[RarityConverter] = None, *, slot: Optional[SlotConverter] = None,
+        self, ctx: Context, level: Optional[FilterInt] = None, rarity: Optional[RarityConverter] = None, *, slot: Optional[SlotConverter] = None,
     ):
-        """Sell all items in your backpack. Optionally specify rarity or slot."""
+        """Sell all items in your backpack. Optionally specify level filter, rarity or slot.
+
+        Level filter can be any number (level) followed by a `+` or a `-` sign. For example,
+        if `70+` is specified, all items that can only be equipped above level 70 will be sold.
+        """
+
         assert isinstance(rarity, str) or rarity is None
         assert isinstance(slot, str) or slot is None
         if self.in_adventure(ctx):
@@ -553,21 +566,32 @@ class Adventure(MiscMixin, commands.Cog):
                     ctx, _("{} is not a valid slot, select one of {}").format(slot, humanize_list(ORDER)),
                 )
 
+        if level and level.sign == "+":
+            level_str = _(" above level {}").format(level.num)
+        elif level and level.sign == "-":
+            level_str = _(" below level {}").format(level.num)
+        else:
+            level_str = ""
+
         async with self.get_lock(ctx.author):
             if rarity and slot:
                 msg = await ctx.send(
-                    "Are you sure you want to sell all {rarity} {slot} items in your inventory?".format(
-                        rarity=rarity, slot=slot
+                    "Are you sure you want to sell all {rarity} {slot} items{level} in your inventory?".format(
+                        rarity=rarity, slot=slot, level=level_str
                     )
                 )
             elif rarity or slot:
                 msg = await ctx.send(
-                    "Are you sure you want to sell all{rarity}{slot} items in your inventory?".format(
-                        rarity=f" {rarity}" if rarity else "", slot=f" {slot}" if slot else ""
+                    "Are you sure you want to sell all{rarity}{slot} items{level} in your inventory?".format(
+                        rarity=f" {rarity}" if rarity else "", slot=f" {slot}" if slot else "", level=level_str
                     )
                 )
             else:
-                msg = await ctx.send("Are you sure you want to sell all items in your inventory?")
+                msg = await ctx.send(
+                    "Are you sure you want to sell all items{level} in your inventory?".format(
+                        level=level_str
+                    )
+                )
 
             start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
             pred = ReactionPredicate.yes_or_no(msg, ctx.author)
@@ -588,6 +612,12 @@ class Adventure(MiscMixin, commands.Cog):
                 items = [i for n, i in c.backpack.items() if i.rarity not in ["forged", "set"]]
                 count = 0
                 async for item in AsyncIter(items):
+                    if level and level.sign == "+":
+                        if item.lvl <= level.num:
+                            continue
+                    elif level and level.sign == "-":
+                        if item.lvl >= level.num:
+                            continue
                     if rarity and item.rarity != rarity:
                         continue
                     if slot:
@@ -620,11 +650,12 @@ class Adventure(MiscMixin, commands.Cog):
                 c.last_currency_check = time.time()
                 await self.config.user(ctx.author).set(await c.to_json(self.config))
         msg_list = []
-        new_msg = _("{author} sold all their{rarity} items for {price}.\n\n{items}").format(
+        new_msg = _("{author} sold all their{rarity} items{level} for {price}.\n\n{items}").format(
             author=self.escape(ctx.author.display_name),
             rarity=f" {rarity}" if rarity else "",
             price=humanize_number(total_price),
             items=msg,
+            level=level_str,
         )
         for page in pagify(new_msg, shorten_by=10, page_length=1900):
             msg_list.append(box(page, lang="css"))
@@ -2671,6 +2702,13 @@ class Adventure(MiscMixin, commands.Cog):
                                     owned = f" | {item.owned}"
                                     if item.set:
                                         settext += f" | Set `{item.set}` ({item.parts}pcs)"
+
+                                    equip_lvl = equip_level(c, item)
+                                    if c.lvl < equip_lvl:
+                                        lv_str = f"[{equip_lvl}]"
+                                    else:
+                                        lv_str = f"{equip_lvl}"
+
                                     msg += (
                                         f"\n{str(item):<{rjust}} - "
                                         f"({att_space}{item.att} |"
@@ -2678,7 +2716,7 @@ class Adventure(MiscMixin, commands.Cog):
                                         f"{int_space}{item.int} |"
                                         f"{dex_space}{item.dex} |"
                                         f"{luck_space}{item.luck} )"
-                                        f" | Lv {equip_level(c, item):<3}"
+                                        f" | Lv {lv_str:<3}"
                                         f"{owned}{settext}"
                                     )
 
