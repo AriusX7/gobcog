@@ -197,3 +197,17 @@ class AdventureResults:
 
 class AdventureCheckFailure(commands.CheckFailure):
     pass
+
+
+class FilterInt:
+    def __init__(self, num: int, sign: str):
+        self.num = num
+        self.sign = sign
+
+    @classmethod
+    async def convert(cls, _: commands.Context, argument: str):
+        if argument.endswith("+") or argument.endswith("-"):
+            if argument[0:-1].isnumeric:
+                return cls(int(argument[0:-1]), argument[-1])
+
+        raise BadArgument(_('{} is not a valid filter number.').format(argument))
