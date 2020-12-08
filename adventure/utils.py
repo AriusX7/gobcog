@@ -156,7 +156,7 @@ class AdventureResults:
         if raid_count == 0:
             num_wins = self._num_raids // 2
             raid_count = self._num_raids
-            win_percent = 0.6
+            win_percent = 0.5
         else:
             for raid in raids:
                 if raid["main_action"] == "attack":
@@ -182,7 +182,7 @@ class AdventureResults:
             max_stat = avg_amount * 2
             # want win % to be at least 50%, even when solo
             # if win % is below 50%, scale back min/max for easier mons
-            if win_percent < 0.6:
+            if win_percent < 0.5:
                 min_stat = avg_amount * win_percent
                 max_stat = avg_amount * 1.5
 

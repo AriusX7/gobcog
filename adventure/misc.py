@@ -481,7 +481,7 @@ class MiscMixin(commands.Cog):
             monster_pdef = choice["pdef"] * percent_pdef
             percent_mdef = random.randrange(15, 25) / 100
             monster_mdef = choice["mdef"] * percent_mdef
-        elif win_percentage >= 0.60:
+        elif win_percentage >= 0.50:
             monster_hp_min = int(choice["hp"])
             monster_hp_max = int(choice["hp"] * 1.5)
             monster_diplo_min = int(choice["dipl"])
