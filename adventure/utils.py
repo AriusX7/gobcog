@@ -184,7 +184,7 @@ class AdventureResults:
                 avg_amount = talk_amount / num_talk
             win_percent = num_wins / winrate_count
             min_stat = avg_amount * 0.75
-            max_stat = avg_amount * 2
+            max_stat = avg_amount * 1.50
             # want win % to be at least 50%, even when solo
             # if win % is below 50%, scale back min/max for easier mons
             if win_percent < 0.5:
