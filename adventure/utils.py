@@ -159,7 +159,7 @@ class AdventureResults:
             win_percent = 0.5
         else:
             avg_count = 3
-            winrate_count = 5
+            winrate_count = 6
 
             for n, raid in enumerate(reversed(raids)):
                 if n < avg_count:
