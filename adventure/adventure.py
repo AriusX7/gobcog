@@ -1155,8 +1155,8 @@ class Adventure(MiscMixin, commands.Cog):
                     _(
                         "{author}'s new stats: "
                         "Attack: {stat_att} [{skill_att}], "
+                        "Charisma: {stat_cha} [{skill_cha}], "
                         "Intelligence: {stat_int} [{skill_int}], "
-                        "Diplomacy: {stat_cha} [{skill_cha}], "
                         "Dexterity: {stat_dex}, "
                         "Luck: {stat_luck}."
                     ).format(
@@ -2571,7 +2571,7 @@ class Adventure(MiscMixin, commands.Cog):
                 return False
         return True
 
-    @commands.command()
+    @commands.command(cooldown_after_parsing=True)
     @commands.bot_has_permissions(add_reactions=True)
     @commands.cooldown(rate=1, per=4, type=commands.BucketType.user)
     async def loot(self, ctx: Context, box_type: str = None, number: DynamicInt = 1):

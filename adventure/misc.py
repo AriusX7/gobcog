@@ -2431,7 +2431,7 @@ class MiscMixin(commands.Cog):
                 user=self.escape(ctx.author.display_name), f=(user[:1] + user[1:])
             )
         open_msg = await ctx.send(box(chest_msg, lang="css"))
-        await asyncio.sleep(2)
+        # await asyncio.sleep(2)
         item = await self._roll_chest(chest_type, character)
         if chest_type == "pet" and not item:
             await open_msg.edit(
@@ -2443,49 +2443,49 @@ class MiscMixin(commands.Cog):
                 )
             )
             return None
-        slot = item.slot[0]
-        old_item = getattr(character, item.slot[0], None)
+        old_items = [(i, getattr(character, i, None)) for i in item.slot]
         old_stats = ""
 
-        if old_item:
-            old_slot = old_item.slot[0]
-            if len(old_item.slot) > 1:
-                old_slot = _("two handed")
-                att = old_item.att * 2
-                cha = old_item.cha * 2
-                intel = old_item.int * 2
-                luck = old_item.luck * 2
-                dex = old_item.dex * 2
-            else:
-                att = old_item.att
-                cha = old_item.cha
-                intel = old_item.int
-                luck = old_item.luck
-                dex = old_item.dex
+        for slot, old_item in old_items:
+            if old_item:
+                old_slot = old_item.slot[0]
+                if len(old_item.slot) > 1:
+                    old_slot = _("two handed")
+                    att = old_item.att * 2
+                    cha = old_item.cha * 2
+                    intel = old_item.int * 2
+                    luck = old_item.luck * 2
+                    dex = old_item.dex * 2
+                else:
+                    att = old_item.att
+                    cha = old_item.cha
+                    intel = old_item.int
+                    luck = old_item.luck
+                    dex = old_item.dex
 
-            old_stats = (
-                _("You currently have {item} [{slot}] equipped | Lvl req {lv} equipped.").format(
-                    item=old_item, slot=old_slot, lv=equip_level(character, old_item)
+                old_stats += (
+                    _("You currently have {item} [{slot}] equipped | Lvl req {lv} equipped.").format(
+                        item=old_item, slot=old_slot, lv=equip_level(character, old_item)
+                    )
+                    + f" (ATT: {str(att)}, "
+                    f"CHA: {str(cha)}, "
+                    f"INT: {str(intel)}, "
+                    f"DEX: {str(dex)}, "
+                    f"LUCK: {str(luck)})\n"
                 )
-                + f" (ATT: {str(att)}, "
-                f"CHA: {str(cha)}, "
-                f"INT: {str(intel)}, "
-                f"DEX: {str(dex)}, "
-                f"LUCK: {str(luck)}) "
-            )
-        if len(item.slot) > 1:
-            slot = _("two handed")
-            att = item.att * 2
-            cha = item.cha * 2
-            intel = item.int * 2
-            luck = item.luck * 2
-            dex = item.dex * 2
-        else:
-            att = item.att
-            cha = item.cha
-            intel = item.int
-            luck = item.luck
-            dex = item.dex
+            if len(item.slot) > 1:
+                slot = _("two handed")
+                att = item.att * 2
+                cha = item.cha * 2
+                intel = item.int * 2
+                luck = item.luck * 2
+                dex = item.dex * 2
+            else:
+                att = item.att
+                cha = item.cha
+                intel = item.int
+                luck = item.luck
+                dex = item.dex
 
         equip_lvl = equip_level(character, item)
         if character.lvl < equip_lvl:
