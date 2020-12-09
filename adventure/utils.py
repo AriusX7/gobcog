@@ -181,14 +181,13 @@ class AdventureResults:
             if dmg_amount < talk_amount:
                 stat_type = "dipl"
                 avg_amount = talk_amount / num_talk
-            win_percent = num_wins / min(winrate_count, len(raids))
+            win_percent = num_wins / min(winrate_count, raid_count)
             min_stat = avg_amount * 0.75
-            max_stat = avg_amount * 1.50
+            max_stat = avg_amount * 1.5
             # want win % to be at least 50%, even when solo
             # if win % is below 50%, scale back min/max for easier mons
             if win_percent < 0.5:
                 min_stat = avg_amount * win_percent
-                max_stat = avg_amount * 1.5
 
         stats_dict = {}
         for var in ("stat_type", "min_stat", "max_stat", "win_percent"):
