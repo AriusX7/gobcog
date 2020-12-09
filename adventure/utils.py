@@ -158,11 +158,10 @@ class AdventureResults:
             raid_count = self._num_raids
             win_percent = 0.5
         else:
-            n = 0
             avg_count = 3
             winrate_count = 5
 
-            for raid in raids:
+            for n, raid in enumerate(reversed(raids)):
                 if n < avg_count:
                     if raid["main_action"] == "attack":
                         num_attack += 1
