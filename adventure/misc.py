@@ -436,12 +436,15 @@ class MiscMixin(commands.Cog):
         c = await self.get_character_from_json(ctx.author)
         possible_monsters = []
         stat_range = self._adv_results.get_stat_range(ctx)
+        can_spawn_boss = self._adv_results.can_spawn_boss(ctx)
         async for (e, (m, stats)) in AsyncIter(monsters.items()).enumerate(start=1):
             appropriate_range = max(stats["hp"], stats["dipl"]) <= (max(c.att, c.int, c.cha) * 5)
             if stat_range["max_stat"] > 0:
-                main_stat = stats["hp"] if (stat_range["stat_type"] == "attack") else stats["dipl"]
+                main_stat = stats["hp"] if (stat_range["stat_type"] == "hp") else stats["dipl"]
                 appropriate_range = (stat_range["min_stat"] * 0.75) <= main_stat <= (stat_range["max_stat"] * 1.2)
             if not appropriate_range:
+                continue
+            if stats["boss"] and not can_spawn_boss:
                 continue
             if not stats["boss"] and not stats["miniboss"]:
                 count = 0
@@ -972,9 +975,9 @@ class MiscMixin(commands.Cog):
                 int_dipl=humanize_number(dipl),
             )
         if dmg_dealt >= diplomacy:
-            self._adv_results.add_result(ctx, "attack", dmg_dealt, people, slain)
+            self._adv_results.add_result(ctx, "attack", dmg_dealt, people, slain, session.boss)
         else:
-            self._adv_results.add_result(ctx, "talk", diplomacy, people, persuaded)
+            self._adv_results.add_result(ctx, "talk", diplomacy, people, persuaded, session.boss)
         result_msg = result_msg + "\n" + damage_str + diplo_str
 
         fight_name_list = []
@@ -2483,10 +2486,17 @@ class MiscMixin(commands.Cog):
             intel = item.int
             luck = item.luck
             dex = item.dex
+
+        equip_lvl = equip_level(character, item)
+        if character.lvl < equip_lvl:
+            lv_str = f"[{equip_lvl}]"
+        else:
+            lv_str = f"{equip_lvl}"
+
         if hasattr(user, "display_name"):
             chest_msg2 = (
                 _("{user} found {item} [{slot}] | Lvl req {lv}.").format(
-                    user=self.escape(user.display_name), item=str(item), slot=slot, lv=equip_level(character, item),
+                    user=self.escape(user.display_name), item=str(item), slot=slot, lv=lv_str,
                 )
                 + f" (ATT: {str(att)}, "
                 f"CHA: {str(cha)}, "
@@ -2508,7 +2518,7 @@ class MiscMixin(commands.Cog):
         else:
             chest_msg2 = (
                 _("The {user} found {item} [{slot}] | Lvl req {lv}.").format(
-                    user=user, item=str(item), slot=slot, lv=equip_level(character, item)
+                    user=user, item=str(item), slot=slot, lv=lv_str
                 )
                 + f" (ATT: {str(att)}, "
                 f"CHA: {str(cha)}, "
@@ -2699,7 +2709,7 @@ class MiscMixin(commands.Cog):
 
         word = "has" if len(userlist) == 1 else "have"
         if special is not False and sum(special) == 1:
-            types = [" normal", " rare", "n epic", " legendary", " set"]
+            types = [" normal", " rare", "n epic", " legendary", " ascended", " set"]
             chest_type = types[special.index(1)]
             phrase += _(
                 "\n{b_reward} {word} been awarded {xp} xp and found "
@@ -3045,7 +3055,6 @@ class MiscMixin(commands.Cog):
                 await self._trader(ctx)
 
     async def cog_command_error(self, ctx: Context, error: Exception):
-        ctx.command.reset_cooldown(ctx)
         if isinstance(error, AdventureCheckFailure):
             await smart_embed(ctx, str(error), success=False)
         else:
