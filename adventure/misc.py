@@ -2431,7 +2431,7 @@ class MiscMixin(commands.Cog):
                 user=self.escape(ctx.author.display_name), f=(user[:1] + user[1:])
             )
         open_msg = await ctx.send(box(chest_msg, lang="css"))
-        # await asyncio.sleep(2)
+        await asyncio.sleep(2)
         item = await self._roll_chest(chest_type, character)
         if chest_type == "pet" and not item:
             await open_msg.edit(
