@@ -159,6 +159,15 @@ class MiscMixin(commands.Cog):
             self._daily_bonus = await self.config.daily_bonus.all()
 
             await self.bot.wait_until_ready()
+            
+            results_path = cog_data_path(self) / "results.pickle"
+            if os.path.isfile(results_path):
+                with open(results_path, "rb") as f:
+                    try:
+                        self._adv_results = pickle.load(f)
+                    except EOFError:
+                        pass
+
             session_path = cog_data_path(self) / "sessions.pickle"
             if os.path.isfile(session_path):
                 with open(session_path, "rb") as f:
@@ -3139,6 +3148,9 @@ class MiscMixin(commands.Cog):
 
         with open(cog_data_path(self) / "sessions.pickle", "wb+") as f:
             pickle.dump(self._sessions, f)
+
+        with open(cog_data_path(self) / "results.pickle", "wb+") as f:
+            pickle.dump(self._adv_results, f)
 
     async def _garbage_collection(self):
         await self.bot.wait_until_red_ready()

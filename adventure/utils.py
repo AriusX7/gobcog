@@ -204,6 +204,15 @@ class AdventureResults:
     def __str__(self):
         return str(self._last_raids)
 
+    def __getstate__(self):
+        state = self._last_raids.copy()
+        state["num_raids"] = self._num_raids
+        return state
+
+    def __setstate__(self, state):
+        self._num_raids = state["num_raids"]
+        del state["num_raids"]
+        self._last_raids: MutableMapping[int, List] = state
 
 class AdventureCheckFailure(commands.CheckFailure):
     pass
