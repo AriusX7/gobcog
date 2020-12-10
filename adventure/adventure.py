@@ -41,6 +41,7 @@ from .charsheet import (
     ItemConverter,
     PercentageConverter,
     RarityConverter,
+    SkillConverter,
     SlotConverter,
     Stats,
     ThemeSetMonterConverter,
@@ -61,7 +62,14 @@ from .menus import (
 )
 from .misc import MiscMixin
 from .role import RoleMixin
-from .utils import AdventureResults, DynamicInt, check_global_setting_admin, has_separated_economy, smart_embed, Member
+from .utils import (
+    AdventureResults,
+    DynamicInt,
+    FilterInt,
+    Member,
+    check_global_setting_admin,
+    has_separated_economy,
+    smart_embed,
 
 _ = Translator("Adventure", __file__)
 
@@ -295,6 +303,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         ctx: Context,
         show_diff: Optional[bool] = False,
         rarity: Optional[RarityConverter] = None,
+        sort_order: Optional[SkillConverter] = None,
         *,
         slot: Optional[SlotConverter] = None,
     ):
@@ -304,7 +313,6 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
         Note: An item **degrade** level is how many rebirths it will last, before it is broken down.
         """
-        print(show_diff)
         assert isinstance(rarity, str) or rarity is None
         assert isinstance(slot, str) or slot is None
         if not await self.allow_in_dm(ctx):
@@ -326,7 +334,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
             backpack_contents = _("{author}'s backpack \n\n{backpack}\n").format(
                 author=self.escape(ctx.author.display_name),
-                backpack=await c.get_backpack(rarity=rarity, slot=slot, show_delta=show_diff, equippable=True),
+                backpack=await c.get_backpack(rarity=rarity, slot=slot, show_delta=show_diff, equippable=True, sort_order=sort_order),
             )
             msgs = []
             async for page in AsyncIter(pagify(backpack_contents, delims=["\n"], shorten_by=20, page_length=1900)):
@@ -340,6 +348,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         ctx: Context,
         show_diff: Optional[bool] = False,
         rarity: Optional[RarityConverter] = None,
+        sort_order: Optional[SkillConverter] = None,
         *,
         slot: Optional[SlotConverter] = None,
     ):
@@ -370,7 +379,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
             backpack_contents = _("{author}'s backpack \n\n{backpack}\n").format(
                 author=self.escape(ctx.author.display_name),
-                backpack=await c.get_backpack(rarity=rarity, slot=slot, show_delta=show_diff, unequippable=True),
+                backpack=await c.get_backpack(rarity=rarity, slot=slot, show_delta=show_diff, unequippable=True, sort_order=sort_order),
             )
             msgs = []
             async for page in AsyncIter(pagify(backpack_contents, delims=["\n"], shorten_by=20, page_length=1900)):
@@ -384,11 +393,13 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         ctx: Context,
         show_diff: Optional[bool] = False,
         rarity: Optional[RarityConverter] = None,
+        sort_order: Optional[SkillConverter] = None,
         *,
         slot: Optional[SlotConverter] = None,
     ):
         """This shows the contents of your backpack.
 
+        Give
         Give it a rarity and/or slot to filter what backpack items to show.
 
         Selling:     `[p]backpack sell item_name`
@@ -420,7 +431,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
             backpack_contents = _("{author}'s backpack \n\n{backpack}\n").format(
                 author=self.escape(ctx.author.display_name),
-                backpack=await c.get_backpack(rarity=rarity, slot=slot, show_delta=show_diff),
+                backpack=await c.get_backpack(rarity=rarity, slot=slot, show_delta=show_diff, sort_order=sort_order),
             )
             msgs = []
             async for page in AsyncIter(pagify(backpack_contents, delims=["\n"], shorten_by=20, page_length=1900)):
@@ -539,9 +550,14 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
     @_backpack.command(name="sellall")
     async def backpack_sellall(
-        self, ctx: Context, rarity: Optional[RarityConverter] = None, *, slot: Optional[SlotConverter] = None,
+        self, ctx: Context, level: Optional[FilterInt] = None, rarity: Optional[RarityConverter] = None, *, slot: Optional[SlotConverter] = None,
     ):
-        """Sell all items in your backpack. Optionally specify rarity or slot."""
+        """Sell all items in your backpack. Optionally specify level filter, rarity or slot.
+
+        Level filter can be any number (level) followed by a `+` or a `-` sign. For example,
+        if `70+` is specified, all items that can only be equipped above level 70 will be sold.
+        """
+
         assert isinstance(rarity, str) or rarity is None
         assert isinstance(slot, str) or slot is None
         if self.in_adventure(ctx):
@@ -563,21 +579,32 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     ctx, _("{} is not a valid slot, select one of {}").format(slot, humanize_list(ORDER)),
                 )
 
+        if level and level.sign == "+":
+            level_str = _(" above level {}").format(level.num)
+        elif level and level.sign == "-":
+            level_str = _(" below level {}").format(level.num)
+        else:
+            level_str = ""
+
         async with self.get_lock(ctx.author):
             if rarity and slot:
                 msg = await ctx.send(
-                    "Are you sure you want to sell all {rarity} {slot} items in your inventory?".format(
-                        rarity=rarity, slot=slot
+                    "Are you sure you want to sell all {rarity} {slot} items{level} in your inventory?".format(
+                        rarity=rarity, slot=slot, level=level_str
                     )
                 )
             elif rarity or slot:
                 msg = await ctx.send(
-                    "Are you sure you want to sell all{rarity}{slot} items in your inventory?".format(
-                        rarity=f" {rarity}" if rarity else "", slot=f" {slot}" if slot else ""
+                    "Are you sure you want to sell all{rarity}{slot} items{level} in your inventory?".format(
+                        rarity=f" {rarity}" if rarity else "", slot=f" {slot}" if slot else "", level=level_str
                     )
                 )
             else:
-                msg = await ctx.send("Are you sure you want to sell all items in your inventory?")
+                msg = await ctx.send(
+                    "Are you sure you want to sell all items{level} in your inventory?".format(
+                        level=level_str
+                    )
+                )
 
             start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
             pred = ReactionPredicate.yes_or_no(msg, ctx.author)
@@ -598,6 +625,12 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 items = [i for n, i in c.backpack.items() if i.rarity not in ["forged", "set"]]
                 count = 0
                 async for item in AsyncIter(items):
+                    if level and level.sign == "+":
+                        if item.lvl <= level.num:
+                            continue
+                    elif level and level.sign == "-":
+                        if item.lvl >= level.num:
+                            continue
                     if rarity and item.rarity != rarity:
                         continue
                     if slot:
@@ -630,11 +663,12 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 c.last_currency_check = time.time()
                 await self.config.user(ctx.author).set(await c.to_json(self.config))
         msg_list = []
-        new_msg = _("{author} sold all their{rarity} items for {price}.\n\n{items}").format(
+        new_msg = _("{author} sold all their{rarity} items{level} for {price}.\n\n{items}").format(
             author=self.escape(ctx.author.display_name),
             rarity=f" {rarity}" if rarity else "",
             price=humanize_number(total_price),
             items=msg,
+            level=level_str,
         )
         for page in pagify(new_msg, shorten_by=10, page_length=1900):
             msg_list.append(box(page, lang="css"))
@@ -1005,7 +1039,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             return
         target = user or ctx.author
         async with self.get_lock(target):
-            c = await self.get_character_from_json(user)
+            c = await self.get_character_from_json(target)
             c.heroclass["ability"] = False
             c.heroclass["cooldown"] = 0
             if "catch_cooldown" in c.heroclass:
@@ -1134,8 +1168,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     _(
                         "{author}'s new stats: "
                         "Attack: {stat_att} [{skill_att}], "
+                        "Charisma: {stat_cha} [{skill_cha}], "
                         "Intelligence: {stat_int} [{skill_int}], "
-                        "Diplomacy: {stat_cha} [{skill_cha}], "
                         "Dexterity: {stat_dex}, "
                         "Luck: {stat_luck}."
                     ).format(
@@ -2550,7 +2584,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 return False
         return True
 
-    @commands.command()
+    @commands.command(cooldown_after_parsing=True)
     @commands.bot_has_permissions(add_reactions=True)
     @commands.cooldown(rate=1, per=4, type=commands.BucketType.user)
     async def loot(self, ctx: Context, box_type: str = None, number: DynamicInt = 1):
@@ -2681,6 +2715,13 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                                     owned = f" | {item.owned}"
                                     if item.set:
                                         settext += f" | Set `{item.set}` ({item.parts}pcs)"
+
+                                    equip_lvl = equip_level(c, item)
+                                    if c.lvl < equip_lvl:
+                                        lv_str = f"[{equip_lvl}]"
+                                    else:
+                                        lv_str = f"{equip_lvl}"
+
                                     msg += (
                                         f"\n{str(item):<{rjust}} - "
                                         f"({att_space}{item.att} |"
@@ -2688,7 +2729,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                                         f"{int_space}{item.int} |"
                                         f"{dex_space}{item.dex} |"
                                         f"{luck_space}{item.luck} )"
-                                        f" | Lv {equip_level(c, item):<3}"
+                                        f" | Lv {lv_str:<3}"
                                         f"{owned}{settext}"
                                     )
 
@@ -2837,7 +2878,9 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 if character.bal < loss:
                     items = await character.looted(how_many=max(int(10 - roll) // 2, 1))
                     if items:
-                        item_string = "\n".join([f"{v} {i}" for v, i in items])
+                        item_string = "\n".join(
+                            ["( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | SET (SET PIECES)"] + [f"{i} - {character.get_looted_message(v)}" for v, i in items]
+                        )
                         looted = box(f"{item_string}", lang="css")
                         await self.config.user(ctx.author).set(await character.to_json(self.config))
                 loss_msg = _(
@@ -2923,7 +2966,9 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 if character.bal < loss:
                     items = await character.looted(how_many=max(int(10 - roll) // 2, 1))
                     if items:
-                        item_string = "\n".join([f"{i}  - {v}" for v, i in items])
+                        item_string = "\n".join(
+                            ["( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | SET (SET PIECES)"] + [f"{i} - {character.get_looted_message(v)}" for v, i in items]
+                        )
                         looted = box(f"{item_string}", lang="css")
                         await self.config.user(ctx.author).set(await character.to_json(self.config))
                 loss_msg = _(", losing {loss} {currency_name} as **{negachar}** looted their backpack.").format(
@@ -3217,7 +3262,6 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     c.heroclass["cooldown"] = cooldown_time + 1
                 if c.heroclass["cooldown"] <= time.time():
                     c.heroclass["ability"] = True
-                    c.heroclass["cooldown"] = time.time() + cooldown_time
                     await self.config.user(ctx.author).set(await c.to_json(self.config))
                     await smart_embed(
                         ctx,
@@ -3260,7 +3304,6 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     c.heroclass["cooldown"] = cooldown_time + 1
                 if c.heroclass["cooldown"] <= time.time():
                     c.heroclass["ability"] = True
-                    c.heroclass["cooldown"] = time.time() + cooldown_time
 
                     await self.config.user(ctx.author).set(await c.to_json(self.config))
                     await smart_embed(
@@ -3304,7 +3347,6 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     c.heroclass["cooldown"] = cooldown_time + 1
                 if c.heroclass["cooldown"] <= time.time():
                     c.heroclass["ability"] = True
-                    c.heroclass["cooldown"] = time.time() + cooldown_time
                     await self.config.user(ctx.author).set(await c.to_json(self.config))
                     await smart_embed(
                         ctx,
@@ -3808,6 +3850,15 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     c = await self.get_character_from_json(user)
                     if c.heroclass["name"] != "Ranger" and c.heroclass["ability"]:
                         c.heroclass["ability"] = False
+
+                        if c.heroclass["name"] == "Berserker":
+                            cooldown_time = max(300, (1200 - ((c.luck + c.total_att) * 2)))
+                        elif c.heroclass["name"] == "Bard":
+                            cooldown_time = max(300, (1200 - ((c.luck + c.total_cha) * 2)))
+                        elif c.heroclass["name"] == "Wizard":
+                            cooldown_time = max(300, (1200 - ((c.luck + c.total_int) * 2)))
+
+                        c.heroclass["cooldown"] = time.time() + cooldown_time
                     if c.last_currency_check + 600 < time.time() or c.bal > c.last_known_currency:
                         c.last_known_currency = await bank.get_balance(user)
                         c.last_currency_check = time.time()

@@ -108,7 +108,7 @@ class AdventureResults:
         self._num_raids = num_raids
         self._last_raids: MutableMapping[int, List] = {}
 
-    def add_result(self, ctx: Context, main_action, amount, num_ppl, success):
+    def add_result(self, ctx: Context, main_action, amount, num_ppl, success, boss):
         """Add result to this object.
         :main_action: Main damage action taken by the adventurers
             (highest amount dealt). Should be either "attack" or
@@ -124,7 +124,7 @@ class AdventureResults:
             if ctx.guild.id in self._last_raids:
                 self._last_raids[ctx.guild.id].pop(0)
         raid_dict = {}
-        for var in ("main_action", "amount", "num_ppl", "success"):
+        for var in ("main_action", "amount", "num_ppl", "success", "boss"):
             raid_dict[var] = locals()[var]
         self._last_raids[ctx.guild.id].append(raid_dict)
 
@@ -158,38 +158,48 @@ class AdventureResults:
             raid_count = self._num_raids
             win_percent = 0.5
         else:
-            for raid in raids:
-                if raid["main_action"] == "attack":
-                    num_attack += 1
-                    dmg_amount += raid["amount"]
-                    if raid["num_ppl"] == 1:
-                        dmg_amount += raid["amount"] * SOLO_RAID_SCALE
-                else:
-                    num_talk += 1
-                    talk_amount += raid["amount"]
-                    if raid["num_ppl"] == 1:
-                        talk_amount += raid["amount"] * SOLO_RAID_SCALE
-                log.debug(f"raid dmg: {raid['amount']}")
-                if raid["success"]:
+            avg_count = 3
+            winrate_count = 6
+
+            for n, raid in enumerate(reversed(raids)):
+                if n < avg_count:
+                    if raid["main_action"] == "attack":
+                        num_attack += 1
+                        dmg_amount += raid["amount"]
+                        if raid["num_ppl"] == 1:
+                            dmg_amount += raid["amount"] * SOLO_RAID_SCALE
+                    else:
+                        num_talk += 1
+                        talk_amount += raid["amount"]
+                        if raid["num_ppl"] == 1:
+                            talk_amount += raid["amount"] * SOLO_RAID_SCALE
+                    log.debug(f"raid dmg: {raid['amount']}")
+                if raid["success"] and n < winrate_count:
                     num_wins += 1
             if num_attack > 0:
                 avg_amount = dmg_amount / num_attack
             if dmg_amount < talk_amount:
                 stat_type = "dipl"
                 avg_amount = talk_amount / num_talk
-            win_percent = num_wins / raid_count
+            win_percent = num_wins / min(winrate_count, raid_count)
             min_stat = avg_amount * 0.75
-            max_stat = avg_amount * 2
+            max_stat = avg_amount * 1.5
             # want win % to be at least 50%, even when solo
             # if win % is below 50%, scale back min/max for easier mons
             if win_percent < 0.5:
                 min_stat = avg_amount * win_percent
-                max_stat = avg_amount * 1.5
 
         stats_dict = {}
         for var in ("stat_type", "min_stat", "max_stat", "win_percent"):
             stats_dict[var] = locals()[var]
         return stats_dict
+
+    def can_spawn_boss(self, ctx):
+        """Ensures that the last 2 monsters are not bosses"""
+        raids = self._last_raids.get(ctx.guild.id, [])[-2:]
+        if any(i["boss"] for i in raids):
+            return False
+        return True
 
     def __str__(self):
         return str(self._last_raids)
@@ -197,3 +207,17 @@ class AdventureResults:
 
 class AdventureCheckFailure(commands.CheckFailure):
     pass
+
+
+class FilterInt:
+    def __init__(self, num: int, sign: str):
+        self.num = num
+        self.sign = sign
+
+    @classmethod
+    async def convert(cls, _: commands.Context, argument: str):
+        if argument.endswith("+") or argument.endswith("-"):
+            if argument[0:-1].isnumeric:
+                return cls(int(argument[0:-1]), argument[-1])
+
+        raise BadArgument(_('{} is not a valid filter number.').format(argument))
