@@ -602,6 +602,9 @@ class MiscMixin(commands.Cog):
             self.bot.dispatch("adventure_miniboss", ctx)
         else:
             timer = 60 * 2
+        
+        if transcended:
+            timer = 60 * 3
 
         self._sessions[ctx.guild.id] = GameSession(
             challenge=new_challenge,
@@ -726,6 +729,10 @@ class MiscMixin(commands.Cog):
             else:
                 adventure_msg = await ctx.send(f"{adventure_msg}\n{normal_text}")
             session.timeout = 60 * 2
+        
+        if session.transcended:
+            session.timeout = 60 * 3
+
         session.message_id = adventure_msg.id
         session.message = adventure_msg
         start_adding_reactions(adventure_msg, self._adventure_actions)
@@ -1710,9 +1717,9 @@ class MiscMixin(commands.Cog):
                         pray_magic_bonus = int(
                             (mod * len(magic_list)) + ((mod * len(magic_list)) * max(rebirths * 0.1, 1.5))
                         )
-                    attack += pray_att_bonus
-                    magic += pray_magic_bonus
-                    diplomacy += pray_diplo_bonus
+                    attack += max(pray_att_bonus, 0)
+                    magic += max(pray_magic_bonus, 0)
+                    diplomacy += max(pray_diplo_bonus, 0)
                     if roll == 50:
                         roll_msg = _(
                             "{user} turned into an avatar of mighty {god}. "
@@ -1753,9 +1760,9 @@ class MiscMixin(commands.Cog):
                     if magic_list:
                         magic_buff = 10 * (len(magic_list) + rebirths // 15)
 
-                    attack += attack_buff
-                    magic += magic_buff
-                    diplomacy += talk_buff
+                    attack += max(attack_buff, 0)
+                    magic += max(magic_buff, 0)
+                    diplomacy += max(talk_buff, 0)
                     msg += _(
                         "**{user}'s** prayer called upon the mighty {god} to help you. "
                         "(+{len_f_list}{attack}/+{len_t_list}{talk}/+{len_m_list}{magic}) {roll_emoji}({roll})\n"
