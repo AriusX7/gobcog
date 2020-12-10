@@ -4125,7 +4125,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     @commands.command()
     async def compare(
         self,
-        ctx: commands.Context,
+        ctx: commands.Context, *,
         item: ItemConverter,
     ):
         """Compares given item with equipped item of same slot."""
