@@ -3864,6 +3864,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
                         cooldown_time = 0
                         session = self._sessions[ctx.guild.id]
+                        print(user.name, c.heroclass["name"], c.heroclass["name"] == "Berserker")
+                        print(user.name, ctx.author.id, [i.id for i in session.fight], ctx.author.id in [i.id for i in session.fight])
                         if c.heroclass["name"] == "Berserker" and ctx.author.id in [i.id for i in session.fight]:
                             print(user.name, 'detected')
                             cooldown_time = max(240, (1140 - ((c.luck + c.total_att) * 2)))
