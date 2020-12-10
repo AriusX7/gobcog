@@ -2870,7 +2870,9 @@ class Adventure(MiscMixin, commands.Cog):
                 if character.bal < loss:
                     items = await character.looted(how_many=max(int(10 - roll) // 2, 1))
                     if items:
-                        item_string = "\n".join([f"{v} {i}" for v, i in items])
+                        item_string = "\n".join(
+                            ["( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | SET (SET PIECES)"] + [f"{i} - {character.get_looted_message(v)}" for v, i in items]
+                        )
                         looted = box(f"{item_string}", lang="css")
                         await self.config.user(ctx.author).set(await character.to_json(self.config))
                 loss_msg = _(
@@ -2956,7 +2958,9 @@ class Adventure(MiscMixin, commands.Cog):
                 if character.bal < loss:
                     items = await character.looted(how_many=max(int(10 - roll) // 2, 1))
                     if items:
-                        item_string = "\n".join([f"{i}  - {v}" for v, i in items])
+                        item_string = "\n".join(
+                            ["( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | SET (SET PIECES)"] + [f"{i} - {character.get_looted_message(v)}" for v, i in items]
+                        )
                         looted = box(f"{item_string}", lang="css")
                         await self.config.user(ctx.author).set(await character.to_json(self.config))
                 loss_msg = _(", losing {loss} {currency_name} as **{negachar}** looted their backpack.").format(
