@@ -3209,7 +3209,6 @@ class Adventure(MiscMixin, commands.Cog):
                     c.heroclass["cooldown"] = cooldown_time + 1
                 if c.heroclass["cooldown"] <= time.time():
                     c.heroclass["ability"] = True
-                    c.heroclass["cooldown"] = time.time() + cooldown_time
                     await self.config.user(ctx.author).set(await c.to_json(self.config))
 
                     await smart_embed(
@@ -3841,14 +3840,20 @@ class Adventure(MiscMixin, commands.Cog):
                 async with self.get_lock(user):
                     c = await self.get_character_from_json(user)
                     if c.heroclass["name"] != "Ranger" and c.heroclass["ability"]:
-                        c.heroclass["ability"] = False
 
-                        if c.heroclass["name"] == "Berserker":
+                        cooldown_time = 0
+                        session = self._sessions[ctx.guild.id]
+                        if c.heroclass["name"] == "Berserker" and ctx.author in session.fight:
                             cooldown_time = max(300, (1200 - ((c.luck + c.total_att) * 2)))
-                        elif c.heroclass["name"] == "Bard":
+                        elif c.heroclass["name"] == "Bard" and ctx.author in session.talk:
                             cooldown_time = max(300, (1200 - ((c.luck + c.total_cha) * 2)))
-                        elif c.heroclass["name"] == "Wizard":
+                        elif c.heroclass["name"] == "Wizard" and ctx.author in session.magic:
                             cooldown_time = max(300, (1200 - ((c.luck + c.total_int) * 2)))
+                        elif c.heroclass["name"] == "Cleric" and ctx.author in session.pray:
+                            cooldown_time = max(300, (1200 - ((c.luck + c.total_int) * 2)))
+
+                        if cooldown_time:
+                            c.heroclass["ability"] = False
 
                         c.heroclass["cooldown"] = time.time() + cooldown_time
                     if c.last_currency_check + 600 < time.time() or c.bal > c.last_known_currency:
