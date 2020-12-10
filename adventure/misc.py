@@ -3126,6 +3126,8 @@ class MiscMixin(commands.Cog):
             self._init_task.cancel()
         if self.gb_task:
             self.gb_task.cancel()
+        if self._timed_roles_task:
+            self._timed_roles_task.cancel()
 
         for (msg_id, task) in self.tasks.items():
             task.cancel()
