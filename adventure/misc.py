@@ -1513,7 +1513,7 @@ class MiscMixin(commands.Cog):
                     bonus_roll = random.randint(5, 15)
                     bonus_multi = random.choice([0.2, 0.3, 0.4, 0.5])
                     bonus = max(bonus_roll, int((roll + att_value + rebirths) * bonus_multi))
-                    attack += int((roll - bonus + att_value) / pdef)
+                    attack += max(int((roll - bonus + att_value) / pdef), 0)
                     report += (
                         f"**{self.escape(user.display_name)}**: "
                         f"{self.emojis.dice}({roll}) + "
@@ -1536,7 +1536,7 @@ class MiscMixin(commands.Cog):
                 if c.heroclass["ability"]:
                     base_bonus = random.randint(15, 50) + 5 * rebirths
                 base_str = f"{self.emojis.crit}️ {humanize_number(base_bonus)}"
-                attack += int((roll + base_bonus + crit_bonus + att_value) / pdef)
+                attack += max(int((roll + base_bonus + crit_bonus + att_value) / pdef), 0)
                 bonus = base_str + crit_str
                 report += (
                     f"**{self.escape(user.display_name)}**: "
@@ -1545,7 +1545,7 @@ class MiscMixin(commands.Cog):
                     f"{self.emojis.attack}{str(humanize_number(att_value))}\n"
                 )
             else:
-                attack += int((roll + att_value) / pdef) + rebirths
+                attack += max(int((roll + att_value) / pdef) + rebirths, 0)
                 report += (
                     f"**{self.escape(user.display_name)}**: "
                     f"{self.emojis.dice}({roll}) + "
@@ -1585,7 +1585,7 @@ class MiscMixin(commands.Cog):
                     bonus_roll = random.randint(5, 15)
                     bonus_multi = random.choice([0.2, 0.3, 0.4, 0.5])
                     bonus = max(bonus_roll, int((roll + int_value + rebirths) * bonus_multi))
-                    magic += int((roll - bonus + int_value) / mdef)
+                    magic += max(int((roll - bonus + int_value) / mdef), 0)
                     report += (
                         f"**{self.escape(user.display_name)}**: "
                         f"{self.emojis.dice}({roll}) + "
@@ -1605,7 +1605,7 @@ class MiscMixin(commands.Cog):
                 if c.heroclass["ability"]:
                     base_bonus = random.randint(15, 50) + 5 * rebirths
                     base_str = f"{self.emojis.magic_crit}️ {humanize_number(base_bonus)}"
-                magic += int((roll + base_bonus + crit_bonus + int_value) / mdef)
+                magic += max(int((roll + base_bonus + crit_bonus + int_value) / mdef), 0)
                 bonus = base_str + crit_str
                 report += (
                     f"**{self.escape(user.display_name)}**: "
@@ -1614,7 +1614,7 @@ class MiscMixin(commands.Cog):
                     f"{self.emojis.magic}{humanize_number(int_value)}\n"
                 )
             else:
-                magic += int((roll + int_value) / mdef) + c.rebirths // 5
+                magic += max(int((roll + int_value) / mdef) + c.rebirths // 5, 0)
                 report += (
                     f"**{self.escape(user.display_name)}**: "
                     f"{self.emojis.dice}({roll}) + "
@@ -1666,11 +1666,11 @@ class MiscMixin(commands.Cog):
                     pray_diplo_bonus = 0
                     pray_magic_bonus = 0
                     if fight_list:
-                        pray_att_bonus = (5 * len(fight_list)) - ((5 * len(fight_list)) * max(rebirths * 0.01, 1.5))
+                        pray_att_bonus = max((5 * len(fight_list)) - ((5 * len(fight_list)) * max(rebirths * 0.01, 1.5)), 0)
                     if talk_list:
-                        pray_diplo_bonus = (5 * len(talk_list)) - ((5 * len(talk_list)) * max(rebirths * 0.01, 1.5))
+                        pray_diplo_bonus = max((5 * len(talk_list)) - ((5 * len(talk_list)) * max(rebirths * 0.01, 1.5)), 0)
                     if magic_list:
-                        pray_magic_bonus = (5 * len(magic_list)) - ((5 * len(magic_list)) * max(rebirths * 0.01, 1.5))
+                        pray_magic_bonus = max((5 * len(magic_list)) - ((5 * len(magic_list)) * max(rebirths * 0.01, 1.5)), 0)
                     attack -= pray_att_bonus
                     diplomacy -= pray_diplo_bonus
                     magic -= pray_magic_bonus
@@ -1808,7 +1808,7 @@ class MiscMixin(commands.Cog):
             if roll == 1:
                 if c.heroclass["name"] == "Bard" and c.heroclass["ability"]:
                     bonus = random.randint(5, 15)
-                    diplomacy += roll - bonus + dipl_value + rebirths
+                    diplomacy += max(roll - bonus + dipl_value + rebirths, 0)
                     report += (
                         f"**{self.escape(user.display_name)}** "
                         f"🎲({roll}) +💥{bonus} +🗨{humanize_number(dipl_value)} | "
@@ -1832,7 +1832,7 @@ class MiscMixin(commands.Cog):
                 if c.heroclass["ability"]:
                     base_bonus = random.randint(15, 50) + 5 * rebirths
                 base_str = f"🎵 {humanize_number(base_bonus)}"
-                diplomacy += roll + base_bonus + crit_bonus + dipl_value
+                diplomacy += max(roll + base_bonus + crit_bonus + dipl_value, 0)
                 bonus = base_str + crit_str
                 report += (
                     f"**{self.escape(user.display_name)}** "
@@ -1841,7 +1841,7 @@ class MiscMixin(commands.Cog):
                     f"{self.emojis.talk}{humanize_number(dipl_value)}\n"
                 )
             else:
-                diplomacy += roll + dipl_value + c.rebirths // 5
+                diplomacy += max(roll + dipl_value + c.rebirths // 5, 0)
                 report += (
                     f"**{self.escape(user.display_name)}** "
                     f"{self.emojis.dice}({roll}) + "
