@@ -2443,10 +2443,13 @@ class MiscMixin(commands.Cog):
                 )
             )
             return None
+
+        # Just in case old_items is empty.
+        slot = item.slot[0]
         old_items = [(i, getattr(character, i, None)) for i in item.slot]
         old_stats = ""
 
-        for slot, old_item in old_items:
+        for num, (slot, old_item) in enumerate(old_items):
             if old_item:
                 old_slot = old_item.slot[0]
                 if len(old_item.slot) > 1:
@@ -2463,32 +2466,44 @@ class MiscMixin(commands.Cog):
                     luck = old_item.luck
                     dex = old_item.dex
 
-                old_stats += (
-                    _("You currently have {item} [{slot}] equipped | Lvl req {lv} equipped.").format(
-                        item=old_item, slot=old_slot, lv=equip_level(character, old_item)
-                    )
-                    + f" (ATT: {str(att)}, "
-                    f"CHA: {str(cha)}, "
-                    f"INT: {str(intel)}, "
-                    f"DEX: {str(dex)}, "
-                    f"LUCK: {str(luck)})"
-                )
-                if old_item.set:
-                    old_stats += f" | Set `{old_item.set}` ({old_item.parts}pcs)"
+                    if num == 0:
+                        old_stats += _("You currently have {item} [{slot}] | Lvl req {lv}").format(
+                            item=old_item, slot=old_slot, lv=equip_level(character, old_item)
+                        )
+                        if len(old_items) == 1:
+                            old_stats += " equipped."
+                        else:
+                            old_stats += "."
+                    else:
+                        # we can put equipped here because `num` be only `0` or `1`.
+                        # might have to change this if that changes.
+                        old_stats += _("and {item} [{slot}] | Lvl req {lv} equipped.").format(
+                            item=old_item, slot=old_slot, lv=equip_level(character, old_item)
+                        )
 
-            if len(item.slot) > 1:
-                slot = _("two handed")
-                att = item.att * 2
-                cha = item.cha * 2
-                intel = item.int * 2
-                luck = item.luck * 2
-                dex = item.dex * 2
-            else:
-                att = item.att
-                cha = item.cha
-                intel = item.int
-                luck = item.luck
-                dex = item.dex
+                    old_stats += (
+                        f" (ATT: {str(att)}, "
+                        f"CHA: {str(cha)}, "
+                        f"INT: {str(intel)}, "
+                        f"DEX: {str(dex)}, "
+                        f"LUCK: {str(luck)})"
+                    )
+                    if old_item.set:
+                        old_stats += f" | Set `{old_item.set}` ({old_item.parts}pcs)\n"
+
+        if len(item.slot) > 1:
+            slot = _("two handed")
+            att = item.att * 2
+            cha = item.cha * 2
+            intel = item.int * 2
+            luck = item.luck * 2
+            dex = item.dex * 2
+        else:
+            att = item.att
+            cha = item.cha
+            intel = item.int
+            luck = item.luck
+            dex = item.dex
 
         equip_lvl = equip_level(character, item)
         if character.lvl < equip_lvl:
@@ -2505,10 +2520,10 @@ class MiscMixin(commands.Cog):
                 f"CHA: {str(cha)}, "
                 f"INT: {str(intel)}, "
                 f"DEX: {str(dex)}, "
-                f"LUCK: {str(luck)}) "
+                f"LUCK: {str(luck)})"
             )
             if item.set:
-                chest_msg2 += f" | Set `{item.set}` ({item.parts}pcs)"
+                chest_msg2 += f" | Set `{item.set}` ({item.parts}pcs) "
 
             await open_msg.edit(
                 content=box(
@@ -2529,10 +2544,10 @@ class MiscMixin(commands.Cog):
                 f"CHA: {str(cha)}, "
                 f"INT: {str(intel)}, "
                 f"DEX: {str(dex)}, "
-                f"LUCK: {str(luck)}), "
+                f"LUCK: {str(luck)}) "
             )
             if item.set:
-                chest_msg2 += f" | Set `{item.set}` ({item.parts}pcs)"
+                chest_msg2 += f" | Set `{item.set}` ({item.parts}pcs) "
 
             await open_msg.edit(
                 content=box(
