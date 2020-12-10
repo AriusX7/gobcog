@@ -2471,8 +2471,11 @@ class MiscMixin(commands.Cog):
                     f"CHA: {str(cha)}, "
                     f"INT: {str(intel)}, "
                     f"DEX: {str(dex)}, "
-                    f"LUCK: {str(luck)})\n"
+                    f"LUCK: {str(luck)})"
                 )
+                if old_item.set:
+                    old_stats += f" | Set `{old_item.set}` ({old_item.parts}pcs)"
+
             if len(item.slot) > 1:
                 slot = _("two handed")
                 att = item.att * 2
@@ -2504,6 +2507,8 @@ class MiscMixin(commands.Cog):
                 f"DEX: {str(dex)}, "
                 f"LUCK: {str(luck)}) "
             )
+            if item.set:
+                chest_msg2 += f" | Set `{item.set}` ({item.parts}pcs)"
 
             await open_msg.edit(
                 content=box(
@@ -2526,6 +2531,9 @@ class MiscMixin(commands.Cog):
                 f"DEX: {str(dex)}, "
                 f"LUCK: {str(luck)}), "
             )
+            if item.set:
+                chest_msg2 += f" | Set `{item.set}` ({item.parts}pcs)"
+
             await open_msg.edit(
                 content=box(
                     _(
