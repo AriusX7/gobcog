@@ -3268,10 +3268,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     )
                 cooldown_time = max(240, (1140 - ((c.luck + c.total_att) * 2)))
                 if "cooldown" not in c.heroclass:
-                    print(ctx.author.name, 'not in heroclass')
                     c.heroclass["cooldown"] = cooldown_time + 1
                 if c.heroclass["cooldown"] <= time.time():
-                    print(ctx.author.name, 'setting?')
                     c.heroclass["ability"] = True
                     await self.config.user(ctx.author).set(await c.to_json(self.config))
                     await smart_embed(
@@ -3282,7 +3280,6 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     )
                 else:
                     cooldown_time = c.heroclass["cooldown"] - time.time()
-                    print(ctx.author.name, cooldown_time)
                     return await smart_embed(
                         ctx,
                         _(
@@ -3864,19 +3861,15 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
                         cooldown_time = 0
                         session = self._sessions[ctx.guild.id]
-                        print(user.name, c.heroclass["name"], c.heroclass["name"] == "Berserker")
-                        print(user.name, ctx.author.id, [i.id for i in session.fight], ctx.author.id in [i.id for i in session.fight])
-                        if c.heroclass["name"] == "Berserker" and ctx.author.id in [i.id for i in session.fight]:
-                            print(user.name, 'detected')
+                        if c.heroclass["name"] == "Berserker" and user in session.fight:
                             cooldown_time = max(240, (1140 - ((c.luck + c.total_att) * 2)))
-                        elif c.heroclass["name"] == "Bard" and ctx.author.id in [i.id for i in session.talk]:
+                        elif c.heroclass["name"] == "Bard" and user in session.talk:
                             cooldown_time = max(240, (1140 - ((c.luck + c.total_cha) * 2)))
-                        elif c.heroclass["name"] == "Wizard" and ctx.author.id in [i.id for i in session.magic]:
+                        elif c.heroclass["name"] == "Wizard" and user in session.magic:
                             cooldown_time = max(240, (1140 - ((c.luck + c.total_int) * 2)))
-                        elif c.heroclass["name"] == "Cleric" and ctx.author.id in [i.id for i in session.pray]:
+                        elif c.heroclass["name"] == "Cleric" and user in session.pray:
                             cooldown_time = max(240, (1140 - ((c.luck + c.total_int) * 2)))
 
-                        print(user.name, cooldown_time)
                         if cooldown_time:
                             c.heroclass["ability"] = False
 
