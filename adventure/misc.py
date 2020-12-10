@@ -3086,6 +3086,7 @@ class MiscMixin(commands.Cog):
 
     async def cog_command_error(self, ctx: Context, error: Exception):
         if isinstance(error, AdventureCheckFailure):
+            ctx.command.reset_cooldown(ctx)
             await smart_embed(ctx, str(error), success=False)
         else:
             if ctx.guild:
