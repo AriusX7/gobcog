@@ -69,7 +69,8 @@ from .utils import (
     Member,
     check_global_setting_admin,
     has_separated_economy,
-    smart_embed,
+    smart_embed
+)
 
 _ = Translator("Adventure", __file__)
 
