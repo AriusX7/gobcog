@@ -862,13 +862,46 @@ class Character(Item):
                 continue
             loot_number = random.randint(1, min(item.owned, how_many - looted_so_far))
             looted_so_far += loot_number
-            looted.append((str(item), loot_number))
+            looted.append((item, loot_number))
             item.owned -= loot_number
             if item.owned <= 0:
                 del self.backpack[item.name]
             else:
                 self.backpack[item.name] = item
         return looted
+
+    def get_looted_message(self, item):
+        settext = ""
+        att_space = " " if len(str(item.att)) >= 1 else ""
+        cha_space = " " if len(str(item.cha)) >= 1 else ""
+        int_space = " " if len(str(item.int)) >= 1 else ""
+        dex_space = " " if len(str(item.dex)) >= 1 else ""
+        luck_space = " " if len(str(item.luck)) >= 1 else ""
+        if item.set:
+            settext += f" | Set `{item.set}` ({item.parts}pcs)"
+        e_level = equip_level(self, item)
+        if e_level > self.lvl:
+            level = f"[{e_level}]"
+        else:
+            level = f"{e_level}"
+
+        slot_name_org = item.slot
+        att = item.att if len(slot_name_org) < 2 else item.att * 2
+        cha = item.cha if len(slot_name_org) < 2 else item.cha * 2
+        int = item.int if len(slot_name_org) < 2 else item.int * 2
+        dex = item.dex if len(slot_name_org) < 2 else item.dex * 2
+        luck = item.luck if len(slot_name_org) < 2 else item.luck * 2
+        rjuststat = 3
+
+        stats = (
+            f"({att_space}{att:<{rjuststat}} |"
+            f"{cha_space}{cha:<{rjuststat}} |"
+            f"{int_space}{int:<{rjuststat}} |"
+            f"{dex_space}{dex:<{rjuststat}} |"
+            f"{luck_space}{luck:<{rjuststat}})"
+        )
+
+        return f"{item} {stats} | Lvl {level:<5}{settext}"
 
     async def get_backpack(
         self,
@@ -952,7 +985,7 @@ class Character(Item):
                     f"{cha_space}{cha:<{rjuststat}} |"
                     f"{int_space}{int:<{rjuststat}} |"
                     f"{dex_space}{dex:<{rjuststat}} |"
-                    f"{luck_space}{luck:<{rjuststat}} )"
+                    f"{luck_space}{luck:<{rjuststat}})"
                 )
 
                 slot_string += f"\n{str(item[1]):<{rjust}} - {stats} | Lvl {level:<5}{owned}{settext}"
