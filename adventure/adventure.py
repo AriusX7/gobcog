@@ -1026,7 +1026,7 @@ class Adventure(MiscMixin, commands.Cog):
             return
         target = user or ctx.author
         async with self.get_lock(target):
-            c = await self.get_character_from_json(user)
+            c = await self.get_character_from_json(target)
             c.heroclass["ability"] = False
             c.heroclass["cooldown"] = 0
             if "catch_cooldown" in c.heroclass:
@@ -3245,7 +3245,6 @@ class Adventure(MiscMixin, commands.Cog):
                     c.heroclass["cooldown"] = cooldown_time + 1
                 if c.heroclass["cooldown"] <= time.time():
                     c.heroclass["ability"] = True
-                    c.heroclass["cooldown"] = time.time() + cooldown_time
                     await self.config.user(ctx.author).set(await c.to_json(self.config))
                     await smart_embed(
                         ctx,
@@ -3288,7 +3287,6 @@ class Adventure(MiscMixin, commands.Cog):
                     c.heroclass["cooldown"] = cooldown_time + 1
                 if c.heroclass["cooldown"] <= time.time():
                     c.heroclass["ability"] = True
-                    c.heroclass["cooldown"] = time.time() + cooldown_time
 
                     await self.config.user(ctx.author).set(await c.to_json(self.config))
                     await smart_embed(
@@ -3332,7 +3330,6 @@ class Adventure(MiscMixin, commands.Cog):
                     c.heroclass["cooldown"] = cooldown_time + 1
                 if c.heroclass["cooldown"] <= time.time():
                     c.heroclass["ability"] = True
-                    c.heroclass["cooldown"] = time.time() + cooldown_time
                     await self.config.user(ctx.author).set(await c.to_json(self.config))
                     await smart_embed(
                         ctx,
@@ -3836,6 +3833,15 @@ class Adventure(MiscMixin, commands.Cog):
                     c = await self.get_character_from_json(user)
                     if c.heroclass["name"] != "Ranger" and c.heroclass["ability"]:
                         c.heroclass["ability"] = False
+
+                        if c.heroclass["name"] == "Berserker":
+                            cooldown_time = max(300, (1200 - ((c.luck + c.total_att) * 2)))
+                        elif c.heroclass["name"] == "Bard":
+                            cooldown_time = max(300, (1200 - ((c.luck + c.total_cha) * 2)))
+                        elif c.heroclass["name"] == "Wizard":
+                            cooldown_time = max(300, (1200 - ((c.luck + c.total_int) * 2)))
+
+                        c.heroclass["cooldown"] = time.time() + cooldown_time
                     if c.last_currency_check + 600 < time.time() or c.bal > c.last_known_currency:
                         c.last_known_currency = await bank.get_balance(user)
                         c.last_currency_check = time.time()
