@@ -32,6 +32,8 @@ class RoleMixin(commands.Cog):
         """Set roles for adventure pings."""
 
     @_roleset.command(name="general")
+    @commands.guild_only()
+    @commands.admin_or_permissions(manage_guild=True)
     async def _roleset_general(self, ctx: Context, *, role: discord.Role = None):
         """Set role for all adventure pings."""
 
@@ -47,6 +49,8 @@ class RoleMixin(commands.Cog):
             )
 
     @_roleset.command(name="boss")
+    @commands.guild_only()
+    @commands.admin_or_permissions(manage_guild=True)
     async def _roleset_boss(self, ctx: Context, *, role: discord.Role = None):
         """Set role for boss-only adventure pings."""
 
@@ -82,7 +86,7 @@ class RoleMixin(commands.Cog):
         return guild.get_role(role_id)
 
     @commands.command()
-    @commands.cooldown(rate=1, per=5, type=BucketType.guild)
+    @commands.cooldown(rate=1, per=300, type=BucketType.guild)
     @commands.bot_has_permissions(manage_roles=True)
     @commands.guild_only()
     async def pingadv(self, ctx: Context):
@@ -108,8 +112,9 @@ class RoleMixin(commands.Cog):
             )
 
         try:
-            await ctx.send(
-                _("{mention}").format(mention=role.mention),
+            await ctx.send(_("{mention}, {user} needs your assistance in fighting the monster ahead!").format(
+                    mention=role.mention, user=self.escape(ctx.author.display_name)
+                ),
                 allowed_mentions=discord.AllowedMentions(roles=True)
             )
         finally:
@@ -125,11 +130,11 @@ class RoleMixin(commands.Cog):
                 )
 
     @commands.command()
-    @commands.cooldown(rate=1, per=10, type=BucketType.guild)
+    @commands.cooldown(rate=1, per=300, type=BucketType.guild)
     @commands.bot_has_permissions(manage_roles=True)
     @commands.guild_only()
     async def pingboss(self, ctx: Context):
-        """Ping the boss-only adventures role."""
+        """Ping the transcended or boss-only adventures role."""
 
         role_id = await self.config.guild(ctx.guild).boss_ping_role()
         if not role_id:
@@ -151,10 +156,11 @@ class RoleMixin(commands.Cog):
             )
 
         try:
-            await ctx.send(
-                _("{mention}").format(mention=role.mention),
+            await ctx.send(_("{mention}, {user} needs your assistance in fighting the boss or transcended monster ahead!").format(
+                    mention=role.mention, user=self.escape(ctx.author.display_name)
+                ),
                 allowed_mentions=discord.AllowedMentions(roles=True)
-            )
+            ),
         finally:
             try:
                 await self.make_unmentionable(role)
