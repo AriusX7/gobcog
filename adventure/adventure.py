@@ -1147,6 +1147,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     async def equip_loadout(self, ctx: Context, name: str):
         """Equip a saved loadout."""
         if self.in_adventure(ctx):
+            ctx.command.reset_cooldown(ctx)
             return await smart_embed(
                 ctx, _("You tried to magically equip multiple items at once, but the monster ahead nearly killed you."),
             )
