@@ -1048,6 +1048,14 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             await self.config.user(target).set(await c.to_json(self.config))
         await ctx.tick()
 
+    @commands.command()
+    @commands.is_owner()
+    async def devclear(self, ctx: commands.Context):
+        """[Dev] Clears raid history to reset monster generation."""
+        if not await no_dev_prompt(ctx):
+            return
+        self._adv_results = AdventureResults(20)
+
     @commands.group(aliases=["loadouts"])
     async def loadout(self, ctx: Context):
         """Set up gear sets or loadouts."""
