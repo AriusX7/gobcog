@@ -2978,7 +2978,7 @@ class MiscMixin(commands.Cog):
         final_words += [word if word in exceptions else word.capitalize() for word in lowercase_words[1:]]
         return " ".join(final_words)
 
-    async def cog_before_invoke(self, ctx: Context):
+    async def cog_check(self, ctx: Context):
         await self._ready_event.wait()
         if ctx.author.id in self.locks and self.locks[ctx.author.id].locked():
             raise AdventureCheckFailure(f"Another operation is currently executing for {ctx.author.mention}. Try again later.")
