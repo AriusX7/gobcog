@@ -2647,7 +2647,6 @@ class MiscMixin(commands.Cog):
                     lang="css",
                 )
             else:
-                print(True, "\n\n", [str(getattr(character, i, None)) for i in item.slot])
                 equip_msg = box(
                     _("{user} equipped {item} ({slot} slot) and put {old_items} into their backpack.").format(
                         user=self.escape(ctx.author.display_name),
