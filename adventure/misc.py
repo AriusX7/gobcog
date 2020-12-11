@@ -612,7 +612,7 @@ class MiscMixin(commands.Cog):
         else:
             timer = 60 * 2
 
-        if transcended and not monster_roster[challenge]["boss"]:
+        if transcended and not monster_roster[challenge]["boss"] and not monster_roster[challenge]["miniboss"]:
             timer = 60 * 3
 
         self._sessions[ctx.guild.id] = GameSession(
@@ -737,10 +737,11 @@ class MiscMixin(commands.Cog):
                 adventure_msg = await ctx.send(embed=embed)
             else:
                 adventure_msg = await ctx.send(f"{adventure_msg}\n{normal_text}")
-            session.timeout = 60 * 2
-        
-        if session.transcended:
-            session.timeout = 60 * 3
+
+            if session.transcended:
+                session.timeout = 60 * 3
+            else:
+                session.timeout = 60 * 2
 
         session.message_id = adventure_msg.id
         session.message = adventure_msg
