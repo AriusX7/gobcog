@@ -494,7 +494,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                             author=self.escape(ctx.author.display_name),
                             item=str(equip),
                             slot=slot,
-                            put=getattr(c, equip.slot[0]),
+                            put=" and ".join(str(getattr(c, i)) for i in equip.slot if getattr(c, i, None)),
                         ),
                         lang="css",
                     )
@@ -4140,29 +4140,46 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         """Compares given item with equipped item of same slot."""
 
         character = await self.get_character_from_json(ctx.author)
-        slot = item.slot[0]
-        other = getattr(character, item.slot[0], None)
+        # other = getattr(character, item.slot[0], None)
 
-        if not other:
+        others = [getattr(character, i, None) for i in item.slot if getattr(character, i, None) is not None]
+
+        if not others:
+            slot_str = " and/or ".join(item.slot)
+            if len(item.slot) == 1:
+                item_str = "item"
+            else:
+                item_str = "items"
+
             msg = await ctx.send(
                 box(
-                    _("{item}\n\nYou don't have any [{slot}] item equipped. Equip this?".format(
-                        item=self.display_item(item, character), slot=slot
+                    _("{item}\n\nYou don't have any [{slot}] {item_str} equipped. Equip this?".format(
+                        item=self.display_item(item, character), slot=slot_str, item_str=item_str
                     )),
                     lang="css"
                 )
             )
-        elif item.name == other.name:
+        elif item.name in [i.name for i in others]:
             # This is actually reachable in case of multiple items with same name.
             return await ctx.send(box(self.display_item(item, character, True), lang="css"))
         else:
             sep = f"\n\n#{'-' * 40}\n\n"
 
+            if len(others) > 1:
+                extra_items = ""
+                for i in others[1:]:
+                    extra_items += f"\n\n{self.display_item(i, character, True)}"
+            else:
+                extra_items = ""
+
             msg = await ctx.send(
                 box(
-                    _("{item_one}{sep}{item_two}{sep}Do you want to equip {item_one_name}?").format(
+                    _(
+                        "{item_one}{sep}{item_two}{extra}{sep}Do you want to equip {item_one_name}?"
+                    ).format(
                         item_one=self.display_item(item, character),
-                        item_two=self.display_item(other, character, True),
+                        item_two=self.display_item(others[0], character, True),
+                        extra=extra_items,
                         sep=sep,
                         item_one_name=str(item)
                     ),
@@ -4184,25 +4201,26 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             if self.is_dev(ctx.author):
                 equiplevel = 0
             if not can_equip(character, item):
+                await self._clear_react(msg)
                 return await smart_embed(
                     ctx,
                     f"**{self.escape(ctx.author.display_name)}**, you need to be level "
                     f"`{equiplevel}` to equip this item.",
                 )
-            if not other:
+            if not others:
                 equip_msg = box(
                     _("{user} equipped {item} ({slot} slot).").format(
-                        user=self.escape(ctx.author.display_name), item=item, slot=slot
+                        user=self.escape(ctx.author.display_name), item=item, slot=item.slot[0]
                     ),
                     lang="css",
                 )
             else:
                 equip_msg = box(
-                    _("{user} equipped {item} ({slot} slot) and put {old_item} into their backpack.").format(
+                    _("{user} equipped {item} ({slot} slot) and put {old_items} into their backpack.").format(
                         user=self.escape(ctx.author.display_name),
                         item=item,
-                        slot=slot,
-                        old_item=other,
+                        slot=item.slot[0],
+                        old_items=" and ".join(str(i) for i in others),
                     ),
                     lang="css",
                 )

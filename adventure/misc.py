@@ -2493,7 +2493,7 @@ class MiscMixin(commands.Cog):
                     else:
                         # we can put equipped here because `num` be only `0` or `1`.
                         # might have to change this if that changes.
-                        old_stats += _("and {item} [{slot}] | Lvl req {lv} equipped.").format(
+                        old_stats += _(" and {item} [{slot}] | Lvl req {lv} equipped.").format(
                             item=old_item, slot=old_slot, lv=equip_level(character, old_item)
                         )
 
@@ -2647,12 +2647,15 @@ class MiscMixin(commands.Cog):
                     lang="css",
                 )
             else:
+                print(True, "\n\n", [str(getattr(character, i, None)) for i in item.slot])
                 equip_msg = box(
-                    _("{user} equipped {item} ({slot} slot) and put {old_item} into their backpack.").format(
+                    _("{user} equipped {item} ({slot} slot) and put {old_items} into their backpack.").format(
                         user=self.escape(ctx.author.display_name),
                         item=item,
                         slot=slot,
-                        old_item=getattr(character, item.slot[0]),
+                        old_items=" and ".join(
+                            str(getattr(character, i)) for i in item.slot if getattr(character, i, None)
+                        ),
                     ),
                     lang="css",
                 )
