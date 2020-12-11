@@ -611,8 +611,8 @@ class MiscMixin(commands.Cog):
             self.bot.dispatch("adventure_miniboss", ctx)
         else:
             timer = 60 * 2
-        
-        if transcended:
+
+        if transcended and not monster_roster[challenge]["boss"]:
             timer = 60 * 3
 
         self._sessions[ctx.guild.id] = GameSession(
