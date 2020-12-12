@@ -33,11 +33,5 @@
     " terrifying": [1, 1.2],
     " tiny": [0.7, 1],
     " weak": [0.5, 1],
-    " weary": [0.6, 0.9],
-    " panicky": [0.8, 1.5],
-    " scrawny": [0.5, 1],
-    " charming": [1, 10],
-    " clumsy": [0.7, 0.8],
-    " cooperative": [1.3, 0.6],
-    " determined": [0.9, 10]
+    " weary": [0.6, 0.9]
 }
