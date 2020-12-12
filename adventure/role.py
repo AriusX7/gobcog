@@ -104,12 +104,14 @@ class RoleMixin(commands.Cog):
             await self.make_mentionable(role)
         except discord.HTTPException:
             log.exception(_("There was an error editing role permissions."))
+            return
         except discord.Forbidden:
             log.exception(
                 _("I don't have the permission to edit role permissions in {guild}.").format(
                     guild=role.guild.name
                 )
             )
+            return
 
         try:
             await ctx.send(_("{mention}, {user} needs your assistance in fighting the monster ahead!").format(
@@ -148,12 +150,14 @@ class RoleMixin(commands.Cog):
             await self.make_mentionable(role)
         except discord.HTTPException:
             log.exception(_("There was an error editing role permissions."))
+            return
         except discord.Forbidden:
             log.exception(
                 _("I don't have the permission to edit role permissions in {guild}.").format(
                     guild=role.guild.name
                 )
             )
+            return
 
         try:
             await ctx.send(_("{mention}, {user} needs your assistance in fighting the boss or transcended monster ahead!").format(
