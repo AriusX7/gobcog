@@ -57,7 +57,7 @@ class RoleMixin(commands.Cog):
         await self.config.guild(ctx.guild).boss_ping_role.set(getattr(role, "id", None))
 
         if not role:
-            await smart_embed(ctx, _("Unset bose-only adventures role."), True)
+            await smart_embed(ctx, _("Unset boss-only adventures role."), True)
         else:
             await smart_embed(
                 ctx,
