@@ -94,10 +94,12 @@ class RoleMixin(commands.Cog):
 
         role_id = await self.config.guild(ctx.guild).general_ping_role()
         if not role_id:
+            ctx.command.reset_cooldown(ctx)
             return await smart_embed(ctx, _("Role is not set."))
 
         role = ctx.guild.get_role(role_id)
         if not role:
+            ctx.command.reset_cooldown(ctx)
             return await smart_embed(ctx, _("I could not find the set role."))
 
         try:
@@ -138,11 +140,13 @@ class RoleMixin(commands.Cog):
 
         role_id = await self.config.guild(ctx.guild).boss_ping_role()
         if not role_id:
-            await smart_embed(ctx, _("Role is not set."))
+            ctx.command.reset_cooldown(ctx)
+            return await smart_embed(ctx, _("Role is not set."))
 
         role = ctx.guild.get_role(role_id)
         if not role:
-            await smart_embed(ctx, _("I could not find the set role."))
+            ctx.command.reset_cooldown(ctx)
+            return await smart_embed(ctx, _("I could not find the set role."))
 
         try:
             await self.make_mentionable(role)
