@@ -86,7 +86,7 @@ class RoleMixin(commands.Cog):
         return guild.get_role(role_id)
 
     @commands.command()
-    @commands.cooldown(rate=1, per=300, type=BucketType.guild)
+    @commands.cooldown(rate=1, per=180, type=BucketType.guild)
     @commands.bot_has_permissions(manage_roles=True)
     @commands.guild_only()
     async def pingadv(self, ctx: Context):
