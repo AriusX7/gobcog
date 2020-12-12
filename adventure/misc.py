@@ -860,6 +860,16 @@ class MiscMixin(commands.Cog):
         self._current_traders[guild.id]["users"].append(user)
         spender = user
         channel = reaction.message.channel
+
+        if self.in_adventure(user=user):
+            with contextlib.suppress(discord.HTTPException):
+                await reaction.remove(user)
+            return await channel.send(
+                _("**{author}**, you have to be back in town to buy things from the cart!", delete_after=10).format(
+                    author=self.escape(user.display_name)
+                )
+            )
+
         currency_name = await bank.get_currency_name(guild,)
         if currency_name.startswith("<"):
             currency_name = "credits"
@@ -913,8 +923,9 @@ class MiscMixin(commands.Cog):
             with contextlib.suppress(discord.HTTPException):
                 await to_delete.delete()
                 await msg.delete()
+                await reaction.remove(user)
             await channel.send(
-                _("**{author}**, you do not have enough {currency_name}.").format(
+                _("**{author}**, you do not have enough {currency_name}.", delete_after=10).format(
                     author=self.escape(user.display_name), currency_name=currency_name
                 )
             )
@@ -3067,7 +3078,7 @@ class MiscMixin(commands.Cog):
                     if sremain > 3:
                         await self._handle_adventure(reaction, user)
         if guild.id in self._current_traders:
-            if reaction.message.id == self._current_traders[guild.id]["msg"] and not self.in_adventure(user=user):
+            if reaction.message.id == self._current_traders[guild.id]["msg"]:
                 if user in self._current_traders[guild.id]["users"]:
                     return
                 if guild.id in self._trader_countdown:
