@@ -865,9 +865,9 @@ class MiscMixin(commands.Cog):
             with contextlib.suppress(discord.HTTPException):
                 await reaction.remove(user)
             return await channel.send(
-                _("**{author}**, you have to be back in town to buy things from the cart!", delete_after=10).format(
+                _("**{author}**, you have to be back in town to buy things from the cart!").format(
                     author=self.escape(user.display_name)
-                )
+                ), delete_after=10
             )
 
         currency_name = await bank.get_currency_name(guild,)
@@ -925,9 +925,9 @@ class MiscMixin(commands.Cog):
                 await msg.delete()
                 await reaction.remove(user)
             await channel.send(
-                _("**{author}**, you do not have enough {currency_name}.", delete_after=10).format(
+                _("**{author}**, you do not have enough {currency_name}.").format(
                     author=self.escape(user.display_name), currency_name=currency_name
-                )
+                ), delete_after=10
             )
             self._current_traders[guild.id]["users"].remove(user)
 
@@ -3110,7 +3110,9 @@ class MiscMixin(commands.Cog):
     async def cog_command_error(self, ctx: Context, error: Exception):
         if isinstance(error, AdventureCheckFailure):
             ctx.command.reset_cooldown(ctx)
-            await smart_embed(ctx, str(error), success=False)
+            await smart_embed(ctx, str(error), success=False, delete_after=5)
+            await asyncio.sleep(5)
+            await ctx.message.delete()
         else:
             if ctx.guild:
                 dest_id = await self.config.guild(ctx.guild).error_channel()
