@@ -57,7 +57,7 @@ class RoleMixin(commands.Cog):
         await self.config.guild(ctx.guild).boss_ping_role.set(getattr(role, "id", None))
 
         if not role:
-            await smart_embed(ctx, _("Unset bose-only adventures role."), True)
+            await smart_embed(ctx, _("Unset boss-only adventures role."), True)
         else:
             await smart_embed(
                 ctx,
@@ -106,12 +106,14 @@ class RoleMixin(commands.Cog):
             await self.make_mentionable(role)
         except discord.HTTPException:
             log.exception(_("There was an error editing role permissions."))
+            return
         except discord.Forbidden:
             log.exception(
                 _("I don't have the permission to edit role permissions in {guild}.").format(
                     guild=role.guild.name
                 )
             )
+            return
 
         try:
             await ctx.send(_("{mention}, {user} needs your assistance in fighting the monster ahead!").format(
@@ -152,12 +154,14 @@ class RoleMixin(commands.Cog):
             await self.make_mentionable(role)
         except discord.HTTPException:
             log.exception(_("There was an error editing role permissions."))
+            return
         except discord.Forbidden:
             log.exception(
                 _("I don't have the permission to edit role permissions in {guild}.").format(
                     guild=role.guild.name
                 )
             )
+            return
 
         try:
             await ctx.send(_("{mention}, {user} needs your assistance in fighting the boss or transcended monster ahead!").format(
