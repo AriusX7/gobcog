@@ -102,6 +102,10 @@ class RoleMixin(commands.Cog):
             ctx.command.reset_cooldown(ctx)
             return await smart_embed(ctx, _("I could not find the set role."))
 
+        if not self.in_adventure(ctx):
+            ctx.command.reset_cooldown(ctx)
+            return await smart_embed(ctx, _("You must be in an adventure to use this command."))
+
         try:
             await self.make_mentionable(role)
         except discord.HTTPException:
@@ -149,6 +153,10 @@ class RoleMixin(commands.Cog):
         if not role:
             ctx.command.reset_cooldown(ctx)
             return await smart_embed(ctx, _("I could not find the set role."))
+
+        if not self.in_adventure(ctx):
+            ctx.command.reset_cooldown(ctx)
+            return await smart_embed(ctx, _("You must be in an adventure to use this command."))
 
         try:
             await self.make_mentionable(role)
