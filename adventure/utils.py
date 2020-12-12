@@ -12,7 +12,7 @@ from . import bank
 _ = Translator("Adventure", __file__)
 log = logging.getLogger("red.cogs.adventure")
 
-async def smart_embed(ctx, message, success=None):
+async def smart_embed(ctx, message, success=None, **kwargs):
     # use_emebd has been disabled here.. for reasons
     if await ctx.embed_requested():
         if success is True:
@@ -21,9 +21,9 @@ async def smart_embed(ctx, message, success=None):
             colour = discord.Colour.dark_red()
         else:
             colour = await ctx.embed_colour()
-        return await ctx.send(embed=discord.Embed(description=message, color=colour))
+        return await ctx.send(embed=discord.Embed(description=message, color=colour), **kwargs)
     else:
-        return await ctx.send(message)
+        return await ctx.send(message, **kwargs)
 
 
 def check_global_setting_admin():
