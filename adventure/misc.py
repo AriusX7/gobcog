@@ -3113,8 +3113,8 @@ class MiscMixin(commands.Cog):
     async def cog_command_error(self, ctx: Context, error: Exception):
         if isinstance(error, AdventureCheckFailure):
             ctx.command.reset_cooldown(ctx)
-            await smart_embed(ctx, str(error), success=False, delete_after=5)
-            await asyncio.sleep(5)
+            await smart_embed(ctx, str(error), success=False, delete_after=15)
+            await asyncio.sleep(15)
             with contextlib.suppress(discord.HTTPException):
                 await ctx.message.delete()
         else:
