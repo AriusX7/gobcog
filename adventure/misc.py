@@ -3078,7 +3078,7 @@ class MiscMixin(commands.Cog):
             if reaction.message.id == self._sessions[guild.id].message_id:
                 if guild.id in self._adventure_countdown:
                     (timer, done, sremain) = self._adventure_countdown[guild.id]
-                    if sremain > 3:
+                    if sremain > 0:
                         await self._handle_adventure(reaction, user)
         if guild.id in self._current_traders:
             if reaction.message.id == self._current_traders[guild.id]["msg"]:
@@ -3086,7 +3086,7 @@ class MiscMixin(commands.Cog):
                     return
                 if guild.id in self._trader_countdown:
                     (timer, done, sremain) = self._trader_countdown[guild.id]
-                    if sremain > 3:
+                    if sremain > 0:
                         await self._handle_cart(reaction, user)
 
     @commands.Cog.listener()
