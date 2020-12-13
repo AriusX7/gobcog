@@ -68,8 +68,10 @@ from .utils import (
     FilterInt,
     Member,
     check_global_setting_admin,
+    can_use_ability,
     has_separated_economy,
-    smart_embed
+    smart_embed,
+    AdventureCheckFailure
 )
 
 _ = Translator("Adventure", __file__)
@@ -271,11 +273,11 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         rarity = rarity.lower()
         slot = slot.lower()
         if rarity not in RARITIES:
-            return await smart_embed(
-                ctx, _("Invalid rarity; choose one of {list}.").format(list=humanize_list(RARITIES)),
+            raise AdventureCheckFailure(
+                _("Invalid rarity; choose one of {list}.").format(list=humanize_list(RARITIES))
             )
         elif slot not in ORDER:
-            return await smart_embed(ctx, _("Invalid slot; choose one of {list}.").format(list=humanize_list(ORDER)))
+            raise AdventureCheckFailure(_("Invalid slot; choose one of {list}.").format(list=humanize_list(ORDER)))
         async with self.get_lock(user):
             c = await self.get_character_from_json(user)
             for i in range(num):
@@ -317,20 +319,20 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         assert isinstance(rarity, str) or rarity is None
         assert isinstance(slot, str) or slot is None
         if not await self.allow_in_dm(ctx):
-            return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
+            raise AdventureCheckFailure(_("This command is not available in DM's on this bot."))
         if not ctx.invoked_subcommand:
             c = await self.get_character_from_json(ctx.author)
             if rarity:
                 rarity = rarity.lower()
                 if rarity not in RARITIES:
-                    return await smart_embed(
-                        ctx, _("{} is not a valid rarity, select one of {}").format(rarity, humanize_list(RARITIES)),
+                    raise AdventureCheckFailure(
+                        _("{} is not a valid rarity, select one of {}").format(rarity, humanize_list(RARITIES)),
                     )
             if slot:
                 slot = slot.lower()
                 if slot not in ORDER:
-                    return await smart_embed(
-                        ctx, _("{} is not a valid slot, select one of {}").format(slot, humanize_list(ORDER)),
+                    raise AdventureCheckFailure(
+                        _("{} is not a valid slot, select one of {}").format(slot, humanize_list(ORDER))
                     )
 
             backpack_contents = _("{author}'s backpack \n\n{backpack}\n").format(
@@ -361,21 +363,19 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         """
         assert isinstance(rarity, str) or rarity is None
         assert isinstance(slot, str) or slot is None
-        if not await self.allow_in_dm(ctx):
-            return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
         if not ctx.invoked_subcommand:
             c = await self.get_character_from_json(ctx.author)
             if rarity:
                 rarity = rarity.lower()
                 if rarity not in RARITIES:
-                    return await smart_embed(
-                        ctx, _("{} is not a valid rarity, select one of {}").format(rarity, humanize_list(RARITIES)),
+                    raise AdventureCheckFailure(
+                        _("{} is not a valid rarity, select one of {}").format(rarity, humanize_list(RARITIES)),
                     )
             if slot:
                 slot = slot.lower()
                 if slot not in ORDER:
-                    return await smart_embed(
-                        ctx, _("{} is not a valid slot, select one of {}").format(slot, humanize_list(ORDER)),
+                    raise AdventureCheckFailure(
+                        _("{} is not a valid slot, select one of {}").format(slot, humanize_list(ORDER)),
                     )
 
             backpack_contents = _("{author}'s backpack \n\n{backpack}\n").format(
@@ -413,21 +413,20 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         """
         assert isinstance(rarity, str) or rarity is None
         assert isinstance(slot, str) or slot is None
-        if not await self.allow_in_dm(ctx):
-            return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
+
         if not ctx.invoked_subcommand:
             c = await self.get_character_from_json(ctx.author)
             if rarity:
                 rarity = rarity.lower()
                 if rarity not in RARITIES:
-                    return await smart_embed(
-                        ctx, _("{} is not a valid rarity, select one of {}").format(rarity, humanize_list(RARITIES)),
+                    raise AdventureCheckFailure(
+                        _("{} is not a valid rarity, select one of {}").format(rarity, humanize_list(RARITIES)),
                     )
             if slot:
                 slot = slot.lower()
                 if slot not in ORDER:
-                    return await smart_embed(
-                        ctx, _("{} is not a valid slot, select one of {}").format(slot, humanize_list(ORDER)),
+                    raise AdventureCheckFailure(
+                        _("{} is not a valid slot, select one of {}").format(slot, humanize_list(ORDER)),
                     )
 
             backpack_contents = _("{author}'s backpack \n\n{backpack}\n").format(
@@ -462,8 +461,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         """Equip an item from your backpack."""
         assert isinstance(equip_item, Item)
         if self.in_adventure(ctx):
-            return await smart_embed(
-                ctx, _("You tried to equip an item but the monster ahead of you commands your attention."),
+            raise AdventureCheckFailure(
+                _("You tried to equip an item but the monster ahead of you commands your attention."),
             )
         async with self.get_lock(ctx.author):
             c = await self.get_character_from_json(ctx.author)
@@ -472,8 +471,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 equiplevel = 0
 
             if not can_equip(c, equip_item):
-                return await smart_embed(
-                    ctx, _("You need to be level `{level}` to equip this item.").format(level=equiplevel),
+                raise AdventureCheckFailure(
+                    _("You need to be level `{level}` to equip this item.").format(level=equiplevel),
                 )
 
             equip = c.backpack.get(equip_item.name)
@@ -511,8 +510,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         """
         assert isinstance(backpack_item, Item)
         if self.in_adventure(ctx):
-            return await smart_embed(
-                ctx, _("You tried to disassemble an item but the monster ahead of you commands your attention."),
+            raise AdventureCheckFailure(
+                _("You tried to disassemble an item but the monster ahead of you commands your attention."),
             )
         async with self.get_lock(ctx.author):
             character = await self.get_character_from_json(ctx.author)
@@ -522,7 +521,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 return
 
             if item.rarity != "set":
-                return await smart_embed(ctx, _("You can only disassemble set items."))
+                raise AdventureCheckFailure(_("You can only disassemble set items."))
             if character.heroclass["name"] != "Tinkerer":
                 roll = random.randint(0, 1)
             else:
@@ -562,22 +561,22 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         assert isinstance(rarity, str) or rarity is None
         assert isinstance(slot, str) or slot is None
         if self.in_adventure(ctx):
-            return await smart_embed(
-                ctx, _("You tried to go sell your items but the monster ahead is not allowing you to leave."),
+            raise AdventureCheckFailure(
+                _("You tried to go sell your items but the monster ahead is not allowing you to leave."),
             )
         if rarity:
             rarity = rarity.lower()
             if rarity not in RARITIES:
-                return await smart_embed(
-                    ctx, _("{} is not a valid rarity, select one of {}").format(rarity, humanize_list(RARITIES)),
+                raise AdventureCheckFailure(
+                    _("{} is not a valid rarity, select one of {}").format(rarity, humanize_list(RARITIES)),
                 )
             if rarity.lower() in ["set", "forged"]:
-                return await smart_embed(ctx, _("You cannot sell `{rarity}` rarity items.").format(rarity=rarity))
+                raise AdventureCheckFailure(_("You cannot sell `{rarity}` rarity items.").format(rarity=rarity))
         if slot:
             slot = slot.lower()
             if slot not in ORDER:
-                return await smart_embed(
-                    ctx, _("{} is not a valid slot, select one of {}").format(slot, humanize_list(ORDER)),
+                raise AdventureCheckFailure(
+                    _("{} is not a valid slot, select one of {}").format(slot, humanize_list(ORDER)),
                 )
 
         if level and level.sign == "+":
@@ -681,8 +680,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         """Sell an item from your backpack."""
 
         if self.in_adventure(ctx):
-            return await smart_embed(
-                ctx, _("You tried to go sell your items but the monster ahead is not allowing you to leave."),
+            raise AdventureCheckFailure(
+                _("You tried to go sell your items but the monster ahead is not allowing you to leave."),
             )
         if item.rarity == "forged":
             ctx.command.reset_cooldown(ctx)
@@ -746,8 +745,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 _("You take the item and pass it from one hand to the other. Congratulations, you traded yourself."),
             )
         if self.in_adventure(ctx):
-            return await smart_embed(
-                ctx, _("You tried to trade an item to a party member but the monster ahead commands your attention."),
+            raise AdventureCheckFailure(
+                _("You tried to trade an item to a party member but the monster ahead commands your attention."),
             )
         if self.in_adventure(user=buyer):
             return await smart_embed(
@@ -758,8 +757,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             )
         c = await self.get_character_from_json(ctx.author)
         if not any([x for x in c.backpack if item.name.lower() == x.lower()]):
-            return await smart_embed(
-                ctx,
+            raise AdventureCheckFailure(
                 _("**{author}**, you have to specify an item from your backpack to trade.").format(
                     author=self.escape(ctx.author.display_name)
                 ),
@@ -771,7 +769,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 _(
                     "**{author}**, I found multiple items ({items}) "
                     "matching that name in your backpack.\nPlease be more specific."
-                ).format(author=self.escape(ctx.author.display_name), items=humanize_list([x.name for x in lookup]),),
+                ).format(author=self.escape(ctx.author.display_name), items=humanize_list([x.name for x in lookup])),
             )
             return
         if any([x for x in lookup if x.rarity == "forged"]):
@@ -796,7 +794,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         else:
             item = lookup[0]
             hand = item.slot[0] if len(item.slot) < 2 else "two handed"
-            currency_name = await bank.get_currency_name(ctx.guild,)
+            currency_name = await bank.get_currency_name(ctx.guild)
             if str(currency_name).startswith("<"):
                 currency_name = "credits"
             trade_talk = box(
@@ -838,8 +836,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         if await bank.can_spend(buyer, asking):
                             buy_user = await self.get_character_from_json(ctx.author)
                             if buy_user.rebirths + 1 < c.rebirths:
-                                return await smart_embed(
-                                    ctx,
+                                raise AdventureCheckFailure(
                                     _(
                                         "You can only trade with people that are the same "
                                         "rebirth level, one rebirth level less than you, "
@@ -896,15 +893,14 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     async def rebirth(self, ctx: Context):
         """Resets your character level and increases your rebirths by 1."""
         if self.in_adventure(ctx):
-            return await smart_embed(ctx, _("You tried to rebirth but the monster ahead is commanding your attention."))
-        if not await self.allow_in_dm(ctx):
-            return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
+            raise AdventureCheckFailure(_("You tried to rebirth but the monster ahead is commanding your attention."))
+
         async with self.get_lock(ctx.author):
             c = await self.get_character_from_json(ctx.author)
             if c.lvl < c.maxlevel:
-                return await smart_embed(ctx, _("You need to be level `{c.maxlevel}` to rebirth.").format(c=c))
+                raise AdventureCheckFailure( _("You need to be level `{c.maxlevel}` to rebirth.").format(c=c))
             if not c.last_currency_check + 10 < time.time():
-                return await smart_embed(ctx, _("You need to wait a little before rebirthing.").format(c=c))
+                raise AdventureCheckFailure(_("You need to wait a little before rebirthing.").format(c=c))
             if not await bank.is_global():
                 rebirth_cost = await self.config.guild(ctx.guild).rebirth_cost()
             else:
@@ -913,20 +909,18 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             current_balance = c.bal
             last_known_currency = c.last_known_currency
             if last_known_currency and current_balance / last_known_currency < 0.25:
-                currency_name = await bank.get_currency_name(ctx.guild,)
-                return await smart_embed(
-                    ctx,
+                currency_name = await bank.get_currency_name(ctx.guild)
+                raise AdventureCheckFailure(
                     _(
                         "You tried to get rid of all your {currency_name} -- tsk tsk, "
                         "once you get back up to {cur} {currency_name} try again."
-                    ).format(currency_name=currency_name, cur=humanize_number(last_known_currency),),
+                    ).format(currency_name=currency_name, cur=humanize_number(last_known_currency)),
                 )
             else:
                 has_fund = await has_funds(ctx.author, rebirthcost)
             if not has_fund:
-                currency_name = await bank.get_currency_name(ctx.guild,)
-                return await smart_embed(
-                    ctx, _("You need more {currency_name} to be able to rebirth.").format(currency_name=currency_name),
+                currency_name = await bank.get_currency_name(ctx.guild)
+                raise AdventureCheckFailure( _("You need more {currency_name} to be able to rebirth.").format(currency_name=currency_name),
                 )
             space = "\N{EN SPACE}"
             open_msg = await smart_embed(
@@ -951,7 +945,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
             except asyncio.TimeoutError:
                 await self._clear_react(open_msg)
-                return await smart_embed(ctx, "I can't wait forever, you know.")
+                raise AdventureCheckFailure(_("I can't wait forever, you know."))
             else:
                 if not pred.result:
                     await open_msg.edit(
@@ -963,7 +957,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
                 c = await self.get_character_from_json(ctx.author)
                 if c.lvl < c.maxlevel:
-                    return await smart_embed(ctx, _("You need to be level `{c.maxlevel}` to rebirth.").format(c=c))
+                    raise AdventureCheckFailure(_("You need to be level `{c.maxlevel}` to rebirth.").format(c=c))
                 bal = await bank.get_balance(ctx.author)
                 if bal >= 1000:
                     withdraw = int((bal - 1000) * (rebirth_cost / 100.0))
@@ -1063,8 +1057,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     @loadout.command(name="save")
     async def save_loadout(self, ctx: Context, name: str):
         """Save your current equipment as a loadout."""
-        if not await self.allow_in_dm(ctx):
-            return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
+
         name = name.lower()
         async with self.get_lock(ctx.author):
             c = await self.get_character_from_json(ctx.author)
@@ -1091,8 +1084,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     @loadout.command(name="delete", aliases=["del", "rem", "remove"])
     async def remove_loadout(self, ctx: Context, name: str):
         """Delete a saved loadout."""
-        if not await self.allow_in_dm(ctx):
-            return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
+
         async with self.get_lock(ctx.author):
             name = name.lower()
             c = await self.get_character_from_json(ctx.author)
@@ -1118,19 +1110,16 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     @commands.bot_has_permissions(add_reactions=True)
     async def show_loadout(self, ctx: Context, name: str = None):
         """Show saved loadouts."""
-        if not await self.allow_in_dm(ctx):
-            return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
+
         c = await self.get_character_from_json(ctx.author)
         if not c.loadouts:
-            return await smart_embed(
-                ctx,
+            raise AdventureCheckFailure(
                 _("**{author}**, you don't have any loadouts saved.").format(
                     author=self.escape(ctx.author.display_name)
                 ),
             )
         if name is not None and name.lower() not in c.loadouts:
-            return await smart_embed(
-                ctx,
+            raise AdventureCheckFailure(
                 _("**{author}**, you don't have a loadout named {name}.").format(
                     author=self.escape(ctx.author.display_name), name=name
                 ),
@@ -1155,22 +1144,16 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     async def equip_loadout(self, ctx: Context, name: str):
         """Equip a saved loadout."""
         if self.in_adventure(ctx):
-            ctx.command.reset_cooldown(ctx)
-            return await smart_embed(
-                ctx, _("You tried to magically equip multiple items at once, but the monster ahead nearly killed you."),
+            raise AdventureCheckFailure(
+                _("You tried to magically equip multiple items at once, but the monster ahead nearly killed you.")
             )
-        if not await self.allow_in_dm(ctx):
-            return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
+
         name = name.lower()
         async with self.get_lock(ctx.author):
             c = await self.get_character_from_json(ctx.author)
             if name not in c.loadouts:
-                ctx.command.reset_cooldown(ctx)
-                return await smart_embed(
-                    ctx,
-                    _("**{author}**, you don't have a loadout named {name}.").format(
-                        author=self.escape(ctx.author.display_name), name=name
-                    ),
+                raise AdventureCheckFailure(_("**{author}**, you don't have a loadout named {name}.").format(
+                    author=self.escape(ctx.author.display_name), name=name)
                 )
             else:
                 c = await c.equip_loadout(name)
@@ -1201,19 +1184,12 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     @loadout.command(name="update")
     async def update_loadout(self, ctx: Context, name: str):
         """Updates specified loadout with current equipments."""
-
-        if not await self.allow_in_dm(ctx):
-            return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
-
         async with self.get_lock(ctx.author):
             name = name.lower()
             c = await self.get_character_from_json(ctx.author)
             if name not in c.loadouts:
-                await smart_embed(
-                    ctx,
-                    _("**{author}**, you don't have a loadout named {name}.").format(
-                        author=self.escape(ctx.author.display_name), name=name
-                    ),
+                raise AdventureCheckFailure(_("**{author}**, you don't have a loadout named {name}.").format(
+                    author=self.escape(ctx.author.display_name), name=name)
                 )
                 return
             else:
@@ -1225,6 +1201,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     _("**{author}**, {name} has been updated with your current equipment!").format(
                         author=self.escape(ctx.author.display_name), name=name
                     ),
+                    success=True
                 )
 
     @commands.group()
@@ -1240,17 +1217,19 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         Unless the user's balance is under 1k, users that rebirth will be left with the base of 1k credits plus the remaining credit percentage after the rebirth charge.
         """
         if percentage < 0 or percentage > 100:
-            return await smart_embed(ctx, _("Percentage has to be between 0 and 100."))
+            raise AdventureCheckFailure(_("Percentage has to be between 0 and 100."))
         if not await bank.is_global():
             await self.config.guild(ctx.guild).rebirth_cost.set(percentage)
             await smart_embed(
                 ctx, _("I will now charge {0:.0%} of the user's balance for a rebirth.").format(percentage / 100),
+                success=True
             )
         else:
             await self.config.rebirth_cost.set(percentage)
             await smart_embed(
                 ctx,
                 _("I will now charge {0:.0%} of the user's global balance for a rebirth.").format(percentage / 100),
+                success=True
             )
 
     @adventureset.command()
@@ -1259,10 +1238,10 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         """[Admin] Lock carts to a specific text channel."""
         if room is None:
             await self.config.guild(ctx.guild).cartroom.set(None)
-            return await smart_embed(ctx, _("Done, carts will be able to appear in any text channel the bot can see."))
+            return await smart_embed(ctx, _("Done, carts will be able to appear in any text channel the bot can see."), success=True)
 
         await self.config.guild(ctx.guild).cartroom.set(room.id)
-        await smart_embed(ctx, _("Done, carts will only appear in {room.mention}.").format(room=room))
+        await smart_embed(ctx, _("Done, carts will only appear in {room.mention}.").format(room=room), success=True)
 
     @adventureset.group(name="locks")
     @commands.bot_has_permissions(add_reactions=True)
@@ -1292,6 +1271,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             self._daily_bonus = daily_bonus_data.copy()
         await smart_embed(
             ctx, _("Daily bonus for `{0}` has been set to: {1:.0%}").format(day_text.title(), percentage),
+            success=True
         )
 
     @commands.guild_only()
@@ -1308,7 +1288,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         """[Owner] Set whether or not adventurers are restricted to one adventure at a time."""
         toggle = await self.config.restrict()
         await self.config.restrict.set(not toggle)
-        await smart_embed(ctx, _("Adventurers restricted to one adventure at a time: {}").format(not toggle))
+        await smart_embed(ctx, _("Adventurers restricted to one adventure at a time: {}").format(not toggle), success=True)
 
     @adventureset.command()
     @commands.is_owner()
@@ -1318,7 +1298,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         await self.config.separate_economy.set(not toggle)
         self._separate_economy = not toggle
         await smart_embed(
-            ctx, _("Adventurer currency is: **{}**").format(_("Separated" if not toggle else _("Unified")))
+            ctx, _("Adventurer currency is: **{}**").format(_("Separated" if not toggle else _("Unified"))),
+            success=True
         )
 
     @adventureset.group(name="economy")
@@ -1345,7 +1326,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         await self.config.tax_brackets.set(new_taxes)
         headers = ["Tax %", "Tax Threshold"]
         await smart_embed(
-            ctx, box(tabulate([(f"{v:.2%}", humanize_number(int(k))) for k, v in new_taxes.items()], headers=headers))
+            ctx, box(tabulate([(f"{v:.2%}", humanize_number(int(k))) for k, v in new_taxes.items()], headers=headers)),
+            success=True
         )
 
     @commands.is_owner()
@@ -1357,7 +1339,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         **rate_out**: Is how much gold is needed to convert to 1 bank credit. Default is 11
         """
         if rate_in < 0 or rate_out < 0:
-            return await smart_embed(ctx, _("You are evil ... please DM me your phone number we need to hangout."))
+            raise AdventureCheckFailure(_("You are evil ... please DM me your phone number we need to hangout."))
         await self.config.to_conversion_rate.set(rate_in)
         await self.config.from_conversion_rate.set(rate_out)
         await smart_embed(
@@ -1368,13 +1350,14 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 rate_out=humanize_number(rate_out),
                 a_name=await bank.get_currency_name(ctx.guild),
             ),
+            success=True
         )
 
     @commands_adventureset_economy.command(name="maxwithdraw")
     async def commands_adventureset_economy_maxwithdraw(self, ctx: Context, *, amount: int):
         """[Admin] Set how much players are allowed to withdraw."""
         if amount < 0:
-            return await smart_embed(ctx, _("You are evil ... please DM me your phone number we need to hangout."))
+            raise AdventureCheckFailure(_("You are evil ... please DM me your phone number we need to hangout."))
         if await bank.is_global(_forced=True):
             await self.config.max_allowed_withdraw.set(amount)
         else:
@@ -1383,7 +1366,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             ctx,
             _(
                 "Adventurers will be able to withdraw up to {amount} {name} from their adventure bank and deposit into their bot economy."
-            ).format(name=await bank.get_currency_name(ctx.guild, _forced=True), amount=humanize_number(amount),),
+            ).format(name=await bank.get_currency_name(ctx.guild, _forced=True), amount=humanize_number(amount)),
+            success=True
         )
 
     @commands_adventureset_economy.command(name="withdraw")
@@ -1402,6 +1386,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             _("Adventurers are now {state} to withdraw money from adventure currency.").format(
                 state=_("allowed") if not state else _("disallowed")
             ),
+            success=True
         )
 
     @adventureset.command(name="advcooldown", hidden=True)
@@ -1413,11 +1398,12 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         Default is 120 seconds.
         """
         if time_in_seconds < 30:
-            return await smart_embed(ctx, _("Cooldown cannot be set to less than 30 seconds."))
+            raise AdventureCheckFailure(_("Cooldown cannot be set to less than 30 seconds."))
 
         await self.config.guild(ctx.guild).cooldown_timer_manual.set(time_in_seconds)
         await smart_embed(
             ctx, _("Adventure cooldown set to {cooldown} seconds.").format(cooldown=time_in_seconds),
+            success=True
         )
 
     @adventureset.command()
@@ -1440,7 +1426,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         """[Admin] Set whether or not to use embeds for the adventure game."""
         toggle = await self.config.guild(ctx.guild).embed()
         await self.config.guild(ctx.guild).embed.set(not toggle)
-        await smart_embed(ctx, _("Embeds: {}").format(not toggle))
+        await smart_embed(ctx, _("Embeds: {}").format(not toggle), success=True)
 
     @adventureset.command(aliases=["chests"])
     @commands.is_owner()
@@ -1448,7 +1434,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         """[Admin] Set whether or not to sell chests in the cart."""
         toggle = await self.config.enable_chests()
         await self.config.enable_chests.set(not toggle)
-        await smart_embed(ctx, _("Carts can sell chests: {}").format(not toggle))
+        await smart_embed(ctx, _("Carts can sell chests: {}").format(not toggle), success=True)
 
     @adventureset.command()
     @commands.admin_or_permissions(administrator=True)
@@ -1468,12 +1454,12 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         """
         time_delta = parse_timedelta(time)
         if time_delta is None:
-            return await smart_embed(ctx, _("You must supply a amount and time unit like `120 seconds`."))
+            raise AdventureCheckFailure(_("You must supply a amount and time unit like `120 seconds`."))
         if time_delta.total_seconds() < 600:
             cartname = await self.config.guild(ctx.guild).cart_name()
             if not cartname:
                 cartname = await self.config.cart_name()
-            return await smart_embed(ctx, _("{} doesn't have the energy to return that often.").format(cartname))
+            raise AdventureCheckFailure(_("{} doesn't have the energy to return that often.").format(cartname))
         await self.config.guild(ctx.guild).cart_timeout.set(time_delta.seconds)
         await ctx.tick()
 
@@ -1482,7 +1468,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     async def clear_user(self, ctx: Context, *, user: discord.User):
         """[Owner] Lets you clear a users entire character sheet."""
         await self.config.user(user).clear()
-        await smart_embed(ctx, _("{user}'s character sheet has been erased.").format(user=user))
+        await smart_embed(ctx, _("{user}'s character sheet has been erased.").format(user=user), success=True)
 
     @adventureset.command(name="remove")
     @commands.is_owner()
@@ -1507,9 +1493,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 try:
                     item = c.backpack[full_item_name]
                 except KeyError:
-                    return await smart_embed(
-                        ctx, _("{} does not have an item named `{}`.").format(user, full_item_name)
-                    )
+                    raise AdventureCheckFailure(_("{} does not have an item named `{}`.").format(user, full_item_name))
             with contextlib.suppress(KeyError):
                 del c.backpack[item.name]
             await self.config.user(user).set(await c.to_json(self.config))
@@ -1528,12 +1512,11 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         """[Owner] Change the theme for adventure."""
         if theme == "default":
             await self.config.theme.set("default")
-            await smart_embed(ctx, _("Going back to the default theme."))
+            await smart_embed(ctx, _("Going back to the default theme."), success=True)
             await self.initialize()
             return
         if theme not in os.listdir(cog_data_path(self)):
-            await smart_embed(ctx, _("That theme pack does not exist!"))
-            return
+            raise AdventureCheckFailure(_("That theme pack does not exist!"))
         good_files = [
             "as_monsters.json",
             "attribs.json",
@@ -1554,6 +1537,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         if missing_files:
             await smart_embed(
                 ctx, _("That theme pack is missing the following files: {}.").format(humanize_list(missing_files)),
+                success=False
             )
             return
         else:
@@ -1581,8 +1565,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         assert isinstance(theme_data, dict)
         theme = theme_data.pop("theme", None)
         if theme != "default" and theme not in os.listdir(cog_data_path(self)):
-            await smart_embed(ctx, _("That theme pack does not exist!"))
-            return
+            raise AdventureCheckFailure(_("That theme pack does not exist!"))
         updated = False
         monster = theme_data.pop("name", None)
         async with self.config.themes.all() as config_data:
@@ -1602,7 +1585,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             "Physical defence: [{pdef}]\n"
             "Magical defence:  [{mdef}]\n"
             "Is a boss:        [{boss}]```"
-        ).format(monster=monster, theme=theme, status=_("added to") if not updated else _("updated in"), **theme_data,)
+        ).format(monster=monster, theme=theme, status=_("added to") if not updated else _("updated in"), **theme_data)
 
         embed = discord.Embed(description=text, colour=await ctx.embed_colour())
         embed.set_image(url=image)
@@ -1617,8 +1600,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         assert isinstance(pet_data, dict)
         theme = pet_data.pop("theme", None)
         if theme != "default" and theme not in os.listdir(cog_data_path(self)):
-            await smart_embed(ctx, _("That theme pack does not exist!"))
-            return
+            raise AdventureCheckFailure(_("That theme pack does not exist!"))
         updated = False
         pet = pet_data.pop("name", None)
         async with self.config.themes.all() as config_data:
@@ -1654,8 +1636,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     async def themeset_delete_monster(self, ctx: Context, theme: str, *, monster: str):
         """[Owner] Remove a monster object in the specified theme."""
         if theme != "default" and theme not in os.listdir(cog_data_path(self)):
-            await smart_embed(ctx, _("That theme pack does not exist!"))
-            return
+            raise AdventureCheckFailure(_("That theme pack does not exist!"))
         async with self.config.themes.all() as config_data:
             if theme not in config_data:
                 config_data[theme] = {"monsters": {}}
@@ -1665,18 +1646,16 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 del config_data[theme]["monsters"][monster]
             else:
                 text = _("Monster: `{monster}` does not exist in `{theme}` theme").format(monster=monster, theme=theme)
-                await smart_embed(ctx, text)
-                return
+                raise AdventureCheckFailure(text)
 
         text = _("Monster: `{monster}` has been deleted from the `{theme}` theme").format(monster=monster, theme=theme)
-        await smart_embed(ctx, text)
+        await smart_embed(ctx, text, success=True)
 
     @themeset_delete.command(name="pet")
     async def themeset_delete_pet(self, ctx: Context, theme: str, *, pet: str):
         """[Owner] Remove a pet object in the specified theme."""
         if theme != "default" and theme not in os.listdir(cog_data_path(self)):
-            await smart_embed(ctx, _("That theme pack does not exist!"))
-            return
+            raise AdventureCheckFailure(_("That theme pack does not exist!"))
         async with self.config.themes.all() as config_data:
             if theme not in config_data:
                 config_data[theme] = {"pet": {}}
@@ -1686,11 +1665,10 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 del config_data[theme]["pet"][pet]
             else:
                 text = _("Pet: `{pet}` does not exist in `{theme}` theme").format(pet=pet, theme=theme)
-                await smart_embed(ctx, text)
-                return
+                raise AdventureCheckFailure(text)
 
         text = _("Pet: `{pet}` has been deleted from the `{theme}` theme").format(pet=pet, theme=theme)
-        await smart_embed(ctx, text)
+        await smart_embed(ctx, text, success=True)
 
     @themeset.group(name="list", aliases=["show"])
     async def themeset_list(self, ctx: Context):
@@ -1700,11 +1678,10 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     async def themeset_list_monster(self, ctx: Context, *, theme: str):
         """[Admin] Show monster objects in the specified theme."""
         if theme != "default" and theme not in os.listdir(cog_data_path(self)):
-            await smart_embed(ctx, _("That theme pack does not exist!"))
-            return
+            raise AdventureCheckFailure(_("That theme pack does not exist!"))
         async with self.config.themes.all() as config_data:
             if theme not in config_data:
-                return await smart_embed(ctx, _("No custom monsters exist in this theme"))
+                raise AdventureCheckFailure(_("No custom monsters exist in this theme"))
             monster_data = config_data.get(theme, {}).get("monsters", {})
         embed_list = []
         for monster, monster_stats in monster_data.items():
@@ -1727,11 +1704,10 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     async def themeset_list_pet(self, ctx: Context, *, theme: str):
         """[Admin] Show pet objects in the specified theme."""
         if theme != "default" and theme not in os.listdir(cog_data_path(self)):
-            await smart_embed(ctx, _("That theme pack does not exist!"))
-            return
+            raise AdventureCheckFailure(_("That theme pack does not exist!"))
         async with self.config.themes.all() as config_data:
             if theme not in config_data:
-                return await smart_embed(ctx, _("No custom monsters exist in this theme"))
+                raise AdventureCheckFailure(_("No custom monsters exist in this theme"))
             monster_data = config_data.get(theme, {}).get("pet", {})
         embed_list = []
         for pet, pet_stats in monster_data.items():
@@ -1775,11 +1751,12 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             new_channels = channel_list.remove(channel.id)
             await smart_embed(
                 ctx, _("The {} channel has been removed from the cart delivery list.").format(channel),
+                success=True
             )
             return await self.config.guild(ctx.guild).cart_channels.set(new_channels)
         else:
             channel_list.append(channel.id)
-            await smart_embed(ctx, _("The {} channel has been added to the cart delivery list.").format(channel))
+            await smart_embed(ctx, _("The {} channel has been added to the cart delivery list.").format(channel), success=True)
             await self.config.guild(ctx.guild).cart_channels.set(channel_list)
 
     @commands.guild_only()
@@ -1861,8 +1838,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
         # Thanks to flare#0001 for the idea and writing the first instance of this
         if self.in_adventure(ctx):
-            return await smart_embed(
-                ctx,
+            raise AdventureCheckFailure(
                 _(
                     "You tried to magically combine some of your loot chests "
                     "but the monster ahead is commanding your attention."
@@ -1875,7 +1851,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         rebirth_rare = 8
         rebirth_epic = 10
         if amount < 1:
-            return await smart_embed(ctx, _("Nice try :smirk:"))
+            raise AdventureCheckFailure(_("Nice try :smirk:"))
         if amount > 1:
             plural = "s"
         else:
@@ -1884,24 +1860,17 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             c = await self.get_character_from_json(ctx.author)
 
             if box_rarity.lower() == "rare" and c.rebirths < rebirth_rare:
-                return await smart_embed(
-                    ctx,
-                    ("**{}**, you need to have {} or more rebirths to convert rare treasure chests.").format(
-                        self.escape(ctx.author.display_name), rebirth_rare
-                    ),
-                )
+                raise AdventureCheckFailure(_("**{}**, you need to have {} or more rebirths to convert rare treasure chests.").format(
+                    self.escape(ctx.author.display_name), rebirth_rare
+                ))
             elif box_rarity.lower() == "epic" and c.rebirths < rebirth_epic:
-                return await smart_embed(
-                    ctx,
-                    ("**{}**, you need to have {} or more rebirths to convert epic treasure chests.").format(
-                        self.escape(ctx.author.display_name), rebirth_epic
-                    ),
-                )
+                raise AdventureCheckFailure(_("**{}**, you need to have {} or more rebirths to convert epic treasure chests.").format(
+                    self.escape(ctx.author.display_name), rebirth_epic
+                ))
             elif c.rebirths < 2:
-                return await smart_embed(
-                    ctx,
-                    _("**{c}**, you need to 3 rebirths to use this.").format(c=self.escape(ctx.author.display_name)),
-                )
+                raise AdventureCheckFailure(_("**{c}**, you need to 3 rebirths to use this.").format(
+                    c=self.escape(ctx.author.display_name),
+                ))
 
             if box_rarity.lower() == "normal" and c.rebirths >= rebirth_normal:
                 if c.treasure[0] >= (normalcost * amount):
@@ -1931,12 +1900,9 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     )
                     await self.config.user(ctx.author).set(await c.to_json(self.config))
                 else:
-                    await smart_embed(
-                        ctx,
-                        _("**{author}**, you do not have {amount} normal treasure chests to convert.").format(
-                            author=self.escape(ctx.author.display_name), amount=humanize_number(normalcost * amount),
-                        ),
-                    )
+                    raise AdventureCheckFailure(_("**{author}**, you do not have {amount} normal treasure chests to convert.").format(
+                        author=self.escape(ctx.author.display_name), amount=humanize_number(normalcost * amount),
+                    ))
             elif box_rarity.lower() == "rare" and c.rebirths >= rebirth_rare:
                 if c.treasure[1] >= (rarecost * amount):
                     c.treasure[1] -= rarecost * amount
@@ -1965,12 +1931,9 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     )
                     await self.config.user(ctx.author).set(await c.to_json(self.config))
                 else:
-                    await smart_embed(
-                        ctx,
-                        _("{author}, you do not have {amount} rare treasure chests to convert.").format(
-                            author=ctx.author.mention, amount=humanize_number(rarecost * amount)
-                        ),
-                    )
+                    raise AdventureCheckFailure(_("{author}, you do not have {amount} rare treasure chests to convert.").format(
+                        author=ctx.author.mention, amount=humanize_number(rarecost * amount)
+                    ))
             elif box_rarity.lower() == "epic" and c.rebirths >= rebirth_epic:
                 if c.treasure[2] >= (epiccost * amount):
                     c.treasure[2] -= epiccost * amount
@@ -1999,29 +1962,21 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     )
                     await self.config.user(ctx.author).set(await c.to_json(self.config))
                 else:
-                    await smart_embed(
-                        ctx,
-                        _("**{author}**, you do not have {amount} epic treasure chests to convert.").format(
-                            author=self.escape(ctx.author.display_name), amount=humanize_number(epiccost * amount),
-                        ),
-                    )
+                    raise AdventureCheckFailure(_("**{author}**, you do not have {amount} epic treasure chests to convert.").format(
+                        author=self.escape(ctx.author.display_name), amount=humanize_number(epiccost * amount),
+                    ))
             else:
-                await smart_embed(
-                    ctx,
-                    _("**{}**, please select between normal, rare, or epic treasure chests to convert.").format(
-                        self.escape(ctx.author.display_name)
-                    ),
+                raise AdventureCheckFailure(_("**{}**, please select between normal, rare, or epic treasure chests to convert.").format(
+                    self.escape(ctx.author.display_name))
                 )
 
     @commands.command()
     async def equip(self, ctx: Context, *, item: EquipableItemConverter):
         """This equips an item from your backpack."""
         if self.in_adventure(ctx):
-            return await smart_embed(
-                ctx, _("You tried to equip your item but the monster ahead nearly decapitated you."),
+            raise AdventureCheckFailure(
+                _("You tried to equip your item but the monster ahead nearly decapitated you.")
             )
-        if not await self.allow_in_dm(ctx):
-            return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
 
         await ctx.invoke(self.backpack_equip, equip_item=item)
 
@@ -2033,14 +1988,12 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         This allows a Tinkerer to forge two items into a device. (1h cooldown)
         """
         if self.in_adventure(ctx):
-            return await smart_embed(ctx, _("You tried to forge an item but there were no forges nearby."))
-        if not await self.allow_in_dm(ctx):
-            return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
+            raise AdventureCheckFailure(_("You tried to forge an item but there were no forges nearby."))
+
         async with self.get_lock(ctx.author):
             c = await self.get_character_from_json(ctx.author)
             if c.heroclass["name"] != "Tinkerer":
-                return await smart_embed(
-                    ctx,
+                raise AdventureCheckFailure(
                     _("**{}**, you need to be a Tinkerer to do this.").format(self.escape(ctx.author.display_name)),
                 )
             else:
@@ -2049,11 +2002,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     c.heroclass["cooldown"] = cooldown_time + 1
                 if c.heroclass["cooldown"] > time.time():
                     cooldown_time = c.heroclass["cooldown"] - time.time()
-                    return await smart_embed(
-                        ctx,
-                        _("This command is on cooldown. Try again in {}").format(
-                            humanize_timedelta(seconds=int(cooldown_time)) if cooldown_time >= 1 else _("1 second")
-                        ),
+                    raise AdventureCheckFailure(_("This command is on cooldown. Try again in {}").format(
+                        humanize_timedelta(seconds=int(cooldown_time)) if cooldown_time >= 1 else _("1 second"))
                     )
                 ascended_forge_msg = ""
                 ignored_rarities = ["forged", "set", "event"]
@@ -2063,11 +2013,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 consumed = []
                 forgeables_items = [str(i) for n, i in c.backpack.items() if i.rarity not in ignored_rarities]
                 if len(forgeables_items) <= 1:
-                    return await smart_embed(
-                        ctx,
-                        _("**{}**, you need at least two forgeable items in your backpack to forge.").format(
-                            self.escape(ctx.author.display_name)
-                        ),
+                    raise AdventureCheckFailure(_("**{}**, you need at least two forgeable items in your backpack to forge.").format(
+                        self.escape(ctx.author.display_name))
                     )
                 forgeables = _("{author}'s forgeables\n\n{bc}\n").format(
                     author=self.escape(ctx.author.display_name), bc=await c.get_backpack(forging=True, clean=True)
@@ -2091,7 +2038,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         new_ctx = await self.bot.get_context(reply)
                         if reply.content.lower() in ["cancel", "exit"]:
                             task.cancel()
-                            return await smart_embed(ctx, _("Forging process has been cancelled."))
+                            raise AdventureCheckFailure(_("Forging process has been cancelled."))
                         with contextlib.suppress(BadArgument):
                             item = None
                             item = await ItemConverter().convert(new_ctx, reply.content)
@@ -2101,7 +2048,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                             wrong_item = _("**{c}**, I could not find that item - check your spelling.").format(
                                 c=self.escape(ctx.author.display_name)
                             )
-                            await smart_embed(ctx, wrong_item)
+                            await smart_embed(ctx, wrong_item, success=False)
                         else:
                             break
                     consumed.append(item)
@@ -2110,13 +2057,10 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         self.escape(ctx.author.display_name)
                     )
                     task.cancel()
-                    return await smart_embed(ctx, timeout_msg)
+                    raise AdventureCheckFailure(timeout_msg)
                 if item.rarity in ["forged", "set"]:
-                    return await smart_embed(
-                        ctx,
-                        _("**{c}**, {item.rarity} items cannot be reforged.").format(
-                            c=self.escape(ctx.author.display_name), item=item
-                        ),
+                    raise AdventureCheckFailure(_("**{c}**, {item.rarity} items cannot be reforged.").format(
+                        c=self.escape(ctx.author.display_name), item=item)
                     )
                 await smart_embed(
                     ctx,
@@ -2132,7 +2076,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                             "message", check=MessagePredicate.same_context(user=ctx.author), timeout=30,
                         )
                         if reply.content.lower() in ["cancel", "exit"]:
-                            return await smart_embed(ctx, _("Forging process has been cancelled."))
+                            raise AdventureCheckFailure(_("Forging process has been cancelled."))
                         new_ctx = await self.bot.get_context(reply)
                         with contextlib.suppress(BadArgument):
                             item = None
@@ -2143,14 +2087,14 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                             wrong_item = _(
                                 "**{c}**, you only own 1 copy of this item and you've already selected it."
                             ).format(c=self.escape(ctx.author.display_name))
-                            await smart_embed(ctx, wrong_item)
+                            raise AdventureCheckFailure(wrong_item)
                             item = None
                             continue
                         if not item:
                             wrong_item = _("**{c}**, I could not find that item - check your spelling.").format(
                                 c=self.escape(ctx.author.display_name)
                             )
-                            await smart_embed(ctx, wrong_item)
+                            raise AdventureCheckFailure(wrong_item)
                         else:
                             break
                     consumed.append(item)
@@ -2158,15 +2102,12 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     timeout_msg = _("I don't have all day you know, **{}**.").format(
                         self.escape(ctx.author.display_name)
                     )
-                    return await smart_embed(ctx, timeout_msg)
+                    return await smart_embed(ctx, timeout_msg, success=False)
                 finally:
                     task.cancel()
                 if item.rarity in ["forged", "set"]:
-                    return await smart_embed(
-                        ctx,
-                        _("**{c}**, {item.rarity} items cannot be reforged.").format(
-                            c=self.escape(ctx.author.display_name), item=item
-                        ),
+                    raise AdventureCheckFailure(_("**{c}**, {item.rarity} items cannot be reforged.").format(
+                        c=self.escape(ctx.author.display_name), item=item)
                     )
                 newitem = await self._to_forge(ctx, consumed, c)
                 for x in consumed:
@@ -2258,7 +2199,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         `[p]give item @locastan "fine dagger" 1 att 1 charisma -1 degrade 100 level rare twohanded`
         """
         if item_name.isnumeric():
-            return await smart_embed(ctx, _("Item names cannot be numbers."))
+            raise AdventureCheckFailure(_("Item names cannot be numbers."))
         item_name = re.sub(r"[^\w ]", "", item_name)
         if user is None:
             user = ctx.author
@@ -2285,15 +2226,14 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             user = ctx.author
         loot_types = ["normal", "rare", "epic", "legendary", "ascended", "set"]
         if loot_type not in loot_types:
-            return await smart_embed(
-                ctx,
+            raise AdventureCheckFailure(
                 (
                     "Valid loot types: `normal`, `rare`, `epic`, `legendary`, `ascended` or `set`: "
                     "ex. `{}give loot normal @locastan` "
                 ).format(ctx.prefix),
             )
         if loot_type in ["legendary", "set", "ascended"] and not await ctx.bot.is_owner(ctx.author):
-            return await smart_embed(ctx, _("You are not worthy to award legendary loot."))
+            raise AdventureCheckFailure(_("You are not worthy to award legendary loot."))
         async with self.get_lock(user):
             c = await self.get_character_from_json(user)
             if loot_type == "rare":
@@ -2337,11 +2277,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         For information on class use: `[p]heroclass classname info`.
         """
         if self.in_adventure(ctx):
-            ctx.command.reset_cooldown(ctx)
-            return await smart_embed(ctx, _("The monster ahead growls menacingly, and will not let you leave."))
-        if not await self.allow_in_dm(ctx):
-            ctx.command.reset_cooldown(ctx)
-            return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
+            raise AdventureCheckFailure(_("The monster ahead growls menacingly, and will not let you leave."))
 
         classes = {
             "Wizard": {
@@ -2421,18 +2357,17 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 ctx.command.reset_cooldown(ctx)
                 return await smart_embed(ctx, f"{classes[clz]['desc']}")
             elif clz not in classes:
-                ctx.command.reset_cooldown(ctx)
-                return await smart_embed(ctx, _("{} may be a class somewhere, but not on my watch.").format(clz))
+                raise AdventureCheckFailure(_("{} may be a class somewhere, but not on my watch.").format(clz))
             elif clz in classes and action is None:
                 async with self.get_lock(ctx.author):
                     bal = await bank.get_balance(ctx.author)
-                    currency_name = await bank.get_currency_name(ctx.guild,)
+                    currency_name = await bank.get_currency_name(ctx.guild)
                     if str(currency_name).startswith("<"):
                         currency_name = "credits"
                     spend = round(bal * 0.2)
                     c = await self.get_character_from_json(ctx.author)
                     if c.heroclass["name"] == clz:
-                        return await smart_embed(ctx, _("You already are a {}.").format(clz))
+                        raise AdventureCheckFailure(_("You already are a {}.").format(clz))
                     class_msg = await ctx.send(
                         box(
                             _("This will cost {spend} {currency_name}. Do you want to continue, {author}?").format(
@@ -2575,12 +2510,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         except ValueError:
                             return await class_msg.edit(content=broke)
                     else:
-                        ctx.command.reset_cooldown(ctx)
-                        await smart_embed(
-                            ctx,
-                            _("**{}**, you need to be at least level 10 to choose a class.").format(
-                                self.escape(ctx.author.display_name)
-                            ),
+                        raise AdventureCheckFailure(_("**{}**, you need to be at least level 10 to choose a class.").format(
+                            self.escape(ctx.author.display_name))
                         )
 
     @staticmethod
@@ -2603,13 +2534,12 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         Use the box rarity type with the command: normal, rare, epic, legendary or set.
         """
         if isinstance(number, int) and ((not self.is_dev(ctx.author) and number > 100) or number < 1):
-            return await smart_embed(ctx, _("Nice try :smirk:."))
+            raise AdventureCheckFailure(_("Nice try :smirk:."))
         if self.in_adventure(ctx):
-            return await smart_embed(
-                ctx, _("You tried to open a loot chest but then realised you left them all back at the inn."),
+            raise AdventureCheckFailure(
+                _("You tried to open a loot chest but then realised you left them all back at the inn.")
             )
-        if not await self.allow_in_dm(ctx):
-            return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
+
         msgs = []
         async with self.get_lock(ctx.author):
             c = await self.get_character_from_json(ctx.author)
@@ -2674,8 +2604,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     number = round(percent * c.treasure[5])
                 redux = 5
             elif box_type != "all":
-                return await smart_embed(
-                    ctx, _("There is talk of a {} treasure chest but nobody ever saw one.").format(box_type),
+                raise AdventureCheckFailure(
+                    _("There is talk of a {} treasure chest but nobody ever saw one.").format(box_type)
                 )
             
             if box_type == "all":
@@ -2685,11 +2615,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 treasure = c.treasure[redux]
 
             if treasure < 1 or treasure < number:
-                await smart_embed(
-                    ctx,
-                    _("**{author}**, you do not have enough {box} treasure chests to open.").format(
-                        author=self.escape(ctx.author.display_name), box=box_type
-                    ),
+                raise AdventureCheckFailure(_("**{author}**, you do not have enough {box} treasure chests to open.").format(
+                    author=self.escape(ctx.author.display_name), box=box_type)
                 )
             else:
                 if number > 1:
@@ -2769,17 +2696,14 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     async def _negaverse(self, ctx: Context, offering: DynamicInt = None):
         """This will send you to fight a nega-member!"""
         if self.in_adventure(ctx):
-            ctx.command.reset_cooldown(ctx)
-            return await smart_embed(
-                ctx, _("You tried to teleport to another dimension but the monster ahead did not give you a chance."),
+            raise AdventureCheckFailure(
+                _("You tried to teleport to another dimension but the monster ahead did not give you a chance.")
             )
 
         bal = await bank.get_balance(ctx.author)
-        currency_name = await bank.get_currency_name(ctx.guild,)
+        currency_name = await bank.get_currency_name(ctx.guild)
         if offering is None:
-            ctx.command.reset_cooldown(ctx)
-            return await smart_embed(
-                ctx,
+            raise AdventureCheckFailure(
                 _(
                     "**{author}**, you need to specify how many "
                     "{currency_name} you are willing to offer to the gods for your success."
@@ -2792,8 +2716,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             offering = round(percent * int(bal))
 
         if offering <= 500 or bal <= 500:
-            ctx.command.reset_cooldown(ctx)
-            return await smart_embed(ctx, _("The gods refuse your pitiful offering."))
+            raise AdventureCheckFailure(_("The gods refuse your pitiful offering."))
         if offering > bal:
             offering = int(bal)
         lock = self.get_lock(ctx.author)
@@ -3020,10 +2943,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         """
         if ctx.invoked_subcommand is None:
             if self.in_adventure(ctx):
-                return await smart_embed(ctx, _("You're too distracted with the monster you are facing."))
+                raise AdventureCheckFailure(_("You're too distracted with the monster you are facing."))
 
-            if not await self.allow_in_dm(ctx):
-                return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
             async with self.get_lock(ctx.author):
                 c = await self.get_character_from_json(ctx.author)
                 if c.heroclass["name"] != "Ranger":
@@ -3049,8 +2970,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         c.heroclass["catch_cooldown"] = cooldown_time + 1
                     if c.heroclass["catch_cooldown"] > time.time():
                         cooldown_time = c.heroclass["catch_cooldown"] - time.time()
-                        return await smart_embed(
-                            ctx,
+                        raise AdventureCheckFailure(
                             _(
                                 "You caught a pet recently, or you are a brand new Ranger. "
                                 "You will be able to go hunting in {}."
@@ -3058,7 +2978,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                                 humanize_timedelta(seconds=int(cooldown_time))
                                 if int(cooldown_time) >= 1
                                 else _("1 second")
-                            ),
+                            )
                         )
                     theme = await self.config.theme()
                     extra_pets = await self.config.themes.all()
@@ -3123,7 +3043,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                                         ),
                                     ]
                                 )
-                                pet_msg3 = box(msg, lang="css",)
+                                pet_msg3 = box(msg, lang="css")
                             else:
                                 pet_msg3 = box(
                                     _("{bonus}\nThey successfully tamed the {pet}.").format(bonus=bonus, pet=pet),
@@ -3135,14 +3055,14 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                             await self.config.user(ctx.author).set(await c.to_json(self.config))
                         elif roll == 1:
                             bonus = _("But they stepped on a twig and scared it away.")
-                            pet_msg3 = box(_("{bonus}\nThe {pet} escaped.").format(bonus=bonus, pet=pet), lang="css",)
+                            pet_msg3 = box(_("{bonus}\nThe {pet} escaped.").format(bonus=bonus, pet=pet), lang="css")
                             await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}{pet_msg4}")
                         else:
                             bonus = ""
-                            pet_msg3 = box(_("{bonus}\nThe {pet} escaped.").format(bonus=bonus, pet=pet), lang="css",)
+                            pet_msg3 = box(_("{bonus}\nThe {pet} escaped.").format(bonus=bonus, pet=pet), lang="css")
                             await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}{pet_msg4}")
                     else:
-                        pet_msg3 = box(_("{bonus}\nThe {pet} escaped.").format(bonus=bonus, pet=pet), lang="css",)
+                        pet_msg3 = box(_("{bonus}\nThe {pet} escaped.").format(bonus=bonus, pet=pet), lang="css")
                         await user_msg.edit(content=f"{pet_msg}\n{pet_msg2}\n{pet_msg3}{pet_msg4}")
 
     @pet.command(name="forage")
@@ -3150,7 +3070,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     async def _forage(self, ctx: Context):
         """Use your pet to forage for items!"""
         if self.in_adventure(ctx):
-            return await smart_embed(ctx, _("You're too distracted with the monster you are facing."))
+            raise AdventureCheckFailure(_("You're too distracted with the monster you are facing."))
         async with self.get_lock(ctx.author):
             c = await self.get_character_from_json(ctx.author)
             if c.heroclass["name"] != "Ranger":
@@ -3171,18 +3091,15 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 await self.config.user(ctx.author).set(await c.to_json(self.config))
             else:
                 cooldown_time = c.heroclass["cooldown"] - time.time()
-                return await smart_embed(
-                    ctx,
-                    _("This command is on cooldown. Try again in {}.").format(
-                        humanize_timedelta(seconds=int(cooldown_time)) if int(cooldown_time) >= 1 else _("1 second")
-                    ),
+                raise AdventureCheckFailure(_("This command is on cooldown. Try again in {}.").format(
+                    humanize_timedelta(seconds=int(cooldown_time)) if int(cooldown_time) >= 1 else _("1 second"))
                 )
 
     @pet.command(name="free")
     async def _free(self, ctx: Context):
         """Free your pet :cry:"""
         if self.in_adventure(ctx):
-            return await smart_embed(ctx, _("You're too distracted with the monster you are facing."))
+            raise AdventureCheckFailure(_("You're too distracted with the monster you are facing."))
         async with self.get_lock(ctx.author):
             c = await self.get_character_from_json(ctx.author)
             if c.heroclass["name"] != "Ranger":
@@ -3204,6 +3121,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             else:
                 return await ctx.send(box(_("You don't have a pet."), lang="css"))
 
+    @can_use_ability()
     @commands.command()
     async def bless(self, ctx: Context):
         """[Cleric Class Only]
@@ -3212,41 +3130,18 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         """
         async with self.get_lock(ctx.author):
             c = await self.get_character_from_json(ctx.author)
-            if c.heroclass["name"] != "Cleric":
-                ctx.command.reset_cooldown(ctx)
-                return await smart_embed(
-                    ctx, _("**{}**, you need to be a Cleric to do this.").format(self.escape(ctx.author.display_name)),
-                )
-            else:
-                if c.heroclass["ability"]:
-                    return await smart_embed(
-                        ctx, _("**{}**, ability already in use.").format(self.escape(ctx.author.display_name)),
-                    )
-                cooldown_time = max(240, (1140 - ((c.luck + c.total_int) * 2)))
-                if "cooldown" not in c.heroclass:
-                    c.heroclass["cooldown"] = cooldown_time + 1
-                if c.heroclass["cooldown"] <= time.time():
-                    c.heroclass["ability"] = True
-                    await self.config.user(ctx.author).set(await c.to_json(self.config))
+            c.heroclass["ability"] = True
 
-                    await smart_embed(
-                        ctx,
-                        _("{bless} **{c}** is starting an inspiring sermon. {bless}").format(
-                            c=self.escape(ctx.author.display_name), bless=self.emojis.skills.bless
-                        ),
-                    )
-                else:
-                    cooldown_time = c.heroclass["cooldown"] - time.time()
-                    return await smart_embed(
-                        ctx,
-                        _(
-                            "Your hero is currently recovering from the last time "
-                            "they used this skill. Try again in {}."
-                        ).format(
-                            humanize_timedelta(seconds=int(cooldown_time)) if int(cooldown_time) >= 1 else _("1 second")
-                        ),
-                    )
+            await self.config.user(ctx.author).set(await c.to_json(self.config))
+            await smart_embed(
+                ctx,
+                _("{bless} **{c}** is starting an inspiring sermon. {bless}").format(
+                    c=self.escape(ctx.author.display_name), bless=self.emojis.skills.bless
+                ),
+                success=True
+            )
 
+    @can_use_ability()
     @commands.command()
     async def rage(self, ctx: Context):
         """[Berserker Class Only]
@@ -3255,41 +3150,18 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         """
         async with self.get_lock(ctx.author):
             c = await self.get_character_from_json(ctx.author)
-            if c.heroclass["name"] != "Berserker":
-                ctx.command.reset_cooldown(ctx)
-                return await smart_embed(
-                    ctx,
-                    _("**{}**, you need to be a Berserker to do this.").format(self.escape(ctx.author.display_name)),
-                )
-            else:
-                if c.heroclass["ability"] is True:
-                    return await smart_embed(
-                        ctx, _("**{}**, ability already in use.").format(self.escape(ctx.author.display_name)),
-                    )
-                cooldown_time = max(240, (1140 - ((c.luck + c.total_att) * 2)))
-                if "cooldown" not in c.heroclass:
-                    c.heroclass["cooldown"] = cooldown_time + 1
-                if c.heroclass["cooldown"] <= time.time():
-                    c.heroclass["ability"] = True
-                    await self.config.user(ctx.author).set(await c.to_json(self.config))
-                    await smart_embed(
-                        ctx,
-                        _("{skill} **{c}** is starting to froth at the mouth... {skill}").format(
-                            c=self.escape(ctx.author.display_name), skill=self.emojis.skills.berserker,
-                        ),
-                    )
-                else:
-                    cooldown_time = c.heroclass["cooldown"] - time.time()
-                    return await smart_embed(
-                        ctx,
-                        _(
-                            "Your hero is currently recovering from the last time "
-                            "they used this skill. Try again in {}."
-                        ).format(
-                            humanize_timedelta(seconds=int(cooldown_time)) if int(cooldown_time) >= 1 else _("1 second")
-                        ),
-                    )
+            c.heroclass["ability"] = True
 
+            await self.config.user(ctx.author).set(await c.to_json(self.config))
+            await smart_embed(
+                ctx,
+                _("{skill} **{c}** is starting to froth at the mouth... {skill}").format(
+                    c=self.escape(ctx.author.display_name), skill=self.emojis.skills.berserker,
+                ),
+                success=True
+            )
+
+    @can_use_ability()
     @commands.command()
     async def focus(self, ctx: Context):
         """[Wizard Class Only]
@@ -3298,41 +3170,18 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         """
         async with self.get_lock(ctx.author):
             c = await self.get_character_from_json(ctx.author)
-            if c.heroclass["name"] != "Wizard":
-                ctx.command.reset_cooldown(ctx)
-                return await smart_embed(
-                    ctx, _("**{}**, you need to be a Wizard to do this.").format(self.escape(ctx.author.display_name)),
-                )
-            else:
-                if c.heroclass["ability"] is True:
-                    return await smart_embed(
-                        ctx, _("**{}**, ability already in use.").format(self.escape(ctx.author.display_name)),
-                    )
-                cooldown_time = max(240, (1140 - ((c.luck + c.total_int) * 2)))
-                if "cooldown" not in c.heroclass:
-                    c.heroclass["cooldown"] = cooldown_time + 1
-                if c.heroclass["cooldown"] <= time.time():
-                    c.heroclass["ability"] = True
+            c.heroclass["ability"] = True
 
-                    await self.config.user(ctx.author).set(await c.to_json(self.config))
-                    await smart_embed(
-                        ctx,
-                        _("{skill} **{c}** is focusing all of their energy... {skill}").format(
-                            c=self.escape(ctx.author.display_name), skill=self.emojis.skills.wizzard,
-                        ),
-                    )
-                else:
-                    cooldown_time = c.heroclass["cooldown"] - time.time()
-                    return await smart_embed(
-                        ctx,
-                        _(
-                            "Your hero is currently recovering from the "
-                            "last time they used this skill. Try again in {}."
-                        ).format(
-                            humanize_timedelta(seconds=int(cooldown_time)) if int(cooldown_time) >= 1 else _("1 second")
-                        ),
-                    )
+            await self.config.user(ctx.author).set(await c.to_json(self.config))
+            await smart_embed(
+                ctx,
+                _("{skill} **{c}** is focusing all of their energy... {skill}").format(
+                    c=self.escape(ctx.author.display_name), skill=self.emojis.skills.wizzard,
+                ),
+                success=True
+            )
 
+    @can_use_ability()
     @commands.command()
     async def music(self, ctx: Context):
         """[Bard Class Only]
@@ -3341,37 +3190,16 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         """
         async with self.get_lock(ctx.author):
             c = await self.get_character_from_json(ctx.author)
-            if c.heroclass["name"] != "Bard":
-                ctx.command.reset_cooldown(ctx)
-                return await smart_embed(
-                    ctx, _("{}, you need to be a Bard to do this.").format(self.escape(ctx.author.display_name)),
-                )
-            else:
-                if c.heroclass["ability"]:
-                    return await smart_embed(
-                        ctx, _("{}, ability already in use.").format(self.escape(ctx.author.display_name)),
-                    )
-                cooldown_time = max(240, (1140 - ((c.luck + c.total_cha) * 2)))
-                if "cooldown" not in c.heroclass:
-                    c.heroclass["cooldown"] = cooldown_time + 1
-                if c.heroclass["cooldown"] <= time.time():
-                    c.heroclass["ability"] = True
-                    await self.config.user(ctx.author).set(await c.to_json(self.config))
-                    await smart_embed(
-                        ctx,
-                        _("{skill} **{c}** is whipping up a performance... {skill}").format(
-                            c=self.escape(ctx.author.display_name), skill=self.emojis.skills.bard
-                        ),
-                    )
-                else:
-                    cooldown_time = c.heroclass["cooldown"] - time.time()
-                    return await smart_embed(
-                        ctx,
-                        _(
-                            "Your hero is currently recovering from the last time "
-                            "they used this skill. Try again in {}."
-                        ).format(humanize_timedelta(seconds=int(cooldown_time))),
-                    )
+            c.heroclass["ability"] = True
+
+            await self.config.user(ctx.author).set(await c.to_json(self.config))
+            await smart_embed(
+                ctx,
+                _("{skill} **{c}** is whipping up a performance... {skill}").format(
+                    c=self.escape(ctx.author.display_name), skill=self.emojis.skills.bard
+                ),
+                success=True
+            )
 
     @commands.command()
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
@@ -3382,21 +3210,20 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         `[p]skill reset` Will allow you to reset your skill points for a cost.
         """
         if self.in_adventure(ctx):
-            return await smart_embed(
-                ctx, _("The skill cleric is back in town and the monster ahead of you is demanding your attention."),
+            raise AdventureCheckFailure(
+                _("The skill cleric is back in town and the monster ahead of you is demanding your attention.")
             )
-        if not await self.allow_in_dm(ctx):
-            return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
+
         if isinstance(amount, int) and amount < 1:
-            return await smart_embed(ctx, _("Nice try :smirk:"))
+            raise AdventureCheckFailure(_("Nice try :smirk:"))
         async with self.get_lock(ctx.author):
             c = await self.get_character_from_json(ctx.author)
             if spend == "reset":
                 last_reset = await self.config.user(ctx.author).last_skill_reset()
                 if last_reset + 3600 > time.time():
-                    return await smart_embed(ctx, _("You reset your skills within the last hour, try again later."))
+                    raise AdventureCheckFailure(_("You reset your skills within the last hour, try again later."))
                 bal = c.bal
-                currency_name = await bank.get_currency_name(ctx.guild,)
+                currency_name = await bank.get_currency_name(ctx.guild)
                 offering = min(int(bal / 5 + (c.total_int // 3)), 1000000000)
                 nv_msg = await ctx.send(
                     _(
@@ -3427,10 +3254,12 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     await bank.withdraw_credits(ctx.author, offering)
                     await smart_embed(
                         ctx, _("{}, your skill points have been reset.").format(self.escape(ctx.author.display_name)),
+                        success=True
                     )
                 else:
                     await smart_embed(
                         ctx, _("Don't play games with me, {}.").format(self.escape(ctx.author.display_name)),
+                        success=False
                     )
                 return
 
@@ -3442,12 +3271,11 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 
 
             if c.skill["pool"] <= 0:
-                return await smart_embed(
-                    ctx, _("{}, you do not have unspent skillpoints.").format(self.escape(ctx.author.display_name)),
+                raise AdventureCheckFailure(
+                    _("{}, you do not have unspent skillpoints.").format(self.escape(ctx.author.display_name))
                 )
             elif c.skill["pool"] < amount:
-                return await smart_embed(
-                    ctx,
+                raise AdventureCheckFailure(
                     _("{}, you do not have enough unspent skillpoints.").format(self.escape(ctx.author.display_name)),
                 )
             if spend is None:
@@ -3470,8 +3298,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 cha = ["diplomacy", "charisma", "cha", "dipl"]
                 intel = ["intelligence", "intellect", "int", "magic"]
                 if spend not in att + cha + intel:
-                    return await smart_embed(
-                        ctx, _("Don't try to fool me! There is no such thing as {}.").format(spend)
+                    raise AdventureCheckFailure(
+                        _("Don't try to fool me! There is no such thing as {}.").format(spend)
                     )
                 elif spend in att:
                     c.skill["pool"] -= amount
@@ -3491,6 +3319,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     _("{author}, you permanently raised your {spend} value by {amount}.").format(
                         author=self.escape(ctx.author.display_name), spend=spend, amount=amount
                     ),
+                    success=True
                 )
 
     @commands.command(name="setinfo")
@@ -3500,18 +3329,15 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
         set_list = humanize_list(sorted([f"`{i}`" for i in self.SET_BONUSES.keys()], key=str.lower))
         if set_name is None:
-            return await smart_embed(
-                ctx, _("Use this command with one of the following set names: \n{sets}").format(sets=set_list),
+            raise AdventureCheckFailure(
+                _("Use this command with one of the following set names: \n{sets}").format(sets=set_list)
             )
 
         title_cased_set_name = await self._title_case(set_name)
         sets = self.SET_BONUSES.get(title_cased_set_name)
         if sets is None:
-            return await smart_embed(
-                ctx,
-                _("`{input}` is not a valid set.\n\nPlease use one of the following full set names: \n{sets}").format(
-                    input=title_cased_set_name, sets=set_list
-                ),
+            raise AdventureCheckFailure(_("`{input}` is not a valid set.\n\nPlease use one of the following full set names: \n{sets}").format(
+                input=title_cased_set_name, sets=set_list)
             )
 
         c = await self.get_character_from_json(ctx.author)
@@ -3612,8 +3438,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     @commands.bot_has_permissions(add_reactions=True)
     async def stats(self, ctx: Context, *, user: Member = None):
         """This draws up a character sheet of you or an optionally specified member."""
-        if not await self.allow_in_dm(ctx):
-            return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
+
         if user is None:
             user = ctx.author
         if user.bot:
@@ -3679,11 +3504,10 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         Use `[p]unequip name of item` or `[p]unequip slot`
         """
         if self.in_adventure(ctx):
-            return await smart_embed(
-                ctx, _("You tried to unequip your items, but the monster ahead of you looks mighty hungry..."),
+            raise AdventureCheckFailure(
+                _("You tried to unequip your items, but the monster ahead of you looks mighty hungry...")
             )
-        if not await self.allow_in_dm(ctx):
-            return await smart_embed(ctx, _("This command is not available in DM's on this bot."))
+
         async with self.get_lock(ctx.author):
             c = await self.get_character_from_json(ctx.author)
             slots = [
@@ -3781,28 +3605,23 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             adventure_obj = self._sessions[ctx.guild.id]
             link = adventure_obj.message.jump_url
 
-            ctx.command.reset_cooldown(ctx)
-            return await smart_embed(
-                ctx,
+            raise AdventureCheckFailure(
                 _(
                     f"There's already another adventure going on in this server.\n"
                     f"Currently fighting: [{adventure_obj.challenge}]({link})"
-                ),
+                )
             )
 
         if not await has_funds(ctx.author, 250):
-            currency_name = await bank.get_currency_name(ctx.guild,)
+            currency_name = await bank.get_currency_name(ctx.guild)
             ctx.command.reset_cooldown(ctx)
             extra = (
                 _("\nRun `{ctx.clean_prefix}apayday` to get some gold.").format(ctx=ctx)
                 if self._separate_economy
                 else ""
             )
-            return await smart_embed(
-                ctx,
-                _("You need {req} {name} to start an adventure.{extra}").format(
-                    req=250, name=currency_name, extra=extra
-                ),
+            raise AdventureCheckFailure(_("You need {req} {name} to start an adventure.{extra}").format(
+                req=250, name=currency_name, extra=extra)
             )
         guild_settings = await self.config.guild(ctx.guild).all()
         cooldown = guild_settings["cooldown"]
@@ -3817,7 +3636,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 _("No heroes are ready to depart in an adventure, try again in {}.").format(
                     humanize_timedelta(seconds=int(cooldown_time)) if int(cooldown_time) >= 1 else _("1 second")
                 ),
-                delete_after=cooldown_time
+                delete_after=cooldown_time,
+                success=False
             )
 
         if challenge and not (self.is_dev(ctx.author) or await ctx.bot.is_owner(ctx.author)):
@@ -3888,7 +3708,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         error = getattr(error, "original", error)
         if not isinstance(
             error,
-            (commands.CheckFailure, commands.UserInputError, commands.DisabledCommand, commands.CommandOnCooldown,),
+            (commands.CheckFailure, commands.UserInputError, commands.DisabledCommand, commands.CommandOnCooldown),
         ):
             while ctx.guild.id in self._sessions:
                 del self._sessions[ctx.guild.id]
@@ -3910,7 +3730,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 show_global=show_global,
             ).start(ctx=ctx)
         else:
-            await smart_embed(ctx, _("There are no adventurers in the server."))
+            raise AdventureCheckFailure(_("There are no adventurers in the server"))
 
     @commands.command()
     @commands.bot_has_permissions(add_reactions=True, embed_links=True)
@@ -3929,7 +3749,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 show_global=show_global,
             ).start(ctx=ctx)
         else:
-            await smart_embed(ctx, _("There are no adventurers in the server."))
+            raise AdventureCheckFailure(_("There are no adventurers in the server"))
 
     @commands.command()
     @commands.bot_has_permissions(add_reactions=True, embed_links=True)
@@ -3948,7 +3768,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 timeout=60,
             ).start(ctx=ctx)
         else:
-            await smart_embed(ctx, _("No stats to show for this week."))
+            raise AdventureCheckFailure(_("No stats to show for this week."))
 
     @commands.command(name="apayday", cooldown_after_parsing=True)
     @has_separated_economy()
@@ -3962,8 +3782,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             await bank.deposit_credits(author, amount)
         except BalanceTooHigh as exc:
             await bank.set_balance(author, exc.max_balance)
-            await smart_embed(
-                ctx,
+            raise AdventureCheckFailure(
                 _(
                     "You're struggling to move under the weight of all your {currency}! "
                     "Please spend some more \N{GRIMACING FACE}\n\n"
@@ -3984,6 +3803,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     amount=humanize_number(amount),  # Make customizable?
                     new_balance=humanize_number(await bank.get_balance(author)),
                 ),
+                success=True
             )
         character = await self.get_character_from_json(ctx.author)
         if character.last_currency_check + 600 < time.time() or character.bal > character.last_known_currency:
@@ -4002,29 +3822,24 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     async def commands_atransfer_player(self, ctx: commands.Context, amount: int, *, player: discord.User):
         """Transfer gold to another player."""
         if amount <= 0:
-            await smart_embed(
-                ctx, _("{author.mention} You can't transfer 0 or negative values.").format(author=ctx.author),
+            raise AdventureCheckFailure(
+                _("{author.mention} You can't transfer 0 or negative values.").format(author=ctx.author),
             )
             ctx.command.reset_cooldown(ctx)
             return
         currency = await bank.get_currency_name(ctx.guild)
         if not await bank.can_spend(member=ctx.author, amount=amount):
-            ctx.command.reset_cooldown(ctx)
-            return await smart_embed(
-                ctx,
+            raise AdventureCheckFailure(
                 _("{author.mention} you don't have enough {name}.").format(
-                    author=ctx.author, name=await bank.get_currency_name(ctx.guild)
-                ),
+                    author=ctx.author, name=await bank.get_currency_name(ctx.guild))
             )
 
         c = await self.get_character_from_json(ctx.author)
         if c.lvl == c.maxlevel:
-            ctx.command.reset_cooldown(ctx)
-            return await smart_embed(
-                ctx,
+            raise AdventureCheckFailure(
                 _("{author.mention} you can't transfer money when you're at the max level.").format(
                     author=ctx.author, name=await bank.get_currency_name(ctx.guild)
-                ),
+                )
             )
         
         tax = await self.config.tax_brackets.all()
@@ -4053,7 +3868,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 other_user=player.display_name,
                 tax=highest,
                 transfered=humanize_number(transfered),
-            )
+            ),
+            success=True
         )
 
     @commands_atransfer.command(name="give")
@@ -4061,8 +3877,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     async def commands_atransfer_give(self, ctx: commands.Context, amount: int, *players: discord.User):
         """[Owner] Give gold to adventurers."""
         if amount <= 0:
-            await smart_embed(
-                ctx, _("{author.mention} You can't give 0 or negative values.").format(author=ctx.author),
+            raise AdventureCheckFailure(
+                _("{author.mention} You can't give 0 or negative values.").format(author=ctx.author),
             )
             return
         players_string = ""
@@ -4082,6 +3898,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 players=players_string,
                 name=await bank.get_currency_name(ctx.guild),
             ),
+            success=True
         )
 
     @commands.command(name="balance", aliases=["bal", "credits"])
@@ -4207,6 +4024,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     ctx,
                     f"**{self.escape(ctx.author.display_name)}**, you need to be level "
                     f"`{equiplevel}` to equip this item.",
+                    success=True
                 )
             if not others:
                 equip_msg = box(
