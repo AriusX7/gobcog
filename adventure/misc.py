@@ -159,6 +159,15 @@ class MiscMixin(commands.Cog):
             self._daily_bonus = await self.config.daily_bonus.all()
 
             await self.bot.wait_until_ready()
+            
+            results_path = cog_data_path(self) / "results.pickle"
+            if os.path.isfile(results_path):
+                with open(results_path, "rb") as f:
+                    try:
+                        self._adv_results = pickle.load(f)
+                    except EOFError:
+                        pass
+
             session_path = cog_data_path(self) / "sessions.pickle"
             if os.path.isfile(session_path):
                 with open(session_path, "rb") as f:
@@ -603,6 +612,9 @@ class MiscMixin(commands.Cog):
         else:
             timer = 60 * 2
 
+        if transcended and not monster_roster[challenge]["boss"] and not monster_roster[challenge]["miniboss"]:
+            timer = 60 * 3
+
         self._sessions[ctx.guild.id] = GameSession(
             challenge=new_challenge,
             attribute=attribute,
@@ -725,7 +737,12 @@ class MiscMixin(commands.Cog):
                 adventure_msg = await ctx.send(embed=embed)
             else:
                 adventure_msg = await ctx.send(f"{adventure_msg}\n{normal_text}")
-            session.timeout = 60 * 2
+
+            if session.transcended:
+                session.timeout = 60 * 3
+            else:
+                session.timeout = 60 * 2
+
         session.message_id = adventure_msg.id
         session.message = adventure_msg
         start_adding_reactions(adventure_msg, self._adventure_actions)
@@ -843,6 +860,16 @@ class MiscMixin(commands.Cog):
         self._current_traders[guild.id]["users"].append(user)
         spender = user
         channel = reaction.message.channel
+
+        if self.in_adventure(user=user):
+            with contextlib.suppress(discord.HTTPException):
+                await reaction.remove(user)
+            return await channel.send(
+                _("**{author}**, you have to be back in town to buy things from the cart!").format(
+                    author=self.escape(user.display_name)
+                ), delete_after=10
+            )
+
         currency_name = await bank.get_currency_name(guild,)
         if currency_name.startswith("<"):
             currency_name = "credits"
@@ -896,10 +923,11 @@ class MiscMixin(commands.Cog):
             with contextlib.suppress(discord.HTTPException):
                 await to_delete.delete()
                 await msg.delete()
+                await reaction.remove(user)
             await channel.send(
                 _("**{author}**, you do not have enough {currency_name}.").format(
                     author=self.escape(user.display_name), currency_name=currency_name
-                )
+                ), delete_after=10
             )
             self._current_traders[guild.id]["users"].remove(user)
 
@@ -1513,7 +1541,7 @@ class MiscMixin(commands.Cog):
                     bonus_roll = random.randint(5, 15)
                     bonus_multi = random.choice([0.2, 0.3, 0.4, 0.5])
                     bonus = max(bonus_roll, int((roll + att_value + rebirths) * bonus_multi))
-                    attack += int((roll - bonus + att_value) / pdef)
+                    attack += max(int((roll - bonus + att_value) / pdef), 0)
                     report += (
                         f"**{self.escape(user.display_name)}**: "
                         f"{self.emojis.dice}({roll}) + "
@@ -1536,7 +1564,7 @@ class MiscMixin(commands.Cog):
                 if c.heroclass["ability"]:
                     base_bonus = random.randint(15, 50) + 5 * rebirths
                 base_str = f"{self.emojis.crit}️ {humanize_number(base_bonus)}"
-                attack += int((roll + base_bonus + crit_bonus + att_value) / pdef)
+                attack += max(int((roll + base_bonus + crit_bonus + att_value) / pdef), 0)
                 bonus = base_str + crit_str
                 report += (
                     f"**{self.escape(user.display_name)}**: "
@@ -1545,7 +1573,7 @@ class MiscMixin(commands.Cog):
                     f"{self.emojis.attack}{str(humanize_number(att_value))}\n"
                 )
             else:
-                attack += int((roll + att_value) / pdef) + rebirths
+                attack += max(int((roll + att_value) / pdef) + rebirths, 0)
                 report += (
                     f"**{self.escape(user.display_name)}**: "
                     f"{self.emojis.dice}({roll}) + "
@@ -1585,7 +1613,7 @@ class MiscMixin(commands.Cog):
                     bonus_roll = random.randint(5, 15)
                     bonus_multi = random.choice([0.2, 0.3, 0.4, 0.5])
                     bonus = max(bonus_roll, int((roll + int_value + rebirths) * bonus_multi))
-                    magic += int((roll - bonus + int_value) / mdef)
+                    magic += max(int((roll - bonus + int_value) / mdef), 0)
                     report += (
                         f"**{self.escape(user.display_name)}**: "
                         f"{self.emojis.dice}({roll}) + "
@@ -1605,7 +1633,7 @@ class MiscMixin(commands.Cog):
                 if c.heroclass["ability"]:
                     base_bonus = random.randint(15, 50) + 5 * rebirths
                     base_str = f"{self.emojis.magic_crit}️ {humanize_number(base_bonus)}"
-                magic += int((roll + base_bonus + crit_bonus + int_value) / mdef)
+                magic += max(int((roll + base_bonus + crit_bonus + int_value) / mdef), 0)
                 bonus = base_str + crit_str
                 report += (
                     f"**{self.escape(user.display_name)}**: "
@@ -1614,7 +1642,7 @@ class MiscMixin(commands.Cog):
                     f"{self.emojis.magic}{humanize_number(int_value)}\n"
                 )
             else:
-                magic += int((roll + int_value) / mdef) + c.rebirths // 5
+                magic += max(int((roll + int_value) / mdef) + c.rebirths // 5, 0)
                 report += (
                     f"**{self.escape(user.display_name)}**: "
                     f"{self.emojis.dice}({roll}) + "
@@ -1666,11 +1694,11 @@ class MiscMixin(commands.Cog):
                     pray_diplo_bonus = 0
                     pray_magic_bonus = 0
                     if fight_list:
-                        pray_att_bonus = (5 * len(fight_list)) - ((5 * len(fight_list)) * max(rebirths * 0.01, 1.5))
+                        pray_att_bonus = max((5 * len(fight_list)) - ((5 * len(fight_list)) * max(rebirths * 0.01, 1.5)), 0)
                     if talk_list:
-                        pray_diplo_bonus = (5 * len(talk_list)) - ((5 * len(talk_list)) * max(rebirths * 0.01, 1.5))
+                        pray_diplo_bonus = max((5 * len(talk_list)) - ((5 * len(talk_list)) * max(rebirths * 0.01, 1.5)), 0)
                     if magic_list:
-                        pray_magic_bonus = (5 * len(magic_list)) - ((5 * len(magic_list)) * max(rebirths * 0.01, 1.5))
+                        pray_magic_bonus = max((5 * len(magic_list)) - ((5 * len(magic_list)) * max(rebirths * 0.01, 1.5)), 0)
                     attack -= pray_att_bonus
                     diplomacy -= pray_diplo_bonus
                     magic -= pray_magic_bonus
@@ -1710,9 +1738,9 @@ class MiscMixin(commands.Cog):
                         pray_magic_bonus = int(
                             (mod * len(magic_list)) + ((mod * len(magic_list)) * max(rebirths * 0.1, 1.5))
                         )
-                    attack += pray_att_bonus
-                    magic += pray_magic_bonus
-                    diplomacy += pray_diplo_bonus
+                    attack += max(pray_att_bonus, 0)
+                    magic += max(pray_magic_bonus, 0)
+                    diplomacy += max(pray_diplo_bonus, 0)
                     if roll == 50:
                         roll_msg = _(
                             "{user} turned into an avatar of mighty {god}. "
@@ -1753,9 +1781,9 @@ class MiscMixin(commands.Cog):
                     if magic_list:
                         magic_buff = 10 * (len(magic_list) + rebirths // 15)
 
-                    attack += attack_buff
-                    magic += magic_buff
-                    diplomacy += talk_buff
+                    attack += max(attack_buff, 0)
+                    magic += max(magic_buff, 0)
+                    diplomacy += max(talk_buff, 0)
                     msg += _(
                         "**{user}'s** prayer called upon the mighty {god} to help you. "
                         "(+{len_f_list}{attack}/+{len_t_list}{talk}/+{len_m_list}{magic}) {roll_emoji}({roll})\n"
@@ -1808,7 +1836,7 @@ class MiscMixin(commands.Cog):
             if roll == 1:
                 if c.heroclass["name"] == "Bard" and c.heroclass["ability"]:
                     bonus = random.randint(5, 15)
-                    diplomacy += roll - bonus + dipl_value + rebirths
+                    diplomacy += max(roll - bonus + dipl_value + rebirths, 0)
                     report += (
                         f"**{self.escape(user.display_name)}** "
                         f"🎲({roll}) +💥{bonus} +🗨{humanize_number(dipl_value)} | "
@@ -1832,7 +1860,7 @@ class MiscMixin(commands.Cog):
                 if c.heroclass["ability"]:
                     base_bonus = random.randint(15, 50) + 5 * rebirths
                 base_str = f"🎵 {humanize_number(base_bonus)}"
-                diplomacy += roll + base_bonus + crit_bonus + dipl_value
+                diplomacy += max(roll + base_bonus + crit_bonus + dipl_value, 0)
                 bonus = base_str + crit_str
                 report += (
                     f"**{self.escape(user.display_name)}** "
@@ -1841,7 +1869,7 @@ class MiscMixin(commands.Cog):
                     f"{self.emojis.talk}{humanize_number(dipl_value)}\n"
                 )
             else:
-                diplomacy += roll + dipl_value + c.rebirths // 5
+                diplomacy += max(roll + dipl_value + c.rebirths // 5, 0)
                 report += (
                     f"**{self.escape(user.display_name)}** "
                     f"{self.emojis.dice}({roll}) + "
@@ -2443,36 +2471,54 @@ class MiscMixin(commands.Cog):
                 )
             )
             return None
+
+        # Just in case old_items is empty.
         slot = item.slot[0]
-        old_item = getattr(character, item.slot[0], None)
+        old_items = [(i, getattr(character, i, None)) for i in item.slot]
         old_stats = ""
 
-        if old_item:
-            old_slot = old_item.slot[0]
-            if len(old_item.slot) > 1:
-                old_slot = _("two handed")
-                att = old_item.att * 2
-                cha = old_item.cha * 2
-                intel = old_item.int * 2
-                luck = old_item.luck * 2
-                dex = old_item.dex * 2
-            else:
-                att = old_item.att
-                cha = old_item.cha
-                intel = old_item.int
-                luck = old_item.luck
-                dex = old_item.dex
+        for num, (slot, old_item) in enumerate(old_items):
+            if old_item:
+                old_slot = old_item.slot[0]
+                if len(old_item.slot) > 1:
+                    old_slot = _("two handed")
+                    att = old_item.att * 2
+                    cha = old_item.cha * 2
+                    intel = old_item.int * 2
+                    luck = old_item.luck * 2
+                    dex = old_item.dex * 2
+                else:
+                    att = old_item.att
+                    cha = old_item.cha
+                    intel = old_item.int
+                    luck = old_item.luck
+                    dex = old_item.dex
 
-            old_stats = (
-                _("You currently have {item} [{slot}] equipped | Lvl req {lv} equipped.").format(
-                    item=old_item, slot=old_slot, lv=equip_level(character, old_item)
-                )
-                + f" (ATT: {str(att)}, "
-                f"CHA: {str(cha)}, "
-                f"INT: {str(intel)}, "
-                f"DEX: {str(dex)}, "
-                f"LUCK: {str(luck)}) "
-            )
+                    if num == 0:
+                        old_stats += _("You currently have {item} [{slot}] | Lvl req {lv}").format(
+                            item=old_item, slot=old_slot, lv=equip_level(character, old_item)
+                        )
+                        if len(old_items) == 1:
+                            old_stats += " equipped."
+                        else:
+                            old_stats += "."
+                    else:
+                        # we can put equipped here because `num` be only `0` or `1`.
+                        # might have to change this if that changes.
+                        old_stats += _(" and {item} [{slot}] | Lvl req {lv} equipped.").format(
+                            item=old_item, slot=old_slot, lv=equip_level(character, old_item)
+                        )
+
+                    old_stats += (
+                        f" (ATT: {str(att)}, "
+                        f"CHA: {str(cha)}, "
+                        f"INT: {str(intel)}, "
+                        f"DEX: {str(dex)}, "
+                        f"LUCK: {str(luck)})"
+                    )
+                    if old_item.set:
+                        old_stats += f" | Set `{old_item.set}` ({old_item.parts}pcs)\n"
+
         if len(item.slot) > 1:
             slot = _("two handed")
             att = item.att * 2
@@ -2502,8 +2548,10 @@ class MiscMixin(commands.Cog):
                 f"CHA: {str(cha)}, "
                 f"INT: {str(intel)}, "
                 f"DEX: {str(dex)}, "
-                f"LUCK: {str(luck)}) "
+                f"LUCK: {str(luck)})"
             )
+            if item.set:
+                chest_msg2 += f" | Set `{item.set}` ({item.parts}pcs) "
 
             await open_msg.edit(
                 content=box(
@@ -2524,8 +2572,11 @@ class MiscMixin(commands.Cog):
                 f"CHA: {str(cha)}, "
                 f"INT: {str(intel)}, "
                 f"DEX: {str(dex)}, "
-                f"LUCK: {str(luck)}), "
+                f"LUCK: {str(luck)}) "
             )
+            if item.set:
+                chest_msg2 += f" | Set `{item.set}` ({item.parts}pcs) "
+
             await open_msg.edit(
                 content=box(
                     _(
@@ -2609,11 +2660,13 @@ class MiscMixin(commands.Cog):
                 )
             else:
                 equip_msg = box(
-                    _("{user} equipped {item} ({slot} slot) and put {old_item} into their backpack.").format(
+                    _("{user} equipped {item} ({slot} slot) and put {old_items} into their backpack.").format(
                         user=self.escape(ctx.author.display_name),
                         item=item,
                         slot=slot,
-                        old_item=getattr(character, item.slot[0]),
+                        old_items=" and ".join(
+                            str(getattr(character, i)) for i in item.slot if getattr(character, i, None)
+                        ),
                     ),
                     lang="css",
                 )
@@ -2936,7 +2989,7 @@ class MiscMixin(commands.Cog):
         final_words += [word if word in exceptions else word.capitalize() for word in lowercase_words[1:]]
         return " ".join(final_words)
 
-    async def cog_before_invoke(self, ctx: Context):
+    async def cog_check(self, ctx: Context):
         await self._ready_event.wait()
         if ctx.author.id in self.locks and self.locks[ctx.author.id].locked():
             raise AdventureCheckFailure(f"Another operation is currently executing for {ctx.author.mention}. Try again later.")
@@ -2956,15 +3009,18 @@ class MiscMixin(commands.Cog):
                 # 3 things, user, role, channel
                 for i in ctx.author.roles:
                     if not perms_data.get(str(i.id), True):
-                        raise AdventureCheckFailure("You are not allowed to use this command.")
+                        raise AdventureCheckFailure(_("You are not allowed to use this command."))
 
                 if not perms_data.get(str(ctx.author.id), True):
-                    raise AdventureCheckFailure("You are not allowed to use this command.")
+                    raise AdventureCheckFailure(_("You are not allowed to use this command."))
 
                 default = perms_data.get('default', True)
                 if not perms_data.get(str(ctx.channel.id), default):
                     channels = [ctx.bot.get_channel(int(x)).mention for x in perms_data if x.isdigit() and perms_data[x] and ctx.bot.get_channel(int(x))]
-                    raise AdventureCheckFailure(f"Try this in {', '.join(channels)}.")
+                    raise AdventureCheckFailure(_("Try this in {channels}.").format(channels=', '.join(channels)))
+
+        if not await self.allow_in_dm(ctx):
+            raise AdventureCheckFailure(_("This command is not available in DM's on this bot."))
 
         return True
 
@@ -3025,7 +3081,7 @@ class MiscMixin(commands.Cog):
                     if sremain > 3:
                         await self._handle_adventure(reaction, user)
         if guild.id in self._current_traders:
-            if reaction.message.id == self._current_traders[guild.id]["msg"] and not self.in_adventure(user=user):
+            if reaction.message.id == self._current_traders[guild.id]["msg"]:
                 if user in self._current_traders[guild.id]["users"]:
                     return
                 if guild.id in self._trader_countdown:
@@ -3056,7 +3112,11 @@ class MiscMixin(commands.Cog):
 
     async def cog_command_error(self, ctx: Context, error: Exception):
         if isinstance(error, AdventureCheckFailure):
-            await smart_embed(ctx, str(error), success=False)
+            ctx.command.reset_cooldown(ctx)
+            await smart_embed(ctx, str(error), success=False, delete_after=15)
+            await asyncio.sleep(15)
+            with contextlib.suppress(discord.HTTPException):
+                await ctx.message.delete()
         else:
             if ctx.guild:
                 dest_id = await self.config.guild(ctx.guild).error_channel()
@@ -3096,6 +3156,8 @@ class MiscMixin(commands.Cog):
             self._init_task.cancel()
         if self.gb_task:
             self.gb_task.cancel()
+        if self._timed_roles_task:
+            self._timed_roles_task.cancel()
 
         for (msg_id, task) in self.tasks.items():
             task.cancel()
@@ -3106,6 +3168,9 @@ class MiscMixin(commands.Cog):
 
         with open(cog_data_path(self) / "sessions.pickle", "wb+") as f:
             pickle.dump(self._sessions, f)
+
+        with open(cog_data_path(self) / "results.pickle", "wb+") as f:
+            pickle.dump(self._adv_results, f)
 
     async def _garbage_collection(self):
         await self.bot.wait_until_red_ready()
@@ -3146,9 +3211,13 @@ class MiscMixin(commands.Cog):
             luck = item.luck
             dex = item.dex
 
+        lvl = equip_level(character, item)
+        if lvl > character.lvl:
+            lvl = f'[{lvl}]'
+
         msg = (
             _("{item} [{slot}] | Lvl req {lv}{equipped}").format(
-                item=str(item), slot=slot, lv=equip_level(character, item),
+                item=str(item), slot=slot, lv=lvl,
                 equipped=_(" | Equipped") if equipped else ""
             )
             + f"\n\nATT: {str(att)}, "
