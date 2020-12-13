@@ -797,29 +797,34 @@ class Character(Item):
     def get_item_rarity(item):
         item_obj = item[1]
         if item_obj.rarity == "event":
-            return 0
-        elif item_obj.rarity == "forged":
-            return 1
-        elif item_obj.rarity == "set":
-            return 2
-        elif item_obj.rarity == "ascended":
-            return 3
-        elif item_obj.rarity == "legendary":
-            return 4
-        elif item_obj.rarity == "epic":
-            return 5
-        elif item_obj.rarity == "rare":
-            return 6
-        elif item_obj.rarity == "normal":
             return 7
+        elif item_obj.rarity == "forged":
+            return 6
+        elif item_obj.rarity == "set":
+            return 5
+        elif item_obj.rarity == "ascended":
+            return 4
+        elif item_obj.rarity == "legendary":
+            return 3
+        elif item_obj.rarity == "epic":
+            return 2
+        elif item_obj.rarity == "rare":
+            return 1
+        elif item_obj.rarity == "normal":
+            return 0
         else:
-            return 7  # common / normal
+            return 0  # common / normal
 
-    async def get_sorted_backpack(self, backpack: dict, slot=None, rarity=None):
+    async def get_sorted_backpack(self, backpack: dict, slot=None, rarity=None, sort_order=None):
         tmp = {}
 
         def _sort(item):
-            return self.get_item_rarity(item), item[1].lvl, item[1].total_stats
+            if sort_order:
+                sorting_item = getattr(item[1], sort_order, None)
+            else:
+                sorting_item = None
+
+            return sorting_item, self.get_item_rarity(item), item[1].lvl, item[1].total_stats
 
         async for item in AsyncIter(backpack, steps=5):
             slots = backpack[item].slot
@@ -838,7 +843,7 @@ class Character(Item):
         final = []
         async for (idx, slot_name) in AsyncIter(tmp.keys()).enumerate():
             if tmp[slot_name]:
-                final.append(sorted(tmp[slot_name], key=_sort))
+                final.append(sorted(tmp[slot_name], key=_sort, reverse=True))
 
         final.sort(key=lambda i: ORDER.index(i[0][1].slot[0]) if len(i[0][1].slot) == 1 else ORDER.index("two handed"))
         return final
@@ -857,13 +862,46 @@ class Character(Item):
                 continue
             loot_number = random.randint(1, min(item.owned, how_many - looted_so_far))
             looted_so_far += loot_number
-            looted.append((str(item), loot_number))
+            looted.append((item, loot_number))
             item.owned -= loot_number
             if item.owned <= 0:
                 del self.backpack[item.name]
             else:
                 self.backpack[item.name] = item
         return looted
+
+    def get_looted_message(self, item):
+        settext = ""
+        att_space = " " if len(str(item.att)) >= 1 else ""
+        cha_space = " " if len(str(item.cha)) >= 1 else ""
+        int_space = " " if len(str(item.int)) >= 1 else ""
+        dex_space = " " if len(str(item.dex)) >= 1 else ""
+        luck_space = " " if len(str(item.luck)) >= 1 else ""
+        if item.set:
+            settext += f" | Set `{item.set}` ({item.parts}pcs)"
+        e_level = equip_level(self, item)
+        if e_level > self.lvl:
+            level = f"[{e_level}]"
+        else:
+            level = f"{e_level}"
+
+        slot_name_org = item.slot
+        att = item.att if len(slot_name_org) < 2 else item.att * 2
+        cha = item.cha if len(slot_name_org) < 2 else item.cha * 2
+        int = item.int if len(slot_name_org) < 2 else item.int * 2
+        dex = item.dex if len(slot_name_org) < 2 else item.dex * 2
+        luck = item.luck if len(slot_name_org) < 2 else item.luck * 2
+        rjuststat = 3
+
+        stats = (
+            f"({att_space}{att:<{rjuststat}} |"
+            f"{cha_space}{cha:<{rjuststat}} |"
+            f"{int_space}{int:<{rjuststat}} |"
+            f"{dex_space}{dex:<{rjuststat}} |"
+            f"{luck_space}{luck:<{rjuststat}})"
+        )
+
+        return f"{item} {stats} | Lvl {level:<5}{settext}"
 
     async def get_backpack(
         self,
@@ -876,10 +914,11 @@ class Character(Item):
         unequippable=False,
         set_name: str = None,
         clean: bool = False,
+        sort_order: str = None
     ):
         if consumed is None:
             consumed = []
-        bkpk = await self.get_sorted_backpack(self.backpack, slot=slot, rarity=rarity)
+        bkpk = await self.get_sorted_backpack(self.backpack, slot=slot, rarity=rarity, sort_order=sort_order)
         form_string = _(
             "Items in Backpack: \n( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | [DEGRADE#] | OWNED | SET (SET PIECES)"
         )
@@ -946,7 +985,7 @@ class Character(Item):
                     f"{cha_space}{cha:<{rjuststat}} |"
                     f"{int_space}{int:<{rjuststat}} |"
                     f"{dex_space}{dex:<{rjuststat}} |"
-                    f"{luck_space}{luck:<{rjuststat}} )"
+                    f"{luck_space}{luck:<{rjuststat}})"
                 )
 
                 slot_string += f"\n{str(item[1]):<{rjust}} - {stats} | Lvl {level:<5}{owned}{settext}"
@@ -1657,6 +1696,30 @@ class RarityConverter(Converter):
             rarity = argument.lower()
             if rarity not in RARITIES:
                 raise BadArgument
+        return argument
+
+
+class SkillConverter(Converter):
+    async def convert(self, ctx, argument) -> Optional[str]:
+        if argument:
+            skill = argument.lower()
+            att = ["attack", "att", "atk"]
+            cha = ["diplomacy", "charisma", "cha", "dipl"]
+            intel = ["intelligence", "intellect", "int", "magic"]
+            luck = ["luck"]
+            dex = ["dexterity", "dex"]
+            if skill in att:
+                return "att"
+            if skill in cha:
+                return "cha"
+            if skill in intel:
+                return "int"
+            if skill in luck:
+                return "luck"
+            if skill in dex:
+                return "dex"
+
+            raise BadArgument
         return argument
 
 

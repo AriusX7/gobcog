@@ -1,8 +1,10 @@
 import logging
+import time
 from typing import List, MutableMapping
 
 import discord
 from discord.ext import commands
+from redbot.core.utils.chat_formatting import humanize_timedelta
 from discord.ext.commands import BadArgument, CheckFailure, Converter
 from redbot.core.commands import Context, check
 from redbot.core.i18n import Translator
@@ -12,18 +14,18 @@ from . import bank
 _ = Translator("Adventure", __file__)
 log = logging.getLogger("red.cogs.adventure")
 
-async def smart_embed(ctx, message, success=None):
+async def smart_embed(ctx, message, success=None, **kwargs):
     # use_emebd has been disabled here.. for reasons
     if await ctx.embed_requested():
         if success is True:
-            colour = discord.Colour.dark_green()
+            colour = discord.Colour.green()
         elif success is False:
-            colour = discord.Colour.dark_red()
+            colour = discord.Colour.red()
         else:
-            colour = await ctx.embed_colour()
-        return await ctx.send(embed=discord.Embed(description=message, color=colour))
+            colour = discord.Colour.blurple()
+        return await ctx.send(embed=discord.Embed(description=message, color=colour), **kwargs)
     else:
-        return await ctx.send(message)
+        return await ctx.send(message, **kwargs)
 
 
 def check_global_setting_admin():
@@ -57,6 +59,45 @@ def has_separated_economy():
     async def predicate(ctx):
         if not (ctx.cog and getattr(ctx.cog, "_separate_economy", False)):
             raise CheckFailure
+        return True
+
+    return check(predicate)
+
+
+def can_use_ability():
+    async def predicate(ctx):
+        heroclass = {
+            'bless': 'Cleric',
+            'rage': 'Berserker',
+            'focus': 'Wizard',
+            'music': 'Bard'
+        }
+
+        async with ctx.cog.get_lock(ctx.author):
+            c = await ctx.cog.get_character_from_json(ctx.author)
+            if c.heroclass["name"] != heroclass[ctx.command.name]:
+                raise AdventureCheckFailure(
+                    _("**{name}**, you need to be a {heroclass} to do this.").format(name=ctx.cog.escape(ctx.author.display_name), heroclass=heroclass[ctx.command.name])
+                )
+            else:
+                if c.heroclass["ability"]:
+                    raise AdventureCheckFailure(
+                        _("**{}**, ability already in use.").format(ctx.cog.escape(ctx.author.display_name))
+                    )
+                cooldown_time = max(240, (1140 - ((c.luck + c.total_int) * 2)))
+                if "cooldown" not in c.heroclass:
+                    c.heroclass["cooldown"] = cooldown_time + 1
+                if c.heroclass["cooldown"] > time.time():
+                    cooldown_time = c.heroclass["cooldown"] - time.time()
+                    raise AdventureCheckFailure(
+                        _(
+                            "Your hero is currently recovering from the last time "
+                            "they used this skill. Try again in {}."
+                        ).format(
+                            humanize_timedelta(seconds=int(cooldown_time)) if int(cooldown_time) >= 1 else _("1 second")
+                        ),
+                    )
+        
         return True
 
     return check(predicate)
@@ -159,7 +200,7 @@ class AdventureResults:
             win_percent = 0.5
         else:
             avg_count = 3
-            winrate_count = 5
+            winrate_count = 6
 
             for n, raid in enumerate(reversed(raids)):
                 if n < avg_count:
@@ -181,9 +222,9 @@ class AdventureResults:
             if dmg_amount < talk_amount:
                 stat_type = "dipl"
                 avg_amount = talk_amount / num_talk
-            win_percent = num_wins / winrate_count
+            win_percent = num_wins / min(winrate_count, raid_count)
             min_stat = avg_amount * 0.75
-            max_stat = avg_amount * 1.50
+            max_stat = avg_amount * 2
             # want win % to be at least 50%, even when solo
             # if win % is below 50%, scale back min/max for easier mons
             if win_percent < 0.5:
@@ -205,6 +246,15 @@ class AdventureResults:
     def __str__(self):
         return str(self._last_raids)
 
+    def __getstate__(self):
+        state = self._last_raids.copy()
+        state["num_raids"] = self._num_raids
+        return state
+
+    def __setstate__(self, state):
+        self._num_raids = state["num_raids"]
+        del state["num_raids"]
+        self._last_raids: MutableMapping[int, List] = state
 
 class AdventureCheckFailure(commands.CheckFailure):
     pass
