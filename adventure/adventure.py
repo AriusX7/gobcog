@@ -3817,6 +3817,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 _("No heroes are ready to depart in an adventure, try again in {}.").format(
                     humanize_timedelta(seconds=int(cooldown_time)) if int(cooldown_time) >= 1 else _("1 second")
                 ),
+                delete_after=cooldown_time
             )
 
         if challenge and not (self.is_dev(ctx.author) or await ctx.bot.is_owner(ctx.author)):
