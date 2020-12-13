@@ -3009,15 +3009,18 @@ class MiscMixin(commands.Cog):
                 # 3 things, user, role, channel
                 for i in ctx.author.roles:
                     if not perms_data.get(str(i.id), True):
-                        raise AdventureCheckFailure("You are not allowed to use this command.")
+                        raise AdventureCheckFailure(_("You are not allowed to use this command."))
 
                 if not perms_data.get(str(ctx.author.id), True):
-                    raise AdventureCheckFailure("You are not allowed to use this command.")
+                    raise AdventureCheckFailure(_("You are not allowed to use this command."))
 
                 default = perms_data.get('default', True)
                 if not perms_data.get(str(ctx.channel.id), default):
                     channels = [ctx.bot.get_channel(int(x)).mention for x in perms_data if x.isdigit() and perms_data[x] and ctx.bot.get_channel(int(x))]
-                    raise AdventureCheckFailure(f"Try this in {', '.join(channels)}.")
+                    raise AdventureCheckFailure(_("Try this in {channels}.").format(channels=', '.join(channels)))
+
+        if not await self.allow_in_dm(ctx):
+            raise AdventureCheckFailure(_("This command is not available in DM's on this bot."))
 
         return True
 
