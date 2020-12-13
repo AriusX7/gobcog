@@ -3112,7 +3112,8 @@ class MiscMixin(commands.Cog):
             ctx.command.reset_cooldown(ctx)
             await smart_embed(ctx, str(error), success=False, delete_after=5)
             await asyncio.sleep(5)
-            await ctx.message.delete()
+            with contextlib.suppress(discord.HTTPException):
+                await ctx.message.delete()
         else:
             if ctx.guild:
                 dest_id = await self.config.guild(ctx.guild).error_channel()

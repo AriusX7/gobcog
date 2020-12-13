@@ -65,13 +65,15 @@ class RoleMixin(commands.Cog):
                 True
             )
 
-    async def make_mentionable(self, role: Role) -> bool:
+    @staticmethod
+    async def make_mentionable(role: Role) -> bool:
         if role.mentionable:
             return
 
         await role.edit(reason=_("Adventure ping"), mentionable=True)
 
-    async def make_unmentionable(self, role: Role):
+    @staticmethod
+    async def make_unmentionable(role: Role):
         if not role.mentionable:
             return
 
@@ -207,7 +209,8 @@ class RoleMixin(commands.Cog):
 
         delta = parse_timedelta(duration)
         if not delta:
-            return await smart_embed(ctx, _("Invalid duration provided."))
+            await smart_embed(ctx, _("Invalid duration provided."))
+            return False
 
         if await add_role() is False:
             return False
