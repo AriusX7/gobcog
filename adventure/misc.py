@@ -3208,9 +3208,13 @@ class MiscMixin(commands.Cog):
             luck = item.luck
             dex = item.dex
 
+        lvl = equip_level(character, item)
+        if lvl > character.lvl:
+            lvl = f'[{lvl}]'
+
         msg = (
             _("{item} [{slot}] | Lvl req {lv}{equipped}").format(
-                item=str(item), slot=slot, lv=equip_level(character, item),
+                item=str(item), slot=slot, lv=lvl,
                 equipped=_(" | Equipped") if equipped else ""
             )
             + f"\n\nATT: {str(att)}, "
