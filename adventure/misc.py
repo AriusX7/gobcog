@@ -416,15 +416,26 @@ class MiscMixin(commands.Cog):
                 del item_dict["set"]
         return (new_name, item_dict)
 
-    def in_adventure(self, ctx=None, user=None):
+    def in_adventure(self, ctx=None, user=None, *, guild=False):
+        """guild argument ensures that user is in the guild of trigger"""
         author = user or ctx.author
-        sessions = self._sessions
+        
+        if guild:
+            guild_id = getattr(author.guild, 'id', None)
+            try:
+                sessions = {guild_id: self._sessions[guild_id]}
+            except KeyError:
+                return False
+        else:
+            sessions = self._sessions
+
         if not sessions:
             return False
+
         participants_ids = set(
             [
                 p.id
-                for _loop, session in self._sessions.items()
+                for guild_id, session in sessions.items()
                 for p in [*session.fight, *session.magic, *session.pray, *session.talk, *session.run,]
             ]
         )
@@ -589,11 +600,12 @@ class MiscMixin(commands.Cog):
         else:
             attribute = random.choice(list(self.ATTRIBS.keys()))
 
-        if transcended:
+        if transcended and "Ascended" in challenge:
             new_challenge = challenge.replace("Ascended", "Transcended")
             if "Transcended" in new_challenge:
                 self.bot.dispatch("adventure_transcended", ctx)
         else:
+            transcended = False
             new_challenge = challenge
 
         if "Ascended" in new_challenge:
@@ -2171,8 +2183,7 @@ class MiscMixin(commands.Cog):
                 emoji == "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS WITH CIRCLED ONE OVERLAY}"
             ):  # user wants to sell all but one.
                 if item.owned == 1:
-                    ctx.command.reset_cooldown(ctx)
-                    return await smart_embed(ctx, _("You already only own one of those items."))
+                    raise AdventureCheckFailure(_("You already only own one of those items."))
                 price = 0
                 old_owned = item.owned
                 count = 0
