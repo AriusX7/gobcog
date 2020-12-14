@@ -12,7 +12,7 @@ from redbot.core.commands import Context
 from redbot.core.i18n import Translator, cog_i18n
 
 from .charsheet import parse_timedelta
-from .utils import smart_embed
+from .utils import smart_embed, AdventureCheckFailure
 
 _ = Translator("Adventure", __file__)
 
@@ -40,12 +40,12 @@ class RoleMixin(commands.Cog):
         await self.config.guild(ctx.guild).general_ping_role.set(getattr(role, "id", None))
 
         if not role:
-            await smart_embed(ctx, _("Unset all adventures role."), True)
+            await smart_embed(ctx, _("Unset all adventures role."), success=True)
         else:
             await smart_embed(
                 ctx,
                 _("Set {role} as all adventures role.").format(role=role.mention),
-                True
+                success=True
             )
 
     @_roleset.command(name="boss")
@@ -57,12 +57,12 @@ class RoleMixin(commands.Cog):
         await self.config.guild(ctx.guild).boss_ping_role.set(getattr(role, "id", None))
 
         if not role:
-            await smart_embed(ctx, _("Unset boss-only adventures role."), True)
+            await smart_embed(ctx, _("Unset boss-only adventures role."), success=True)
         else:
             await smart_embed(
                 ctx,
                 _("Set {role} as boss-only adventures role.").format(role=role.mention),
-                True
+                success=True
             )
 
     @staticmethod
@@ -209,8 +209,7 @@ class RoleMixin(commands.Cog):
 
         delta = parse_timedelta(duration)
         if not delta:
-            await smart_embed(ctx, _("Invalid duration provided."))
-            return False
+            raise AdventureCheckFailure(_("Invalid duration provided."))
 
         if await add_role() is False:
             return False
