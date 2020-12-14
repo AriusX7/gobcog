@@ -745,7 +745,16 @@ class MiscMixin(commands.Cog):
 
         session.message_id = adventure_msg.id
         session.message = adventure_msg
-        start_adding_reactions(adventure_msg, self._adventure_actions)
+
+        for emoji in self._adventure_actions:
+            try:
+                await adventure_msg.add_reaction(emoji)
+                await asyncio.sleep(0.3)
+            except discord.Forbidden as e:
+                await ctx.send(_("I don't have the permissions to add reactions."))
+                # Re-raised here so it can be logged.
+                raise e
+
         timer = await self._adv_countdown(ctx, session.timer, "Time remaining")
         self.tasks[adventure_msg.id] = timer
         try:
