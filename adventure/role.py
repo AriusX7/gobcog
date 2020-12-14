@@ -96,16 +96,13 @@ class RoleMixin(commands.Cog):
 
         role_id = await self.config.guild(ctx.guild).general_ping_role()
         if not role_id:
-            ctx.command.reset_cooldown(ctx)
             raise AdventureCheckFailure(_("Role is not set."))
 
         role = ctx.guild.get_role(role_id)
         if not role:
-            ctx.command.reset_cooldown(ctx)
             raise AdventureCheckFailure(_("I could not find the set role."))
 
-        if not self.in_adventure(ctx):
-            ctx.command.reset_cooldown(ctx)
+        if not self.in_adventure(ctx, guild=True):
             raise AdventureCheckFailure(_("You must be in an adventure to use this command."))
 
         try:
@@ -148,17 +145,19 @@ class RoleMixin(commands.Cog):
 
         role_id = await self.config.guild(ctx.guild).boss_ping_role()
         if not role_id:
-            ctx.command.reset_cooldown(ctx)
             raise AdventureCheckFailure(_("Role is not set."))
 
         role = ctx.guild.get_role(role_id)
         if not role:
-            ctx.command.reset_cooldown(ctx)
             raise AdventureCheckFailure(_("I could not find the set role."))
 
-        if not self.in_adventure(ctx):
-            ctx.command.reset_cooldown(ctx)
+        if not self.in_adventure(ctx, guild=True):
             raise AdventureCheckFailure(_("You must be in an adventure to use this command."))
+
+        if self._sessions[ctx.guild.id] and not self._sessions[ctx.guild.id].boss and not self._sessions[ctx.guild.id].transcended:
+            raise AdventureCheckFailure(
+                _("You must be fighting a boss or transcended monster to use this command. If not, use `{prefix}pingadv` instead!").format(prefix=ctx.prefix)
+            )
 
         try:
             await self.make_mentionable(role)
