@@ -97,16 +97,16 @@ class RoleMixin(commands.Cog):
         role_id = await self.config.guild(ctx.guild).general_ping_role()
         if not role_id:
             ctx.command.reset_cooldown(ctx)
-            return await smart_embed(ctx, _("Role is not set."))
+            raise AdventureCheckFailure(_("Role is not set."))
 
         role = ctx.guild.get_role(role_id)
         if not role:
             ctx.command.reset_cooldown(ctx)
-            return await smart_embed(ctx, _("I could not find the set role."))
+            raise AdventureCheckFailure(_("I could not find the set role."))
 
         if not self.in_adventure(ctx):
             ctx.command.reset_cooldown(ctx)
-            return await smart_embed(ctx, _("You must be in an adventure to use this command."))
+            raise AdventureCheckFailure(_("You must be in an adventure to use this command."))
 
         try:
             await self.make_mentionable(role)
@@ -149,16 +149,16 @@ class RoleMixin(commands.Cog):
         role_id = await self.config.guild(ctx.guild).boss_ping_role()
         if not role_id:
             ctx.command.reset_cooldown(ctx)
-            return await smart_embed(ctx, _("Role is not set."))
+            raise AdventureCheckFailure(_("Role is not set."))
 
         role = ctx.guild.get_role(role_id)
         if not role:
             ctx.command.reset_cooldown(ctx)
-            return await smart_embed(ctx, _("I could not find the set role."))
+            raise AdventureCheckFailure(_("I could not find the set role."))
 
         if not self.in_adventure(ctx):
             ctx.command.reset_cooldown(ctx)
-            return await smart_embed(ctx, _("You must be in an adventure to use this command."))
+            raise AdventureCheckFailure(_("You must be in an adventure to use this command."))
 
         try:
             await self.make_mentionable(role)
@@ -233,10 +233,10 @@ class RoleMixin(commands.Cog):
 
         role = await self.get_role(ctx.guild, "general_ping_role")
         if not role:
-            return await smart_embed(ctx, _("All adventures role is not set."))
+            raise AdventureCheckFailure(_("All adventures role is not set."))
 
         if await self.add_ping_role(ctx, role, duration, "general") is False:
-            return await smart_embed(ctx, _("Unable to add the role for unknown reason."))
+            raise AdventureCheckFailure(_("Unable to add the role for unknown reason."))
 
         await ctx.tick()
 
@@ -252,10 +252,10 @@ class RoleMixin(commands.Cog):
 
         role = await self.get_role(ctx.guild, "boss_ping_role")
         if not role:
-            return await smart_embed(ctx, _("Boss-only adventures role is not set."))
+            raise AdventureCheckFailure(_("Boss-only adventures role is not set."))
 
         if await self.add_ping_role(ctx, role, duration, "boss") is False:
-            return await smart_embed(ctx, _("Unable to add the role for unknown reason."))
+            raise AdventureCheckFailure(_("Unable to add the role for unknown reason."))
 
         await ctx.tick()
 
@@ -279,10 +279,10 @@ class RoleMixin(commands.Cog):
 
         role = await self.get_role(ctx.guild, "general_ping_role")
         if not role:
-            return await smart_embed(ctx, _("All adventures role is not set."))
+            raise AdventureCheckFailure(_("All adventures role is not set."))
 
         if not await self.remove_ping_role(ctx.author, role):
-            return await smart_embed(ctx, _("Unable to remove the role for unknown reason."))
+            raise AdventureCheckFailure(_("Unable to remove the role for unknown reason."))
 
         async with self.config.guild(ctx.guild).timed_roles() as timed_roles:
             str_id = str(ctx.author.id)
@@ -299,10 +299,10 @@ class RoleMixin(commands.Cog):
 
         role = await self.get_role(ctx.guild, "boss_ping_role")
         if not role:
-            return await smart_embed(ctx, _("Boss-only adventures role is not set."))
+            raise AdventureCheckFailure(_("Boss-only adventures role is not set."))
 
         if not await self.remove_ping_role(ctx.author, role):
-            return await smart_embed(ctx, _("Unable to remove the role for unknown reason."))
+            raise AdventureCheckFailure(_("Unable to remove the role for unknown reason."))
 
 
         async with self.config.guild(ctx.guild).timed_roles() as timed_roles:
