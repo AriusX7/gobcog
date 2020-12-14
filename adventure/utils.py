@@ -1,3 +1,5 @@
+import asyncio
+import contextlib
 import logging
 import time
 from typing import List, MutableMapping
@@ -272,3 +274,43 @@ class FilterInt:
                 return cls(int(argument[0:-1]), argument[-1])
 
         raise BadArgument(_('{} is not a valid filter number.').format(argument))
+
+
+
+def start_adding_reactions(
+    message: discord.Message, emojis
+) -> asyncio.Task:
+    """
+    [Overwrites original Red function to add a 0.3s delay]
+    Start adding reactions to a message.
+
+    This is a non-blocking operation - calling this will schedule the
+    reactions being added, but the calling code will continue to
+    execute asynchronously. There is no need to await this function.
+
+    This is particularly useful if you wish to start waiting for a
+    reaction whilst the reactions are still being added - in fact,
+    this is exactly what `menu` uses to do that.
+
+    Parameters
+    ----------
+    message: discord.Message
+        The message to add reactions to.
+    emojis : Iterable[Union[str, discord.Emoji]]
+        The emojis to react to the message with.
+
+    Returns
+    -------
+    asyncio.Task
+        The task for the coroutine adding the reactions.
+
+    """
+
+    async def task():
+        # The task should exit silently if the message is deleted
+        with contextlib.suppress(discord.NotFound):
+            for emoji in emojis:
+                await message.add_reaction(emoji)
+                await asyncio.sleep(0.3)
+
+    return asyncio.create_task(task())

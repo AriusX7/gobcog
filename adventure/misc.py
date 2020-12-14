@@ -23,13 +23,13 @@ from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import box, escape, humanize_list, humanize_number, pagify
 from redbot.core.utils.common_filters import filter_various_mentions
-from redbot.core.utils.menus import DEFAULT_CONTROLS, menu, start_adding_reactions
+from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 
 import adventure.charsheet
 from . import bank
 from .charsheet import ORDER, RARITIES, Character, GameSession, Item, calculate_sp, can_equip, equip_level, has_funds
-from .utils import AdventureCheckFailure, smart_embed
+from .utils import AdventureCheckFailure, smart_embed, start_adding_reactions
 
 DEV_LIST = [208903205982044161, 154497072148643840, 218773382617890828]
 REBIRTH_LVL = 20
@@ -745,15 +745,8 @@ class MiscMixin(commands.Cog):
 
         session.message_id = adventure_msg.id
         session.message = adventure_msg
-
-        for emoji in self._adventure_actions:
-            try:
-                await adventure_msg.add_reaction(emoji)
-                await asyncio.sleep(0.3)
-            except discord.Forbidden as e:
-                await ctx.send(_("I don't have the permissions to add reactions."))
-                # Re-raised here so it can be logged.
-                raise e
+        
+        start_adding_reactions(adventure_msg, self._adventure_actions)
 
         timer = await self._adv_countdown(ctx, session.timer, "Time remaining")
         self.tasks[adventure_msg.id] = timer
