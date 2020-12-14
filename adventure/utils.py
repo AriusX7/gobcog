@@ -10,6 +10,7 @@ from redbot.core.utils.chat_formatting import humanize_timedelta
 from discord.ext.commands import BadArgument, CheckFailure, Converter
 from redbot.core.commands import Context, check
 from redbot.core.i18n import Translator
+from redbot.core.utils.menus import prev_page, next_page
 
 from . import bank
 
@@ -314,3 +315,25 @@ def start_adding_reactions(
                 await asyncio.sleep(0.3)
 
     return asyncio.create_task(task())
+
+
+async def close_menu(
+    ctx: commands.Context,
+    pages: list,
+    controls: dict,
+    message: discord.Message,
+    page: int,
+    timeout: float,
+    emoji: str,
+):
+    with contextlib.suppress(discord.NotFound):
+        await ctx.tick()
+        await message.delete()
+
+
+
+MENU_CONTROLS = {
+    "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}": prev_page,
+    "\N{CROSS MARK}": close_menu,
+    "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}": next_page,
+}

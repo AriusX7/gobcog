@@ -24,7 +24,7 @@ from redbot.core.errors import BalanceTooHigh
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import box, humanize_list, humanize_number, humanize_timedelta, pagify
-from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
+from redbot.core.utils.menus import menu
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 from tabulate import tabulate
 
@@ -72,7 +72,8 @@ from .utils import (
     has_separated_economy,
     smart_embed,
     AdventureCheckFailure,
-    start_adding_reactions
+    start_adding_reactions,
+    MENU_CONTROLS
 )
 
 _ = Translator("Adventure", __file__)
@@ -342,7 +343,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             msgs = []
             async for page in AsyncIter(pagify(backpack_contents, delims=["\n"], shorten_by=20, page_length=1900)):
                 msgs.append(box(page, lang="css"))
-            return await menu(ctx, msgs, DEFAULT_CONTROLS)
+            return await menu(ctx, msgs, MENU_CONTROLS)
 
     @commands.command(name="ubackpack")
     @commands.bot_has_permissions(add_reactions=True)
@@ -385,7 +386,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             msgs = []
             async for page in AsyncIter(pagify(backpack_contents, delims=["\n"], shorten_by=20, page_length=1900)):
                 msgs.append(box(page, lang="css"))
-            return await menu(ctx, msgs, DEFAULT_CONTROLS)
+            return await menu(ctx, msgs, MENU_CONTROLS)
 
     @commands.group(name="backpack", autohelp=False)
     @commands.bot_has_permissions(add_reactions=True)
@@ -436,7 +437,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             msgs = []
             async for page in AsyncIter(pagify(backpack_contents, delims=["\n"], shorten_by=20, page_length=1900)):
                 msgs.append(box(page, lang="css"))
-            controls = DEFAULT_CONTROLS.copy()
+            controls = MENU_CONTROLS.copy()
 
             async def _backpack_info(
                 ctx: commands.Context,
@@ -672,7 +673,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         )
         for page in pagify(new_msg, shorten_by=10, page_length=1900):
             msg_list.append(box(page, lang="css"))
-        await menu(ctx, msg_list, DEFAULT_CONTROLS)
+        await menu(ctx, msg_list, MENU_CONTROLS)
 
     @_backpack.command(name="sell", cooldown_after_parsing=True)
     @commands.cooldown(rate=3, per=60, type=commands.BucketType.user)
@@ -1137,7 +1138,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 )
                 msg_list.append(box(msg, lang="css"))
                 count += 1
-            await menu(ctx, msg_list, DEFAULT_CONTROLS, page=index)
+            await menu(ctx, msg_list, MENU_CONTROLS, page=index)
 
     @loadout.command(name="equip", aliases=["load"], cooldown_after_parsing=True)
     @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
@@ -1698,7 +1699,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             embed.set_image(url=image)
             embed_list.append(embed)
         if embed_list:
-            await menu(ctx, embed_list, DEFAULT_CONTROLS)
+            await menu(ctx, embed_list, MENU_CONTROLS)
 
     @themeset_list.command(name="pet")
     async def themeset_list_pet(self, ctx: Context, *, theme: str):
@@ -1722,7 +1723,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             embed = discord.Embed(title=pet, description=text)
             embed_list.append(embed)
         if embed_list:
-            await menu(ctx, embed_list, DEFAULT_CONTROLS)
+            await menu(ctx, embed_list, MENU_CONTROLS)
 
     @adventureset.command()
     @commands.admin_or_permissions(administrator=True)
@@ -2021,7 +2022,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 )
                 pages = pagify(forgeables, delims=["\n"], shorten_by=20, page_length=1900)
                 pages = [box(page, lang="css") for page in pages]
-                task = asyncio.create_task(menu(ctx, pages, DEFAULT_CONTROLS, timeout=180))
+                task = asyncio.create_task(menu(ctx, pages, MENU_CONTROLS, timeout=180))
                 await smart_embed(
                     ctx,
                     _(
@@ -2688,7 +2689,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
                     await self._open_chest(ctx, ctx.author, box_type, character=c)  # returns item and msg
         if msgs:
-            await menu(ctx, msgs, DEFAULT_CONTROLS)
+            await menu(ctx, msgs, MENU_CONTROLS)
 
     @commands.command(name="negaverse", aliases=["nv"], cooldown_after_parsing=True)
     @commands.cooldown(rate=1, per=3600, type=commands.BucketType.user)
@@ -3411,7 +3412,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         async for page in AsyncIter(pagify(backpack_contents, delims=["\n"], shorten_by=20, page_length=1950)):
             msg_list.append(box(page, lang="css"))
 
-        await menu(ctx, pages=msg_list, controls=DEFAULT_CONTROLS)
+        await menu(ctx, pages=msg_list, controls=MENU_CONTROLS)
 
     async def _setinfo_details(self, ctx: Context, title_cased_set_name: str):
         """
@@ -3450,7 +3451,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             legend=legend, equip=c.get_equipment(), user=c.user.display_name
         )
         await menu(
-            ctx, pages=[box(c, lang="css"), box(equipped_gear_msg, lang="css")], controls=DEFAULT_CONTROLS,
+            ctx, pages=[box(c, lang="css"), box(equipped_gear_msg, lang="css")], controls=MENU_CONTROLS,
         )
 
     async def _build_loadout_display(self, userdata, loadout=True):
@@ -3577,7 +3578,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             embed = discord.Embed(description=page)
             embed_list.append(embed)
         if len(embed_list) > 1:
-            await menu(ctx, embed_list, DEFAULT_CONTROLS)
+            await menu(ctx, embed_list, MENU_CONTROLS)
         else:
             await ctx.send(embed=embed_list[0])
 
