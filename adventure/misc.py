@@ -3090,6 +3090,29 @@ class MiscMixin(commands.Cog):
                         await self._handle_cart(reaction, user)
 
     @commands.Cog.listener()
+    async def on_reaction_remove(self, reaction, user):
+        """This will be a cog level reaction_add listener for game logic."""
+        await self.bot.wait_until_ready()
+        if user.bot:
+            return
+        try:
+            guild = user.guild
+        except AttributeError:
+            return
+        emojis = ReactionPredicate.NUMBER_EMOJIS + self._adventure_actions
+        if str(reaction.emoji) not in emojis:
+            return
+        if not await self.has_perm(user):
+            return
+        if guild.id in self._sessions:
+            if reaction.message.id == self._sessions[guild.id].message_id:
+                if guild.id in self._adventure_countdown:
+                    (timer, done, sremain) = self._adventure_countdown[guild.id]
+                    if sremain > 0:
+                        reaction.emoji = self.emojis.run
+                        await self._handle_adventure(reaction, user)
+
+    @commands.Cog.listener()
     async def on_message_without_command(self, message):
         await self._ready_event.wait()
         if not message.guild:
