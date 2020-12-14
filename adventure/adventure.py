@@ -122,7 +122,6 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             self.emojis.magic,
             self.emojis.talk,
             self.emojis.pray,
-            self.emojis.run,
         ]
         self._adventure_controls = {
             "fight": self.emojis.attack,
@@ -3869,7 +3868,6 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 tax=highest,
                 transfered=humanize_number(transfered),
             ),
-            success=True
         )
 
     @commands_atransfer.command(name="give")
