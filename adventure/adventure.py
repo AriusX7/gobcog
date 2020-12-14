@@ -214,7 +214,26 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 "general": {},
                 "boss": {}
             },
+            "autoadv": {
+                # Channel ID for which autoadv is currently enabled.
+                "channel": None,
+                # Message ID used to invoke autoadv.
+                "message": None,
+                # Whether autoadv is on in the channel or not.
+                "on": False,
+                # Timestamp when autoadv is supposed to end.
+                "end_ts": None,
+                # Timestamp when adventure was last run in the channel.
+                "last_run_ts": None
+            },
+            "autoadv_config": {
+                # These roles can use adventure command even if it is disabled.
+                "allowed_roles": [],
+                # Duration (in seconds) after which adventure should run.
+                "interval": 300,
+            },
         }
+
         default_global = {
             "god_name": _("Herbert"),
             "cart_name": _("Hawl's brother"),
@@ -252,6 +271,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         self._init_task = self.bot.loop.create_task(self.initialize())
         self._timed_roles_task = self.timed_roles_task.start()
         self._ready_event = asyncio.Event()
+        self.autoadv_task.start()
 
     @commands.command()
     @commands.bot_has_permissions(add_reactions=True)
@@ -3638,7 +3658,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 delete_after=cooldown_time,
                 success=False
             )
-
+        # return await ctx.send("ack")
         if challenge and not (self.is_dev(ctx.author) or await ctx.bot.is_owner(ctx.author)):
             # Only let the bot owner specify a specific challenge
             challenge = None
@@ -4045,3 +4065,28 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             character = await character.equip_item(item, False, self.is_dev(ctx.author))
             await self.config.user(ctx.author).set(await character.to_json(self.config))
         await self._clear_react(msg)
+
+    @commands.command()
+    @commands.admin_or_permissions(manage_messages=True)
+    async def autoadv(self, ctx: Context, duration: Optional[int] = 60, setting: bool = True):
+        if not duration:
+            setting = False
+
+        adv_cmd = ctx.cog.all_commands["adventure"]
+
+        if setting:
+            adv_cmd.deny_to("default", ctx.guild.id)
+            config = await self.config.guild(ctx.guild).autoadv_config()
+            for role in config["allowed_roles"]:
+                adv_cmd.allow_for(role, ctx.guild.id)
+            async with self.config.guild(ctx.guild).autoadv() as autoadv:
+                autoadv["channel"] = ctx.channel.id
+                autoadv["message"] = ctx.message.id
+                now = self.utc_timestamp(datetime.utcnow())
+                autoadv["end_ts"] = now + (duration * 60)
+                autoadv["on"] = True
+                autoadv["last_run_ts"] = now
+            asyncio.create_task(adv_cmd.invoke(ctx))
+            adv_cmd.reset_cooldown(ctx)
+        else:
+            await self.disable_autoadv(ctx.guild, adv_cmd)
