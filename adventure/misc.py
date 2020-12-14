@@ -13,6 +13,8 @@ from datetime import date, datetime, timedelta
 from typing import List, MutableMapping, Union
 
 import discord
+from discord.ext import tasks
+
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.commands import Context
@@ -3260,3 +3262,62 @@ class MiscMixin(commands.Cog):
         )
 
         return msg
+
+    async def disable_autoadv(self, guild: discord.Guild, adv_cmd: commands.Command):
+        adv_cmd.allow_for("default", guild.id)
+        async with self.config.guild(guild).autoadv() as autoadv:
+            autoadv["channel"] = None
+            autoadv["message"] = None
+            autoadv["end_ts"] = None
+            autoadv["on"] = False
+            autoadv["last_run_ts"] = None
+
+    async def run_autoadv(self, channel_id: int, message_id: int, adv_cmd: commands.Command):
+        if not channel_id:
+            return
+
+        channel = self.bot.get_channel(channel_id)
+
+        message = await channel.fetch_message(message_id)
+        if not message:
+            return
+
+        ctx = await self.bot.get_context(message)
+        if not ctx.valid:
+            return
+
+        asyncio.create_task(adv_cmd.invoke(ctx))
+        adv_cmd.reset_cooldown(ctx)
+
+    @staticmethod
+    def utc_timestamp(dt: datetime) -> float:
+        """Get timestamp in UTC."""
+
+        ts = (dt - datetime(1970, 1, 1)).total_seconds()
+        return ts
+
+    @tasks.loop(seconds=10)
+    async def autoadv_task(self):
+        adv_cmd = self.bot.get_command("adventure")
+        now = self.utc_timestamp(datetime.utcnow())
+
+        for guild in self.bot.guilds:
+            autoadv = await self.config.guild(guild).autoadv()
+
+            if not autoadv["end_ts"]:
+                continue
+
+            if autoadv["end_ts"] < now:
+                await self.disable_autoadv(guild, adv_cmd)
+                continue
+
+            if not autoadv["on"]:
+                continue
+
+            if not autoadv["last_run_ts"]:
+                continue
+
+            config = await self.config.guild(guild).autoadv_config()
+            if autoadv["last_run_ts"] + config["interval"] < now:
+                await self.config.guild(guild).set_raw("autoadv", "last_run_ts", value=now)
+                await self.run_autoadv(autoadv["channel"], autoadv["message"], adv_cmd)
