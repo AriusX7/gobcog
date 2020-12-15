@@ -401,11 +401,11 @@ class GameSession:
     reacted: bool = False
     participants: Set[discord.Member] = set()
     monster_modified_stats: MutableMapping = {}
-    fight: List[discord.Member] = []
-    magic: List[discord.Member] = []
-    talk: List[discord.Member] = []
-    pray: List[discord.Member] = []
-    run: List[discord.Member] = []
+    fight: Set[discord.Member] = []
+    magic: Set[discord.Member] = []
+    talk: Set[discord.Member] = []
+    pray: Set[discord.Member] = []
+    run: Set[discord.Member] = []
     message: discord.Message = None
     channel: discord.TextChannel = None
     countdown_message: discord.Message = None
@@ -429,11 +429,11 @@ class GameSession:
         self.reacted = False
         self.reactors: Set[discord.Member] = set()
         self.participants: Set[discord.Member] = set()
-        self.fight: List[discord.Member] = []
-        self.magic: List[discord.Member] = []
-        self.talk: List[discord.Member] = []
-        self.pray: List[discord.Member] = []
-        self.run: List[discord.Member] = []
+        self.fight: Set[discord.Member] = set()
+        self.magic: Set[discord.Member] = set()
+        self.talk: Set[discord.Member] = set()
+        self.pray: Set[discord.Member] = set()
+        self.run: Set[discord.Member] = set()
         self.transcended: bool = kwargs.pop("transcended", False)
         self.start_time = datetime.now()
         
@@ -443,10 +443,10 @@ class GameSession:
     def __getstate__(self):
         state = self.__dict__.copy()
         state['guild'] = state['guild'].id
-        state['fight'] = [i.id for i in state['fight']]
-        state['magic'] = [i.id for i in state['magic']]
-        state['talk'] = [i.id for i in state['talk']]
-        state['pray'] = [i.id for i in state['pray']]
+        state['fight'] = {i.id for i in state['fight']}
+        state['magic'] = {i.id for i in state['magic']}
+        state['talk'] = {i.id for i in state['talk']}
+        state['pray'] = {i.id for i in state['pray']}
         state['reactors'] = {i.id for i in state['reactors']}
         state['participants'] = {i.id for i in state['participants']}
         state['channel'] = state['message'].channel.id
