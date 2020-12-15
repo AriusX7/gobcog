@@ -87,23 +87,20 @@ class RoleMixin(commands.Cog):
 
         return guild.get_role(role_id)
 
-    @commands.command()
-    @commands.cooldown(rate=1, per=180, type=BucketType.guild)
-    @commands.bot_has_permissions(manage_roles=True)
-    @commands.guild_only()
-    async def pingadv(self, ctx: Context):
-        """Ping the all adventures role."""
-
-        role_id = await self.config.guild(ctx.guild).general_ping_role()
-        if not role_id:
-            raise AdventureCheckFailure(_("Role is not set."))
-
-        role = ctx.guild.get_role(role_id)
+    async def ping(self, ctx, role_iden: str):
+        role = await self.get_role(ctx.guild, role_iden + "_ping_role")
         if not role:
             raise AdventureCheckFailure(_("I could not find the set role."))
 
         if not self.in_adventure(ctx, guild=True):
             raise AdventureCheckFailure(_("You must be in an adventure to use this command."))
+
+        session = self._sessions[ctx.guild.id]
+
+        if role_iden == 'boss' and not session.boss and not session.transcended:
+            raise AdventureCheckFailure(
+                _("You must be fighting a boss or transcended monster to use this command. Use `{prefix}pingadv` instead!").format(prefix=ctx.prefix)
+            )
 
         try:
             await self.make_mentionable(role)
@@ -117,8 +114,6 @@ class RoleMixin(commands.Cog):
                 )
             )
             return
-
-        session = self._sessions[ctx.guild.id]
         try:
             await ctx.send(_("{mention}, {user} needs your assistance in fighting the **{session.attribute} {session.challenge}** ahead!").format(
                     mention=role.mention, user=self.escape(ctx.author.display_name), session=session
@@ -136,6 +131,14 @@ class RoleMixin(commands.Cog):
                         guild=role.guild.name
                     )
                 )
+
+    @commands.command()
+    @commands.cooldown(rate=1, per=180, type=BucketType.guild)
+    @commands.bot_has_permissions(manage_roles=True)
+    @commands.guild_only()
+    async def pingadv(self, ctx: Context):
+        """Ping the all adventures role."""
+        await self.ping(ctx, 'general')
 
     @commands.command()
     @commands.cooldown(rate=1, per=300, type=BucketType.guild)
@@ -143,54 +146,7 @@ class RoleMixin(commands.Cog):
     @commands.guild_only()
     async def pingboss(self, ctx: Context):
         """Ping the transcended or boss-only adventures role."""
-
-        role_id = await self.config.guild(ctx.guild).boss_ping_role()
-        if not role_id:
-            raise AdventureCheckFailure(_("Role is not set."))
-
-        role = ctx.guild.get_role(role_id)
-        if not role:
-            raise AdventureCheckFailure(_("I could not find the set role."))
-
-        if not self.in_adventure(ctx, guild=True):
-            raise AdventureCheckFailure(_("You must be in an adventure to use this command."))
-
-        session = self._sessions[ctx.guild.id]
-        if not session.boss and not session.transcended:
-            raise AdventureCheckFailure(
-                _("You must be fighting a boss or transcended monster to use this command. If not, use `{prefix}pingadv` instead!").format(prefix=ctx.prefix)
-            )
-
-        try:
-            await self.make_mentionable(role)
-        except discord.HTTPException:
-            log.exception(_("There was an error editing role permissions."))
-            return
-        except discord.Forbidden:
-            log.exception(
-                _("I don't have the permission to edit role permissions in {guild}.").format(
-                    guild=role.guild.name
-                )
-            )
-            return
-
-        try:
-            await ctx.send(_("{mention}, {user} needs your assistance in fighting the **{session.attribute} {session.challenge}** ahead!").format(
-                    mention=role.mention, user=self.escape(ctx.author.display_name), session=session
-                ),
-                allowed_mentions=discord.AllowedMentions(roles=True)
-            ),
-        finally:
-            try:
-                await self.make_unmentionable(role)
-            except discord.HTTPException:
-                log.exception(_("There was an error editing role permissions."))
-            except discord.Forbidden:
-                log.exception(
-                    _("I don't have the permission to edit role permissions in {guild}.").format(
-                        guild=role.guild.name
-                    )
-                )
+        await self.ping(ctx, 'boss')
 
     async def add_ping_role(self, ctx: Context, role: discord.Role, duration: Optional[str], role_type: str):
         async def add_role():
