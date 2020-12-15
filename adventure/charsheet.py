@@ -456,10 +456,10 @@ class GameSession:
     
     async def load_from_pickle(self, bot):
         self.guild = bot.get_guild(self.guild)
-        self.fight = [self.guild.get_member(i) for i in self.fight]
-        self.magic = [self.guild.get_member(i) for i in self.magic]
-        self.talk = [self.guild.get_member(i) for i in self.talk]
-        self.pray = [self.guild.get_member(i) for i in self.pray]
+        self.fight = {self.guild.get_member(i) for i in self.fight}
+        self.magic = {self.guild.get_member(i) for i in self.magic}
+        self.talk = {self.guild.get_member(i) for i in self.talk}
+        self.pray = {self.guild.get_member(i) for i in self.pray}
         self.reactors = {self.guild.get_member(i) for i in self.reactors}
         self.participants = {self.guild.get_member(i) for i in self.participants}
 
