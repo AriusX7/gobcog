@@ -467,6 +467,13 @@ class GameSession:
         self.message = await self.channel.fetch_message(self.message)
         self.countdown_message = await self.channel.fetch_message(self.countdown_message)
 
+    @property
+    def fmt_attribute(self):
+        vowels = 'aeiou'
+        if any(self.attribute.startswith(x) for x in vowels):
+            return 'an ' + self.attribute
+        else:
+            return 'a ' + self.attribute
 
 class Character(Item):
     """An class to represent the characters stats."""
