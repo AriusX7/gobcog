@@ -812,9 +812,6 @@ class MiscMixin(commands.Cog):
         session = self._sessions[user.guild.id]
         has_fund = await has_funds(user, 250)
         for x in ["fight", "magic", "talk", "pray", "run"]:
-            if user in getattr(session, x, []):
-                getattr(session, x).remove(user)
-
             if not has_fund or user in getattr(session, x, []):
                 with contextlib.suppress(discord.HTTPException):
                     symbol = self._adventure_controls[x]
@@ -861,10 +858,6 @@ class MiscMixin(commands.Cog):
                         )
                         self._react_messaged.append(user_id)
                         return
-                else:
-                    getattr(session, action).append(user)
-            else:
-                getattr(session, action).append(user)
 
     async def _handle_cart(self, reaction, user):
         guild = user.guild
@@ -957,8 +950,25 @@ class MiscMixin(commands.Cog):
         failed = False
         lost = False
         session = self._sessions[ctx.guild.id]
-        with contextlib.suppress(discord.HTTPException):
-            await message.clear_reactions()
+
+        # update message object
+        message = await message.channel.fetch_message(message.id)
+
+        for r in message.reactions:
+            if str(r.emoji) in self._adventure_actions:
+                action = {v: k for k, v in self._adventure_controls.items()}[str(r.emoji)]
+                async for user in r.users():
+                    if not user.bot:
+                        # only allow user to do one action, so remove from all
+                        # others if found
+                        for x in ["fight", "magic", "talk", "pray", "run"]:
+                            if user in getattr(session, x, []):
+                                getattr(session, x).remove(user)
+
+                        getattr(session, action).append(user)
+
+        # with contextlib.suppress(discord.HTTPException):
+        #     await message.clear_reactions()
 
         fight_list = list(set(session.fight))
         talk_list = list(set(session.talk))
@@ -3122,8 +3132,8 @@ class MiscMixin(commands.Cog):
                 if guild.id in self._adventure_countdown:
                     (timer, done, sremain) = self._adventure_countdown[guild.id]
                     if sremain > 0:
-                        reaction.emoji = self.emojis.run
-                        await self._handle_adventure(reaction, user)
+                        session = self._sessions[guild.id]
+                        session.run.append(user)
 
     @commands.Cog.listener()
     async def on_message_without_command(self, message):
