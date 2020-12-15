@@ -427,6 +427,7 @@ class GameSession:
         self.message = kwargs.pop("message", 1)
         self.message_id: int = 0
         self.reacted = False
+        self.reactors: Set[discord.Member] = set()
         self.participants: Set[discord.Member] = set()
         self.fight: List[discord.Member] = []
         self.magic: List[discord.Member] = []
@@ -446,6 +447,7 @@ class GameSession:
         state['magic'] = [i.id for i in state['magic']]
         state['talk'] = [i.id for i in state['talk']]
         state['pray'] = [i.id for i in state['pray']]
+        state['reactors'] = {i.id for i in state['reactors']}
         state['participants'] = {i.id for i in state['participants']}
         state['channel'] = state['message'].channel.id
         state['message'] = state['message'].id
@@ -458,6 +460,7 @@ class GameSession:
         self.magic = [self.guild.get_member(i) for i in self.magic]
         self.talk = [self.guild.get_member(i) for i in self.talk]
         self.pray = [self.guild.get_member(i) for i in self.pray]
+        self.reactors = {self.guild.get_member(i) for i in self.reactors}
         self.participants = {self.guild.get_member(i) for i in self.participants}
 
         self.channel = self.guild.get_channel(self.channel)
