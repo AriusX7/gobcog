@@ -118,9 +118,10 @@ class RoleMixin(commands.Cog):
             )
             return
 
+        session = self._sessions[ctx.guild.id]
         try:
-            await ctx.send(_("{mention}, {user} needs your assistance in fighting the monster ahead!").format(
-                    mention=role.mention, user=self.escape(ctx.author.display_name)
+            await ctx.send(_("{mention}, {user} needs your assistance in fighting the **{session.attribute} {session.challenge}** ahead!").format(
+                    mention=role.mention, user=self.escape(ctx.author.display_name), session=session
                 ),
                 allowed_mentions=discord.AllowedMentions(roles=True)
             )
@@ -154,7 +155,8 @@ class RoleMixin(commands.Cog):
         if not self.in_adventure(ctx, guild=True):
             raise AdventureCheckFailure(_("You must be in an adventure to use this command."))
 
-        if self._sessions[ctx.guild.id] and not self._sessions[ctx.guild.id].boss and not self._sessions[ctx.guild.id].transcended:
+        session = self._sessions[ctx.guild.id]
+        if not session.boss and not session.transcended:
             raise AdventureCheckFailure(
                 _("You must be fighting a boss or transcended monster to use this command. If not, use `{prefix}pingadv` instead!").format(prefix=ctx.prefix)
             )
@@ -173,8 +175,8 @@ class RoleMixin(commands.Cog):
             return
 
         try:
-            await ctx.send(_("{mention}, {user} needs your assistance in fighting the boss or transcended monster ahead!").format(
-                    mention=role.mention, user=self.escape(ctx.author.display_name)
+            await ctx.send(_("{mention}, {user} needs your assistance in fighting the **{session.attribute} {session.challenge}** ahead!").format(
+                    mention=role.mention, user=self.escape(ctx.author.display_name), session=session
                 ),
                 allowed_mentions=discord.AllowedMentions(roles=True)
             ),

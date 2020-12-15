@@ -610,10 +610,6 @@ class MiscMixin(commands.Cog):
 
         if "Ascended" in new_challenge:
             self.bot.dispatch("adventure_ascended", ctx)
-        if attribute == "n immortal":
-            self.bot.dispatch("adventure_immortal", ctx)
-        if attribute == " possessed":
-            self.bot.dispatch("adventure_possessed", ctx)
         if monster_roster[challenge]["boss"]:
             timer = 60 * 5
             text = box(_("\n [{} Alarm!]").format(new_challenge), lang="css")
@@ -655,13 +651,13 @@ class MiscMixin(commands.Cog):
     async def _choice(self, ctx: Context, adventure_msg):
         session = self._sessions[ctx.guild.id]
         dragon_text = _(
-            "but **a{attr} {chall}** "
+            "but **{attr} {chall}** "
             "just landed in front of you glaring! \n\n"
             "What will you do and will other heroes be brave enough to help you?\n"
             "Heroes have 5 minutes to participate via reaction:"
             "\n\nReact with: {reactions}"
         ).format(
-            attr=session.attribute,
+            attr=session.fmt_attribute,
             chall=session.challenge,
             reactions="**"
             + _("Fight")
@@ -676,12 +672,12 @@ class MiscMixin(commands.Cog):
             + "**",
         )
         basilisk_text = _(
-            "but **a{attr} {chall}** stepped out looking around. \n\n"
+            "but **{attr} {chall}** stepped out looking around. \n\n"
             "What will you do and will other heroes help your cause?\n"
             "Heroes have 3 minutes to participate via reaction:"
             "\n\nReact with: {reactions}"
         ).format(
-            attr=session.attribute,
+            attr=session.fmt_attribute,
             chall=session.challenge,
             reactions="**"
             + _("Fight")
@@ -696,13 +692,13 @@ class MiscMixin(commands.Cog):
             + "**",
         )
         normal_text = _(
-            "but **a{attr} {chall}** "
+            "but **{attr} {chall}** "
             "is guarding it with{threat}. \n\n"
             "What will you do and will other heroes help your cause?\n"
             "Heroes have 2 minutes to participate via reaction:"
             "\n\nReact with: {reactions}"
         ).format(
-            attr=session.attribute,
+            attr=session.fmt_attribute,
             chall=session.challenge,
             threat=random.choice(self.THREATEE),
             reactions="**"
