@@ -967,8 +967,8 @@ class MiscMixin(commands.Cog):
 
                         getattr(session, action).append(user)
 
-        # with contextlib.suppress(discord.HTTPException):
-        #     await message.clear_reactions()
+        with contextlib.suppress(discord.HTTPException):
+            await message.clear_reactions()
 
         fight_list = list(set(session.fight))
         talk_list = list(set(session.talk))
