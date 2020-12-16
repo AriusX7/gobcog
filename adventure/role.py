@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone
 import logging
 from typing import Optional
@@ -120,6 +121,7 @@ class RoleMixin(commands.Cog):
                 ),
                 allowed_mentions=discord.AllowedMentions(roles=True)
             )
+            await asyncio.sleep(2)
         finally:
             try:
                 await self.make_unmentionable(role)
