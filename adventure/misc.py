@@ -21,7 +21,7 @@ from redbot.core.data_manager import bundled_data_path, cog_data_path
 from redbot.core.errors import BalanceTooHigh
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
-from redbot.core.utils.chat_formatting import box, escape, humanize_list, humanize_number, pagify
+from redbot.core.utils.chat_formatting import box, escape, humanize_list, humanize_number, humanize_timedelta, pagify
 from redbot.core.utils.common_filters import filter_various_mentions
 from redbot.core.utils.menus import menu
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
@@ -29,7 +29,7 @@ from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 import adventure.charsheet
 from . import bank
 from .charsheet import ORDER, RARITIES, Character, GameSession, Item, calculate_sp, can_equip, equip_level, has_funds
-from .utils import AdventureCheckFailure, smart_embed, start_adding_reactions, MENU_CONTROLS
+from .utils import AdventureCheckFailure, AdventureOnCooldown, smart_embed, start_adding_reactions, MENU_CONTROLS
 
 DEV_LIST = [208903205982044161, 154497072148643840, 218773382617890828]
 REBIRTH_LVL = 20
@@ -2761,10 +2761,10 @@ class MiscMixin(commands.Cog):
             [", ".join(rewards_list[:-1]), rewards_list[-1]] if len(rewards_list) > 2 else rewards_list
         )
 
-        if cp > 0:
-            cp = f' {cp}'
+        if int(newcp) > 0:
+            newcp = f' {humanize_number(int(newcp))}'
         else:
-            cp = ''
+            newcp = ''
 
         word = "has" if len(userlist) == 1 else "have"
         if special is not False and sum(special) == 1:
@@ -2778,7 +2778,7 @@ class MiscMixin(commands.Cog):
                 b_reward=to_reward,
                 word=word,
                 xp=humanize_number(int(newxp)),
-                cp=humanize_number(int(newcp)),
+                cp=newcp,
                 currency_name=currency_name,
                 chest_type=chest_type,
             )
@@ -2790,7 +2790,7 @@ class MiscMixin(commands.Cog):
                 b_reward=to_reward,
                 word=word,
                 xp=humanize_number(int(newxp)),
-                cp=humanize_number(int(newcp)),
+                cp=newcp,
                 currency_name=currency_name,
             )
         else:
@@ -2800,7 +2800,7 @@ class MiscMixin(commands.Cog):
                 b_reward=to_reward,
                 word=word,
                 xp=humanize_number(int(newxp)),
-                cp=humanize_number(int(newcp)),
+                cp=newcp,
                 currency_name=currency_name,
             )
         return phrase
@@ -3140,7 +3140,15 @@ class MiscMixin(commands.Cog):
                 await self._trader(ctx)
 
     async def cog_command_error(self, ctx: Context, error: Exception):
-        if isinstance(error, AdventureCheckFailure):
+        if isinstance(error, commands.CommandOnCooldown):
+            error = AdventureOnCooldown(retry_after=error.retry_after)
+
+        if isinstance(error, AdventureOnCooldown):
+            await smart_embed(ctx, str(error), success=False, delete_after=error.retry_after)
+            await asyncio.sleep(error.retry_after)
+            await ctx.tick()
+
+        elif isinstance(error, AdventureCheckFailure):
             ctx.command.reset_cooldown(ctx)
             await smart_embed(ctx, str(error), success=False, delete_after=15)
             await asyncio.sleep(15)

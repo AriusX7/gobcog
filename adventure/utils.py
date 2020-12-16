@@ -92,13 +92,12 @@ def can_use_ability():
                     c.heroclass["cooldown"] = cooldown_time + 1
                 if c.heroclass["cooldown"] > time.time():
                     cooldown_time = c.heroclass["cooldown"] - time.time()
-                    raise AdventureCheckFailure(
-                        _(
+                    raise AdventureOnCooldown(
+                        message=_(
                             "Your hero is currently recovering from the last time "
-                            "they used this skill. Try again in {}."
-                        ).format(
-                            humanize_timedelta(seconds=int(cooldown_time)) if int(cooldown_time) >= 1 else _("1 second")
+                            "they used this skill. Try again in {delay}."
                         ),
+                        retry_after=cooldown_time
                     )
         
         return True
@@ -261,6 +260,18 @@ class AdventureResults:
 
 class AdventureCheckFailure(commands.CheckFailure):
     pass
+
+class AdventureOnCooldown(AdventureCheckFailure):
+    def __init__(self, retry_after, *, message=None):
+        self.retry_after = int(retry_after)
+
+        if message is None:
+            message = _("This command is on cooldown. Try again in {delay}.")
+
+        message = message.format(
+            delay=humanize_timedelta(seconds=self.retry_after) if self.retry_after >= 1 else _("1 second")
+        )
+        super().__init__(message)
 
 
 class FilterInt:
