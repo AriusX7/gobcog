@@ -72,6 +72,7 @@ from .utils import (
     has_separated_economy,
     smart_embed,
     AdventureCheckFailure,
+    AdventureOnCooldown,
     start_adding_reactions,
     MENU_CONTROLS
 )
@@ -3632,13 +3633,9 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         if cooldown + cooldown_time > time.time():
             cooldown_time = cooldown + cooldown_time - time.time()
             ctx.command.reset_cooldown(ctx)
-            return await smart_embed(
-                ctx,
-                _("No heroes are ready to depart in an adventure, try again in {}.").format(
-                    humanize_timedelta(seconds=int(cooldown_time)) if int(cooldown_time) >= 1 else _("1 second")
-                ),
-                delete_after=cooldown_time,
-                success=False
+            raise AdventureOnCooldown(
+                message=_("No heroes are ready to depart in an adventure, try again in {delay}."),
+                retry_after=cooldown_time
             )
 
         if challenge and not (self.is_dev(ctx.author) or await ctx.bot.is_owner(ctx.author)):
