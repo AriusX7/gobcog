@@ -2761,12 +2761,17 @@ class MiscMixin(commands.Cog):
             [", ".join(rewards_list[:-1]), rewards_list[-1]] if len(rewards_list) > 2 else rewards_list
         )
 
+        if cp > 0:
+            cp = f' {cp}'
+        else:
+            cp = ''
+
         word = "has" if len(userlist) == 1 else "have"
         if special is not False and sum(special) == 1:
             types = [" normal", " rare", "n epic", " legendary", " ascended", " set"]
             chest_type = types[special.index(1)]
             phrase += _(
-                "\n{b_reward} {word} been awarded {xp} xp and found "
+                "\n{b_reward} {word} been awarded {xp} xp and found"
                 "{cp} {currency_name} (split based on stats). "
                 "You also secured **a{chest_type} treasure chest**!"
             ).format(
@@ -2779,7 +2784,7 @@ class MiscMixin(commands.Cog):
             )
         elif special is not False and sum(special) > 1:
             phrase += _(
-                "\n{b_reward} {word} been awarded {xp} xp and found {cp} {currency_name} (split based on stats). "
+                "\n{b_reward} {word} been awarded {xp} xp and found{cp} {currency_name} (split based on stats). "
                 "You also secured **several treasure chests**!"
             ).format(
                 b_reward=to_reward,
@@ -2790,7 +2795,7 @@ class MiscMixin(commands.Cog):
             )
         else:
             phrase += _(
-                "\n{b_reward} {word} been awarded {xp} xp and found {cp} {currency_name} (split based on stats)."
+                "\n{b_reward} {word} been awarded {xp} xp and found{cp} {currency_name} (split based on stats)."
             ).format(
                 b_reward=to_reward,
                 word=word,
