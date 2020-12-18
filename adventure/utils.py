@@ -284,6 +284,9 @@ class FilterInt:
         if argument.endswith("+") or argument.endswith("-"):
             if argument[0:-1].isnumeric:
                 return cls(int(argument[0:-1]), argument[-1])
+        elif argument.startswith("+") or argument.startswith("-"):
+            if argument[1:].isnumeric:
+                return cls(int(argument[1:]), argument[0])
 
         raise BadArgument(_('{} is not a valid filter number.').format(argument))
 
