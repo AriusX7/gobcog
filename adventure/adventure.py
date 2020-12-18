@@ -552,12 +552,16 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
     @_backpack.command(name="sellall")
     async def backpack_sellall(
-        self, ctx: Context, level: Optional[FilterInt] = None, rarity: Optional[RarityConverter] = None, *, slot: Optional[SlotConverter] = None,
+        self, ctx: Context, level: Optional[FilterInt] = None, degrade: Optional[FilterInt] = None, rarity: Optional[RarityConverter] = None, *, slot: Optional[SlotConverter] = None,
     ):
         """Sell all items in your backpack. Optionally specify level filter, rarity or slot.
 
         Level filter can be any number (level) followed by a `+` or a `-` sign. For example,
         if `70+` is specified, all items that can only be equipped above level 70 will be sold.
+
+        Degrade filter works the same as level filters but only work for legendary and ascnded items.
+
+        Note: The level filter has to be specified (e.g. 0+) to use the degrade filter
         """
 
         assert isinstance(rarity, str) or rarity is None
@@ -588,23 +592,33 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         else:
             level_str = ""
 
+        if degrade and degrade.sign == "+":
+            degrade_str = _(" above degrade {}").format(degrade.num)
+        elif degrade and degrade.sign == "-":
+            degrade_str = _(" below degrade {}").format(degrade.num)
+        else:
+            degrade_str = ""
+
+        if rarity and rarity not in ('all', 'legendary', 'ascended'):
+            degrade_str = ""
+        
         async with self.get_lock(ctx.author):
             if rarity and slot:
                 msg = await ctx.send(
-                    "Are you sure you want to sell all {rarity} {slot} items{level} in your inventory?".format(
-                        rarity=rarity, slot=slot, level=level_str
+                    "Are you sure you want to sell all {rarity} {slot} items{level}{degrade} in your inventory?".format(
+                        rarity=rarity, slot=slot, level=level_str, degrade=degrade_str
                     )
                 )
             elif rarity or slot:
                 msg = await ctx.send(
-                    "Are you sure you want to sell all{rarity}{slot} items{level} in your inventory?".format(
-                        rarity=f" {rarity}" if rarity else "", slot=f" {slot}" if slot else "", level=level_str
+                    "Are you sure you want to sell all{rarity}{slot} items{level}{degrade} in your inventory?".format(
+                        rarity=f" {rarity}" if rarity else "", slot=f" {slot}" if slot else "", level=level_str, degrade=degrade_str
                     )
                 )
             else:
                 msg = await ctx.send(
-                    "Are you sure you want to sell all items{level} in your inventory?".format(
-                        level=level_str
+                    "Are you sure you want to sell all items{level}{degrade} in your inventory?".format(
+                        level=level_str, degrade=degrade_str
                     )
                 )
 
@@ -633,6 +647,14 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     elif level and level.sign == "-":
                         if item.lvl >= level.num:
                             continue
+
+                    if degrade and degrade.sign == "+":
+                        if item.degrade and item.degrade <= degrade.num:
+                            continue
+                    elif degrade and degrade.sign == "-":
+                        if item.degrade and item.degrade >= degrade.num:
+                            continue
+
                     if rarity and item.rarity != rarity:
                         continue
                     if slot:
@@ -665,12 +687,13 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 c.last_currency_check = time.time()
                 await self.config.user(ctx.author).set(await c.to_json(self.config))
         msg_list = []
-        new_msg = _("{author} sold all their{rarity} items{level} for {price}.\n\n{items}").format(
+        new_msg = _("{author} sold all their{rarity} items{level}{degrade} for {price}.\n\n{items}").format(
             author=self.escape(ctx.author.display_name),
             rarity=f" {rarity}" if rarity else "",
             price=humanize_number(total_price),
             items=msg,
             level=level_str,
+            degrade=degrade_str
         )
         for page in pagify(new_msg, shorten_by=10, page_length=1900):
             msg_list.append(box(page, lang="css"))
