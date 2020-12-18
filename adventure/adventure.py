@@ -559,7 +559,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         Level filter can be any number (level) followed by a `+` or a `-` sign. For example,
         if `70+` is specified, all items that can only be equipped above level 70 will be sold.
 
-        Degrade filter works the same as level filters but only work for legendary and ascnded items.
+        Degrade filter works the same as level filters but only work for legendary and ascended items.
 
         Note: The level filter has to be specified (e.g. 0+) to use the degrade filter
         """
