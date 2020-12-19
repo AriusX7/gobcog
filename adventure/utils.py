@@ -210,6 +210,8 @@ class AdventureResults:
                     if not raid.get("amount"):
                         # Incrementing `avg_count` makes sure we still consider 3 raids (if possible).
                         avg_count += 1
+                        # Similarly, incrementing `winrate_count` makes sure we consider 6 raids (if possible).
+                        winrate_count += 1
                         continue
                     if raid["main_action"] == "attack":
                         num_attack += 1
