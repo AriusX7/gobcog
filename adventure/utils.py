@@ -6,6 +6,7 @@ from typing import List, MutableMapping
 
 import discord
 from discord.ext import commands
+from discord.utils import get
 from redbot.core.utils.chat_formatting import humanize_timedelta
 from discord.ext.commands import BadArgument, CheckFailure, Converter
 from redbot.core.commands import Context, check
@@ -206,6 +207,12 @@ class AdventureResults:
 
             for n, raid in enumerate(reversed(raids)):
                 if n < avg_count:
+                    if not raid.get("amount"):
+                        # Incrementing `avg_count` makes sure we still consider 3 raids (if possible).
+                        avg_count += 1
+                        # Similarly, incrementing `winrate_count` makes sure we consider 6 raids (if possible).
+                        winrate_count += 1
+                        continue
                     if raid["main_action"] == "attack":
                         num_attack += 1
                         dmg_amount += raid["amount"]
