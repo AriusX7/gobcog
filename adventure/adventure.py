@@ -1165,7 +1165,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             await menu(ctx, msg_list, MENU_CONTROLS, page=index)
 
     @loadout.command(name="equip", aliases=["load"], cooldown_after_parsing=True)
-    @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=360, type=commands.BucketType.user)
     async def equip_loadout(self, ctx: Context, name: str):
         """Equip a saved loadout."""
         if self.in_adventure(ctx):
