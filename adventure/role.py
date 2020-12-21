@@ -93,10 +93,10 @@ class RoleMixin(commands.Cog):
         if not role:
             raise AdventureCheckFailure(_("I could not find the set role."))
 
-        if not self.in_adventure(ctx, guild=True):
-            raise AdventureCheckFailure(_("You must be in an adventure to use this command."))
+        session = self._sessions.get(ctx.guild.id)
 
-        session = self._sessions[ctx.guild.id]
+        if session is None:
+            raise AdventureCheckFailure(_("You must be in an adventure to use this command."))
 
         if role_iden == 'boss' and not session.boss and not session.transcended:
             raise AdventureCheckFailure(
