@@ -253,7 +253,7 @@ class RoleMixin(commands.Cog):
     @commands.guild_only()
     @commands.bot_has_permissions(manage_roles=True)
     async def rbossrole(self, ctx: Context):
-        """Removes the boss-only adventure role for optionally specified duration."""
+        """Removes the boss-only adventure role."""
 
         role = await self.get_role(ctx.guild, "boss_ping_role")
         if not role:
