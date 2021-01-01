@@ -667,8 +667,6 @@ class MiscMixin(commands.Cog):
             + _("Talk")
             + "** - **"
             + _("Pray")
-            + "** - **"
-            + _("Run")
             + "**",
         )
         basilisk_text = _(
@@ -687,8 +685,6 @@ class MiscMixin(commands.Cog):
             + _("Talk")
             + "** - **"
             + _("Pray")
-            + "** - **"
-            + _("Run")
             + "**",
         )
         normal_text = _(
@@ -709,8 +705,6 @@ class MiscMixin(commands.Cog):
             + _("Talk")
             + "** - **"
             + _("Pray")
-            + "** - **"
-            + _("Run")
             + "**",
         )
 
