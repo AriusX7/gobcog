@@ -856,6 +856,17 @@ class MiscMixin(commands.Cog):
 
 
     async def _handle_cart(self, reaction, user):
+        # This needs to be above here so a user isn't added to `_current_traders`
+        # if he's in an adventure.
+        if self.in_adventure(user=user):
+            with contextlib.suppress(discord.HTTPException):
+                await reaction.remove(user)
+            return await reaction.message.channel.send(
+                _("**{author}**, you have to be back in town to buy things from the cart!").format(
+                    author=self.escape(user.display_name)
+                ), delete_after=10
+            )
+
         guild = user.guild
         emojis = ReactionPredicate.NUMBER_EMOJIS
         itemindex = emojis.index(str(reaction.emoji)) - 1
@@ -863,15 +874,6 @@ class MiscMixin(commands.Cog):
         self._current_traders[guild.id]["users"].append(user)
         spender = user
         channel = reaction.message.channel
-
-        if self.in_adventure(user=user):
-            with contextlib.suppress(discord.HTTPException):
-                await reaction.remove(user)
-            return await channel.send(
-                _("**{author}**, you have to be back in town to buy things from the cart!").format(
-                    author=self.escape(user.display_name)
-                ), delete_after=10
-            )
 
         currency_name = await bank.get_currency_name(guild,)
         if currency_name.startswith("<"):
