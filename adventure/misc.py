@@ -691,12 +691,13 @@ class MiscMixin(commands.Cog):
             "but **{attr} {chall}** "
             "is guarding it with{threat}. \n\n"
             "What will you do and will other heroes help your cause?\n"
-            "Heroes have 2 minutes to participate via reaction:"
+            "Heroes have {duration} minutes to participate via reaction:"
             "\n\nReact with: {reactions}"
         ).format(
             attr=session.fmt_attribute,
             chall=session.challenge,
             threat=random.choice(self.THREATEE),
+            duration=3 if session.transcended else 2,
             reactions="**"
             + _("Fight")
             + "** - **"
