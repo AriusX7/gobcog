@@ -639,7 +639,6 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             total_price = 0
             async with ctx.typing():
                 items = [i for n, i in c.backpack.items() if i.rarity not in ["forged", "set"]]
-                count = 0
                 async for item in AsyncIter(items):
                     if level and level.sign == "+":
                         if item.lvl <= level.num:
@@ -669,20 +668,16 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         item_price += self._sell(c, item)
                         if item.owned <= 0:
                             del c.backpack[item.name]
-                        if not count % 10:
-                            await asyncio.sleep(0.1)
-                        count += 1
+                    item_price = max(item_price, 0)
                     msg += _("{old_item} sold for {price}.\n").format(
                         old_item=str(old_owned) + " " + str(item), price=humanize_number(item_price),
                     )
                     total_price += item_price
-                    await asyncio.sleep(0.1)
-                    item_price = max(item_price, 0)
-                    if item_price > 0:
-                        try:
-                            await bank.deposit_credits(ctx.author, item_price)
-                        except BalanceTooHigh as e:
-                            await bank.set_balance(ctx.author, e.max_balance)
+                if total_price > 0:
+                    try:
+                        await bank.deposit_credits(ctx.author, total_price)
+                    except BalanceTooHigh as e:
+                        await bank.set_balance(ctx.author, e.max_balance)
                 c.last_known_currency = await bank.get_balance(ctx.author)
                 c.last_currency_check = time.time()
                 await self.config.user(ctx.author).set(await c.to_json(self.config))
