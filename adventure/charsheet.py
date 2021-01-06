@@ -917,6 +917,8 @@ class Character(Item):
         self,
         forging: bool = False,
         consumed=None,
+        level=None,
+        degrade=None,
         rarity=None,
         slot=None,
         show_delta=False,
@@ -944,6 +946,20 @@ class Character(Item):
             slot_string = ""
             current_equipped = getattr(self, slot_name if slot != "two handed" else "left", None)
             async for item in AsyncIter(slot_group):
+                if level and level.sign == "+":
+                    if item[1].lvl <= level.num:
+                        continue
+                elif level and level.sign == "-":
+                    if item[1].lvl >= level.num:
+                        continue
+
+                if degrade and degrade.sign == "+":
+                    if item[1].degrade and item[1].degrade <= degrade.num:
+                        continue
+                elif degrade and degrade.sign == "-":
+                    if item[1].degrade and item[1].degrade >= degrade.num:
+                        continue
+
                 if forging and (item[1].rarity in ["forged", "set"] or item[1] in consumed_list):
                     continue
                 if forging and item[1].rarity == "ascended":
@@ -971,9 +987,9 @@ class Character(Item):
                     settext += f" | Set `{item[1].set}` ({item[1].parts}pcs)"
                 e_level = equip_level(self, item[1])
                 if e_level > self.lvl:
-                    level = f"[{e_level}]"
+                    fmt_level = f"[{e_level}]"
                 else:
-                    level = f"{e_level}"
+                    fmt_level = f"{e_level}"
 
                 if show_delta:
                     att = self.get_equipped_delta(current_equipped, item[1], "att")
@@ -998,7 +1014,7 @@ class Character(Item):
                     f"{luck_space}{luck:<{rjuststat}})"
                 )
 
-                slot_string += f"\n{str(item[1]):<{rjust}} - {stats} | Lvl {level:<5}{owned}{settext}"
+                slot_string += f"\n{str(item[1]):<{rjust}} - {stats} | Lvl {fmt_level:<5}{owned}{settext}"
             if slot_string:
                 form_string += f"\n\n {slot_name.title()} slot\n{slot_string}"
 

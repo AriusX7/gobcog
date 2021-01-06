@@ -307,6 +307,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         self,
         ctx: Context,
         show_diff: Optional[bool] = False,
+        level: Optional[FilterInt] = None,
+        degrade: Optional[FilterInt] = None,
         rarity: Optional[RarityConverter] = None,
         sort_order: Optional[SkillConverter] = None,
         *,
@@ -339,7 +341,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
             backpack_contents = _("{author}'s backpack \n\n{backpack}\n").format(
                 author=self.escape(ctx.author.display_name),
-                backpack=await c.get_backpack(rarity=rarity, slot=slot, show_delta=show_diff, equippable=True, sort_order=sort_order),
+                backpack=await c.get_backpack(level=level, degrade=degrade, rarity=rarity, slot=slot, show_delta=show_diff, equippable=True, sort_order=sort_order),
             )
             msgs = []
             async for page in AsyncIter(pagify(backpack_contents, delims=["\n"], shorten_by=20, page_length=1900)):
@@ -352,6 +354,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         self,
         ctx: Context,
         show_diff: Optional[bool] = False,
+        level: Optional[FilterInt] = None,
+        degrade: Optional[FilterInt] = None,
         rarity: Optional[RarityConverter] = None,
         sort_order: Optional[SkillConverter] = None,
         *,
@@ -382,7 +386,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
             backpack_contents = _("{author}'s backpack \n\n{backpack}\n").format(
                 author=self.escape(ctx.author.display_name),
-                backpack=await c.get_backpack(rarity=rarity, slot=slot, show_delta=show_diff, unequippable=True, sort_order=sort_order),
+                backpack=await c.get_backpack(level=level, degrade=degrade, rarity=rarity, slot=slot, show_delta=show_diff, unequippable=True, sort_order=sort_order),
             )
             msgs = []
             async for page in AsyncIter(pagify(backpack_contents, delims=["\n"], shorten_by=20, page_length=1900)):
@@ -395,6 +399,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         self,
         ctx: Context,
         show_diff: Optional[bool] = False,
+        level: Optional[FilterInt] = None,
+        degrade: Optional[FilterInt] = None,
         rarity: Optional[RarityConverter] = None,
         sort_order: Optional[SkillConverter] = None,
         *,
@@ -433,7 +439,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
             backpack_contents = _("{author}'s backpack \n\n{backpack}\n").format(
                 author=self.escape(ctx.author.display_name),
-                backpack=await c.get_backpack(rarity=rarity, slot=slot, show_delta=show_diff, sort_order=sort_order),
+                backpack=await c.get_backpack(level=level, degrade=degrade, rarity=rarity, slot=slot, show_delta=show_diff, sort_order=sort_order),
             )
             msgs = []
             async for page in AsyncIter(pagify(backpack_contents, delims=["\n"], shorten_by=20, page_length=1900)):
@@ -552,7 +558,11 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
     @_backpack.command(name="sellall")
     async def backpack_sellall(
-        self, ctx: Context, level: Optional[FilterInt] = None, degrade: Optional[FilterInt] = None, rarity: Optional[RarityConverter] = None, *, slot: Optional[SlotConverter] = None,
+        self, ctx: Context,
+        level: Optional[FilterInt] = None,
+        degrade: Optional[FilterInt] = None,
+        rarity: Optional[RarityConverter] = None,
+        *, slot: Optional[SlotConverter] = None,
     ):
         """Sell all items in your backpack. Optionally specify level filter, rarity or slot.
 
