@@ -2149,8 +2149,6 @@ class MiscMixin(commands.Cog):
                     price += price_shown
                     if item.owned <= 0:
                         del character.backpack[item.name]
-                    if not count % 10:
-                        await asyncio.sleep(0.1)
                     count += 1
                 msg += _("**{author}** sold all their {old_item} for {price} {currency_name}.\n").format(
                     author=self.escape(ctx.author.display_name),
