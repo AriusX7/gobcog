@@ -946,11 +946,12 @@ class Character(Item):
             slot_string = ""
             current_equipped = getattr(self, slot_name if slot != "two handed" else "left", None)
             async for item in AsyncIter(slot_group):
+                e_level = equip_level(self, item[1])
                 if level and level.sign == "+":
-                    if item[1].lvl <= level.num:
+                    if e_level <= level.num:
                         continue
                 elif level and level.sign == "-":
-                    if item[1].lvl >= level.num:
+                    if e_level >= level.num:
                         continue
 
                 if degrade and degrade.sign == "+":
@@ -985,7 +986,6 @@ class Character(Item):
                 owned += f" | {item[1].owned}"
                 if item[1].set:
                     settext += f" | Set `{item[1].set}` ({item[1].parts}pcs)"
-                e_level = equip_level(self, item[1])
                 if e_level > self.lvl:
                     fmt_level = f"[{e_level}]"
                 else:
