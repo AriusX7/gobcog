@@ -650,11 +650,12 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             async with ctx.typing():
                 items = [i for n, i in c.backpack.items() if i.rarity not in ["forged", "set"]]
                 async for item in AsyncIter(items):
+                    e_level = equip_level(c, item)
                     if level and level.sign == "+":
-                        if item.lvl <= level.num:
+                        if e_level <= level.num:
                             continue
                     elif level and level.sign == "-":
-                        if item.lvl >= level.num:
+                        if e_level >= level.num:
                             continue
 
                     if degrade and degrade.sign == "+":
