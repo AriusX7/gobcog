@@ -408,7 +408,6 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     ):
         """This shows the contents of your backpack.
 
-        Give
         Give it a rarity and/or slot to filter what backpack items to show.
 
         Selling:     `[p]backpack sell item_name`
