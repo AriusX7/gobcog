@@ -956,13 +956,10 @@ class MiscMixin(commands.Cog):
                 action = {v: k for k, v in self._adventure_controls.items()}[str(r.emoji)]
                 async for user in r.users():
                     if not user.bot:
-                        print(user, r.emoji, action)
-
                         # only allow user to do one action, so remove from all
                         # others if found
                         for x in ["fight", "magic", "talk", "pray", "run"]:
                             if user in getattr(session, x, []):
-                                print('removed from', x, user)
                                 getattr(session, x).remove(user)
 
                         getattr(session, action).add(user)
