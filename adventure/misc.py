@@ -810,7 +810,37 @@ class MiscMixin(commands.Cog):
 
         restricted = await self.config.restrict()
         if user not in getattr(session, action, []):
-            if not has_fund:
+            if has_fund:
+                if restricted:
+                    all_users = []
+                    for (guild_id, guild_session) in self._sessions.items():
+                        guild_users_in_game = (
+                            guild_session.fight
+                            | guild_session.magic
+                            | guild_session.talk
+                            | guild_session.pray
+                            | guild_session.run
+                        )
+                        all_users = all_users + guild_users_in_game
+
+                    if user in all_users:
+                        user_id = f"{user.id}-{user.guild.id}"
+                        # iterating through reactions here and removing them seems to be expensive
+                        # so they can just keep their react on the adventures they can't join
+                        if user_id not in self._react_messaged:
+                            await reaction.message.channel.send(
+                                _(
+                                    "**{c}**, you are already in an existing adventure. "
+                                    "Wait for it to finish before joining another one."
+                                ).format(c=self.escape(user.display_name))
+                            )
+                            self._react_messaged.append(user_id)
+                            return
+                    else:
+                        session.reactors.add(user)
+                else:
+                    session.reactors.add(user)
+            else:
                 with contextlib.suppress(discord.HTTPException):
                     await user.send(
                         _(
@@ -823,37 +853,6 @@ class MiscMixin(commands.Cog):
                             "to tell them you are broke!"
                         )
                     )
-                return
-            if restricted:
-                all_users = []
-                for (guild_id, guild_session) in self._sessions.items():
-                    guild_users_in_game = (
-                        guild_session.fight
-                        | guild_session.magic
-                        | guild_session.talk
-                        | guild_session.pray
-                        | guild_session.run
-                    )
-                    all_users = all_users + guild_users_in_game
-
-                if user in all_users:
-                    user_id = f"{user.id}-{user.guild.id}"
-                    # iterating through reactions here and removing them seems to be expensive
-                    # so they can just keep their react on the adventures they can't join
-                    if user_id not in self._react_messaged:
-                        await reaction.message.channel.send(
-                            _(
-                                "**{c}**, you are already in an existing adventure. "
-                                "Wait for it to finish before joining another one."
-                            ).format(c=self.escape(user.display_name))
-                        )
-                        self._react_messaged.append(user_id)
-                        return
-                else:
-                    session.reactors.add(user)
-            else:
-                session.reactors.add(user)
-
 
     async def _handle_cart(self, reaction, user):
         # This needs to be above here so a user isn't added to `_current_traders`
@@ -957,10 +956,13 @@ class MiscMixin(commands.Cog):
                 action = {v: k for k, v in self._adventure_controls.items()}[str(r.emoji)]
                 async for user in r.users():
                     if not user.bot:
+                        print(user, r.emoji, action)
+
                         # only allow user to do one action, so remove from all
                         # others if found
                         for x in ["fight", "magic", "talk", "pray", "run"]:
                             if user in getattr(session, x, []):
+                                print('removed from', x, user)
                                 getattr(session, x).remove(user)
 
                         getattr(session, action).add(user)
@@ -3112,7 +3114,8 @@ class MiscMixin(commands.Cog):
                     (timer, done, sremain) = self._adventure_countdown[guild.id]
                     if sremain > 0:
                         session = self._sessions[guild.id]
-                        session.run.add(user)
+                        if user in session.reactors:
+                            session.run.add(user)
 
     @commands.Cog.listener()
     async def on_message_without_command(self, message):
