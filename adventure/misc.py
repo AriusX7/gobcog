@@ -1843,7 +1843,7 @@ class MiscMixin(commands.Cog):
                     diplomacy += max(roll - bonus + dipl_value + rebirths, 0)
                     report += (
                         f"**{self.escape(user.display_name)}** "
-                        f"🎲({roll}) +💥{bonus} +🗨{humanize_number(dipl_value)} | "
+                        f"🎲({roll}) +💥{bonus} +🗨{humanize_number(dipl_value)}\n"
                     )
                 else:
                     msg += _("{}**{}** accidentally offended the enemy.\n").format(
