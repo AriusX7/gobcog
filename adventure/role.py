@@ -116,8 +116,11 @@ class RoleMixin(commands.Cog):
             )
             return
         try:
-            await ctx.send(_("{mention}, {user} needs your assistance in fighting the **{session.attribute} {session.challenge}** ahead!").format(
-                    mention=role.mention, user=self.escape(ctx.author.display_name), session=session
+            await ctx.send(_(
+                    "{mention}, an adventurer needs your assistance in fighting the"
+                    " **{session.attribute} {session.challenge}** ahead!"
+                ).format(
+                    mention=role.mention, session=session
                 ),
                 allowed_mentions=discord.AllowedMentions(roles=True)
             )
