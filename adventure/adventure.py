@@ -33,6 +33,7 @@ from .charsheet import (
     ORDER,
     RARITIES,
     AllItemConverter,
+    ArgumentConverter,
     Character,
     DayConverter,
     EquipableItemConverter,
@@ -555,15 +556,23 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     ),
                 )
 
-    @_backpack.command(name="sellall")
+    @_backpack.command(name="sellall", usage ='--name --level --degrade --rarity --slot')
     async def backpack_sellall(
         self, ctx: Context,
+        # *, args: ArgumentConverter({
+        #     'name': str,
+        #     'level': FilterInt,
+        #     'degrade': FilterInt,
+        #     'rarity': RarityConverter,
+        #     'slot': SlotConverter
+        # }, allow_shortform=True)=None
+        name: Optional[str] = None,
         level: Optional[FilterInt] = None,
         degrade: Optional[FilterInt] = None,
         rarity: Optional[RarityConverter] = None,
         *, slot: Optional[SlotConverter] = None,
     ):
-        """Sell all items in your backpack. Optionally specify level filter, rarity or slot.
+        """Sell all items in your backpack. Optionally specify degrade filter, level filter, rarity or slot.
 
         Level filter can be any number (level) followed by a `+` or a `-` sign. For example,
         if `70+` is specified, all items that can only be equipped above level 70 will be sold.
@@ -572,6 +581,21 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
         Note: The level filter has to be specified (e.g. 0+) to use the degrade filter
         """
+        # # TODO: UNCOMMENT WHEN ENABLING ARGCONVERTER
+        # if args:
+        #     name = args['name']
+        #     level = args['level']
+        #     degrade = args['degrade']
+        #     rarity = args['rarity']
+        #     slot = args['slot']
+        # else:
+        #     name = None
+        #     level = None
+        #     degrade = None
+        #     rarity = None
+        #     slot = None
+
+        name = None  # unsupported without ARGCONVERTER
 
         assert isinstance(rarity, str) or rarity is None
         assert isinstance(slot, str) or slot is None
@@ -610,24 +634,29 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
         if rarity and rarity not in ('all', 'legendary', 'ascended'):
             degrade_str = ""
-        
+
+        if name:
+            name_str = _(" with name {}").format(name)
+        else:
+            name_str = ""
+
         async with self.get_lock(ctx.author):
             if rarity and slot:
                 msg = await ctx.send(
-                    "Are you sure you want to sell all {rarity} {slot} items{level}{degrade} in your inventory?".format(
-                        rarity=rarity, slot=slot, level=level_str, degrade=degrade_str
+                    "Are you sure you want to sell all {rarity} {slot} items{level}{degrade}{name} in your inventory?".format(
+                        rarity=rarity, slot=slot, level=level_str, degrade=degrade_str, name=name_str
                     )
                 )
             elif rarity or slot:
                 msg = await ctx.send(
-                    "Are you sure you want to sell all{rarity}{slot} items{level}{degrade} in your inventory?".format(
-                        rarity=f" {rarity}" if rarity else "", slot=f" {slot}" if slot else "", level=level_str, degrade=degrade_str
+                    "Are you sure you want to sell all{rarity}{slot} items{level}{degrade}{name} in your inventory?".format(
+                        rarity=f" {rarity}" if rarity else "", slot=f" {slot}" if slot else "", level=level_str, degrade=degrade_str, name=name_str
                     )
                 )
             else:
                 msg = await ctx.send(
-                    "Are you sure you want to sell all items{level}{degrade} in your inventory?".format(
-                        level=level_str, degrade=degrade_str
+                    "Are you sure you want to sell all items{level}{degrade}{name} in your inventory?".format(
+                        level=level_str, degrade=degrade_str, name=name_str
                     )
                 )
 
@@ -650,6 +679,9 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 items = [i for n, i in c.backpack.items() if i.rarity not in ["forged", "set"]]
                 async for item in AsyncIter(items):
                     e_level = equip_level(c, item)
+                    print(item.name.lower(), name.lower())
+                    if name and not item.name.lower().startswith(name.lower()):
+                        continue
                     if level and level.sign == "+":
                         if e_level <= level.num:
                             continue
@@ -692,13 +724,14 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 c.last_currency_check = time.time()
                 await self.config.user(ctx.author).set(await c.to_json(self.config))
         msg_list = []
-        new_msg = _("{author} sold all their{rarity} items{level}{degrade} for {price}.\n\n{items}").format(
+        new_msg = _("{author} sold all their{rarity} items{level}{degrade}{name} for {price}.\n\n{items}").format(
             author=self.escape(ctx.author.display_name),
             rarity=f" {rarity}" if rarity else "",
             price=humanize_number(total_price),
             items=msg,
             level=level_str,
-            degrade=degrade_str
+            degrade=degrade_str,
+            name=name_str
         )
         for page in pagify(new_msg, shorten_by=10, page_length=1900):
             msg_list.append(box(page, lang="css"))

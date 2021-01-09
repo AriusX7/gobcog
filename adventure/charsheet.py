@@ -1780,6 +1780,36 @@ class PercentageConverter(Converter):
         return arg
 
 
+class ArgumentConverter(Converter):
+    def __init__(self, types: Dict[str, Converter], *, allow_shortform=True):
+        self.types = types
+        self.allow_shortform = allow_shortform
+
+    async def convert(self, ctx, argument):
+        args = re.finditer(r'(?P<type>(?:-)+)(?P<name>.*?) *(?:=| ) *\"?(?P<val>.*?)(?= -|$)', argument)
+        result = {}
+
+        for t in self.types.keys():
+            result[t] = None
+
+        for arg in args:
+            type_ = arg.group('type')
+            name = arg.group('name')
+            val = arg.group('val')
+            if type_ == '-' and self.allow_shortform:
+                for t in self.types.keys():
+                    if t.startswith(name):
+                        name = t
+            
+            if name.lower() in self.types.keys():
+                try:
+                    result[name.lower()] = await ctx.command.do_conversion(ctx, self.types[name], val, name)
+                except commands.BadArgument:
+                    continue
+
+        return result
+
+
 def equip_level(char, item):
     return item.lvl if item.rarity == "event" else max(item.lvl - min(max(char.rebirths // 2 - 1, 0), 50), 1)
 
