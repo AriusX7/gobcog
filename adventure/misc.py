@@ -964,6 +964,7 @@ class MiscMixin(commands.Cog):
                                 getattr(session, x).remove(user)
 
                         getattr(session, action).add(user)
+                await asyncio.sleep(0.3)
 
         with contextlib.suppress(discord.HTTPException):
             await message.clear_reactions()
