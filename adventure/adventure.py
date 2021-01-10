@@ -8,7 +8,7 @@ import os
 import random
 import re
 import time
-from collections import namedtuple
+from collections import OrderedDict, namedtuple
 from datetime import date, datetime
 from operator import itemgetter
 from types import SimpleNamespace
@@ -559,13 +559,15 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     @_backpack.command(name="sellall", usage ='--name --level --degrade --rarity --slot')
     async def backpack_sellall(
         self, ctx: Context,
-        # *, args: ArgumentConverter({
-        #     'name': str,
-        #     'level': FilterInt,
-        #     'degrade': FilterInt,
-        #     'rarity': RarityConverter,
-        #     'slot': SlotConverter
-        # }, allow_shortform=True)=None
+        # *, args: ArgumentConverter(
+        #     OrderedDict((
+        #         ('name', str),
+        #         ('level', FilterInt),
+        #         ('degrade', FilterInt),
+        #         ('rarity', RarityConverter),
+        #         ('slot', SlotConverter)
+        #     )),
+        # allow_shortform=True, block_simple=['name'])=None
         name: Optional[str] = None,
         level: Optional[FilterInt] = None,
         degrade: Optional[FilterInt] = None,
@@ -581,7 +583,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
         Note: The level filter has to be specified (e.g. 0+) to use the degrade filter
         """
-        # # TODO: UNCOMMENT WHEN ENABLING ARGCONVERTER
+        # TODO: UNCOMMENT WHEN ENABLING ARGCONVERTER
         # if args:
         #     name = args['name']
         #     level = args['level']
