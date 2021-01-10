@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 import asyncio
+import inspect
 import logging
 import random
 import re
-from copy import copy
+import typing
+from copy import copy, deepcopy
+from collections import OrderedDict
 from datetime import date, datetime, timedelta
 from string import ascii_letters, digits
 from typing import Dict, List, Mapping, MutableMapping, Optional, Set, Tuple
@@ -1781,31 +1784,79 @@ class PercentageConverter(Converter):
 
 
 class ArgumentConverter(Converter):
-    def __init__(self, types: Dict[str, Converter], *, allow_shortform=True):
+    def __init__(self, types: typing.OrderedDict[str, Converter], *, allow_shortform: bool=True, block_simple: List[str]=[]):
+        """Parses complex-form arguments, e.g. --name=test.
+        Also supports simple-form arguments
+
+        Parameters
+        ----------
+        types: OrderedDict[str, Converter]
+        Key is the name of parameter,
+        value is a commands.Converter-ish object (e.g. str/bool/discord.Member etc are allowed)
+
+        **allow_shortform: Optional[bool]
+        Allows shortform (e.g. -n instead of --name).
+        Shortforms are parsed as single-dash and a startswith.
+        Defaults to True
+
+        **block_simple: Optional[List[str]]
+        Blocks certain parameters in simple-form arguments.
+        Useful if you have string converters to prevent it from absorbing everything.
+        Arguments are parsed as Optional[Converter].
+        Defaults to []
+        """
         self.types = types
         self.allow_shortform = allow_shortform
+        self.block_simple = block_simple
 
     async def convert(self, ctx, argument):
-        args = re.finditer(r'(?P<type>(?:-)+)(?P<name>.*?) *(?:=| ) *\"?(?P<val>.*?)(?= -|$)', argument)
+        args = list(re.finditer(r'(?P<type>(?:-)+)(?P<name>.*?) *(?:=| ) *\"?(?P<val>.*?)(?= -|$)', argument))
         result = {}
 
         for t in self.types.keys():
             result[t] = None
 
-        for arg in args:
-            type_ = arg.group('type')
-            name = arg.group('name')
-            val = arg.group('val')
-            if type_ == '-' and self.allow_shortform:
-                for t in self.types.keys():
-                    if t.startswith(name):
-                        name = t
-            
-            if name.lower() in self.types.keys():
-                try:
-                    result[name.lower()] = await ctx.command.do_conversion(ctx, self.types[name], val, name)
-                except commands.BadArgument:
-                    continue
+        if args:
+            # complex-form
+            for arg in args:
+                type_ = arg.group('type')
+                name = arg.group('name')
+                val = arg.group('val')
+                if type_ == '-' and self.allow_shortform:
+                    for t in self.types.keys():
+                        if t.startswith(name):
+                            name = t
+                
+                if name.lower() in self.types.keys():
+                    try:
+                        result[name.lower()] = await ctx.command.do_conversion(ctx, self.types[name], val, name)
+                    except commands.BadArgument:
+                        continue
+        else:
+            # simple-form
+            ctx = copy(ctx)
+            command = copy(ctx.command)
+            ctx.view.index = len(ctx.prefix)
+            ctx.view.previous = 0
+            ctx.view.skip_string(command.qualified_name) # advance to get the root command
+
+            command.params = OrderedDict((
+                ('self', command.params['self']),
+                ('ctx', command.params['ctx'])
+            ))
+
+            for k, v in self.types.items():
+                if k not in self.block_simple:
+                    command.params[k] = inspect.Parameter(
+                        k, inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                        default=None, annotation=Optional[v]
+                    )
+
+            await command._parse_arguments(ctx)
+
+            arg_names = [i for i in self.types.keys() if i not in self.block_simple]
+            for n, arg in enumerate(ctx.args[2:]):
+                result[arg_names[n]] = arg
 
         return result
 
