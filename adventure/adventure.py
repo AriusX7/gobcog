@@ -681,7 +681,6 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 items = [i for n, i in c.backpack.items() if i.rarity not in ["forged", "set"]]
                 async for item in AsyncIter(items):
                     e_level = equip_level(c, item)
-                    print(item.name.lower(), name.lower())
                     if name and not item.name.lower().startswith(name.lower()):
                         continue
                     if level and level.sign == "+":
