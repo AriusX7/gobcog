@@ -1865,7 +1865,6 @@ class ArgumentConverter(Converter):
 
             arg_names = [i for i in self.types.keys() if i not in self.block_simple]
             for n, arg in enumerate(ctx.args[2:]):
-                print(arg, arg_names[n])
                 result[arg_names[n]] = arg
 
             result.update(ctx.kwargs)
