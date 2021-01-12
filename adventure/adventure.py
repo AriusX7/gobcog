@@ -559,20 +559,16 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     @_backpack.command(name="sellall", usage ='--name --level --degrade --rarity --slot')
     async def backpack_sellall(
         self, ctx: Context,
-        # *, args: ArgumentConverter(
-        #     OrderedDict((
-        #         ('name', str),
-        #         ('level', FilterInt),
-        #         ('degrade', FilterInt),
-        #         ('rarity', RarityConverter),
-        #         ('slot', SlotConverter)
-        #     )),
-        # allow_shortform=True, block_simple=['name'])=None
-        name: Optional[str] = None,
-        level: Optional[FilterInt] = None,
-        degrade: Optional[FilterInt] = None,
-        rarity: Optional[RarityConverter] = None,
-        *, slot: Optional[SlotConverter] = None,
+        *, args: ArgumentConverter(
+            OrderedDict((
+                ('level', FilterInt),
+                ('degrade', FilterInt),
+                ('rarity', RarityConverter),
+                ('slot', SlotConverter),
+                ('name', str)
+            )),
+            allow_shortform=True
+        )=None
     ):
         """Sell all items in your backpack. Optionally specify degrade filter, level filter, rarity or slot.
 
@@ -583,21 +579,18 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
         Note: The level filter has to be specified (e.g. 0+) to use the degrade filter
         """
-        # TODO: UNCOMMENT WHEN ENABLING ARGCONVERTER
-        # if args:
-        #     name = args['name']
-        #     level = args['level']
-        #     degrade = args['degrade']
-        #     rarity = args['rarity']
-        #     slot = args['slot']
-        # else:
-        #     name = None
-        #     level = None
-        #     degrade = None
-        #     rarity = None
-        #     slot = None
-
-        name = None  # unsupported without ARGCONVERTER
+        if args:
+            name = args['name']
+            level = args['level']
+            degrade = args['degrade']
+            rarity = args['rarity']
+            slot = args['slot']
+        else:
+            name = None
+            level = None
+            degrade = None
+            rarity = None
+            slot = None
 
         assert isinstance(rarity, str) or rarity is None
         assert isinstance(slot, str) or slot is None

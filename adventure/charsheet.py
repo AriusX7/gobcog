@@ -1793,6 +1793,7 @@ class ArgumentConverter(Converter):
         types: OrderedDict[str, Converter]
         Key is the name of parameter,
         value is a commands.Converter-ish object (e.g. str/bool/discord.Member etc are allowed)
+        Last type is registered as KEYWORD_ONLY instead of POSITIONAL_OR_KEYWORD
 
         **allow_shortform: Optional[bool]
         Allows shortform (e.g. -n instead of --name).
@@ -1832,8 +1833,9 @@ class ArgumentConverter(Converter):
                         result[name.lower()] = await ctx.command.do_conversion(ctx, self.types[name], val, name)
                     except commands.BadArgument:
                         continue
-        else:
-            # simple-form
+
+        if all(v is None for v in result.values()):
+            # try using simple-form
             ctx = copy(ctx)
             command = copy(ctx.command)
             ctx.view.index = len(ctx.prefix)
@@ -1845,18 +1847,28 @@ class ArgumentConverter(Converter):
                 ('ctx', command.params['ctx'])
             ))
 
-            for k, v in self.types.items():
+            items = self.types.items()
+            n = 0
+            for k, v in items:
                 if k not in self.block_simple:
+                    if n == len(items) - 1:
+                        kind = inspect.Parameter.KEYWORD_ONLY
+                    else:
+                        kind = inspect.Parameter.POSITIONAL_OR_KEYWORD
                     command.params[k] = inspect.Parameter(
-                        k, inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                        k, kind,
                         default=None, annotation=Optional[v]
                     )
+                n += 1
 
             await command._parse_arguments(ctx)
 
             arg_names = [i for i in self.types.keys() if i not in self.block_simple]
             for n, arg in enumerate(ctx.args[2:]):
+                print(arg, arg_names[n])
                 result[arg_names[n]] = arg
+
+            result.update(ctx.kwargs)
 
         return result
 
