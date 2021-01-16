@@ -67,6 +67,7 @@ from .utils import (
     AdventureResults,
     DynamicInt,
     FilterInt,
+    FilterStr,
     Member,
     check_global_setting_admin,
     can_use_ability,
@@ -565,17 +566,19 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 ('degrade', FilterInt),
                 ('rarity', RarityConverter),
                 ('slot', SlotConverter),
-                ('name', str)
+                ('name', FilterStr)
             )),
             allow_shortform=True
         )=None
     ):
-        """Sell all items in your backpack. Optionally specify degrade filter, level filter, rarity or slot.
+        """Sell all items in your backpack. Optionally specify name filter, degrade filter, level filter, rarity or slot.
 
         Level filter can be any number (level) followed by a `+` or a `-` sign. For example,
         if `70+` is specified, all items that can only be equipped above level 70 will be sold.
 
         Degrade filter works the same as level filters but only work for legendary and ascended items.
+
+        Name filter works similarly to level and degrade filters, allowing you to include/exclude results.
 
         Note: The level filter has to be specified (e.g. 0+) to use the degrade filter
         """
@@ -614,24 +617,26 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 )
 
         if level and level.sign == "+":
-            level_str = _(" above level {}").format(level.num)
+            level_str = _(" above level {}").format(level.val)
         elif level and level.sign == "-":
-            level_str = _(" below level {}").format(level.num)
+            level_str = _(" below level {}").format(level.val)
         else:
             level_str = ""
 
         if degrade and degrade.sign == "+":
-            degrade_str = _(" above degrade {}").format(degrade.num)
+            degrade_str = _(" above degrade {}").format(degrade.val)
         elif degrade and degrade.sign == "-":
-            degrade_str = _(" below degrade {}").format(degrade.num)
+            degrade_str = _(" below degrade {}").format(degrade.val)
         else:
             degrade_str = ""
 
         if rarity and rarity not in ('all', 'legendary', 'ascended'):
             degrade_str = ""
 
-        if name:
-            name_str = _(" with name {}").format(name)
+        if name and name.sign == "+":
+            name_str = _(" with name {}").format(name.val)
+        elif name and name.sign == "-":
+            name_str = _(" without name {}").format(name.val)
         else:
             name_str = ""
 
@@ -674,20 +679,24 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 items = [i for n, i in c.backpack.items() if i.rarity not in ["forged", "set"]]
                 async for item in AsyncIter(items):
                     e_level = equip_level(c, item)
-                    if name and not item.name.lower().startswith(name.lower()):
+
+                    if name and name.sign == "+" and not item.name.lower().startswith(name.val.lower()):
                         continue
+                    elif name and name.sign == "-" and item.name.lower().startswith(name.val.lower()):
+                        continue
+
                     if level and level.sign == "+":
-                        if e_level <= level.num:
+                        if e_level <= level.val:
                             continue
                     elif level and level.sign == "-":
-                        if e_level >= level.num:
+                        if e_level >= level.val:
                             continue
 
                     if degrade and degrade.sign == "+":
-                        if item.degrade and item.degrade <= degrade.num:
+                        if item.degrade and item.degrade <= degrade.val:
                             continue
                     elif degrade and degrade.sign == "-":
-                        if item.degrade and item.degrade >= degrade.num:
+                        if item.degrade and item.degrade >= degrade.val:
                             continue
 
                     if rarity and item.rarity != rarity:
