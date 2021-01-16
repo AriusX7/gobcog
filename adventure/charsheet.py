@@ -951,17 +951,17 @@ class Character(Item):
             async for item in AsyncIter(slot_group):
                 e_level = equip_level(self, item[1])
                 if level and level.sign == "+":
-                    if e_level <= level.num:
+                    if e_level <= level.val:
                         continue
                 elif level and level.sign == "-":
-                    if e_level >= level.num:
+                    if e_level >= level.val:
                         continue
 
                 if degrade and degrade.sign == "+":
-                    if item[1].degrade and item[1].degrade <= degrade.num:
+                    if item[1].degrade and item[1].degrade <= degrade.val:
                         continue
                 elif degrade and degrade.sign == "-":
-                    if item[1].degrade and item[1].degrade >= degrade.num:
+                    if item[1].degrade and item[1].degrade >= degrade.val:
                         continue
 
                 if forging and (item[1].rarity in ["forged", "set"] or item[1] in consumed_list):

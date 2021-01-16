@@ -282,21 +282,35 @@ class AdventureOnCooldown(AdventureCheckFailure):
 
 
 class FilterInt:
-    def __init__(self, num: int, sign: str):
-        self.num = num
+    def __init__(self, val: int, sign: str):
+        self.val = val
         self.sign = sign
 
     @classmethod
     async def convert(cls, __: commands.Context, argument: str):
         if argument.endswith("+") or argument.endswith("-"):
-            if argument[0:-1].isnumeric:
+            if argument[0:-1].isnumeric():
                 return cls(int(argument[0:-1]), argument[-1])
         elif argument.startswith("+") or argument.startswith("-"):
-            if argument[1:].isnumeric:
+            if argument[1:].isnumeric():
                 return cls(int(argument[1:]), argument[0])
 
         raise BadArgument(_('{} is not a valid filter number.').format(argument))
 
+
+class FilterStr:
+    def __init__(self, val: str, sign: str):
+        self.val = val
+        self.sign = sign
+
+    @classmethod
+    async def convert(cls, __: commands.Context, argument: str):
+        if argument.endswith("+") or argument.endswith("-"):
+            return cls(argument[0:-1], argument[-1])
+        elif argument.startswith("+") or argument.startswith("-"):
+            return cls(argument[1:], argument[0])
+
+        raise BadArgument(_('{} is not a valid filter string.').format(argument))
 
 
 def start_adding_reactions(
