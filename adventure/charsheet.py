@@ -1832,7 +1832,6 @@ class ArgumentConverter(Converter):
                 type_ = arg.group('type')
                 name = arg.group('name').lower()
                 val = arg.group('val')
-                print(val)
                 if type_ == '-' and self.allow_shortform:
                     for t in self.types.keys():
                         if t.startswith(name):
@@ -1852,7 +1851,7 @@ class ArgumentConverter(Converter):
                     else:
                         result[name] = final
 
-        if all(v is None for v in result.values()):
+        if all(v in (None, []) for v in result.values()):
             # try using simple-form
             ctx = copy(ctx)
             command = copy(ctx.command)
@@ -1883,10 +1882,11 @@ class ArgumentConverter(Converter):
 
             arg_names = [i for i in self.types.keys() if i not in self.block_simple]
             for n, arg in enumerate(ctx.args[2:]):
-                if arg_names[n] in self.allow_multiple:
-                    result[arg_names[n]].append(arg)
-                else:
-                    result[arg_names[n]] = arg
+                if arg is not None:
+                    if arg_names[n] in self.allow_multiple:
+                        result[arg_names[n]].append(arg)
+                    else:
+                        result[arg_names[n]] = arg
 
             result.update(ctx.kwargs)
 
