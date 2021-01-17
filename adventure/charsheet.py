@@ -952,13 +952,13 @@ class Character(Item):
             async for item in AsyncIter(slot_group):
                 e_level = equip_level(self, item[1])
 
-                if name and not all(x.is_valid(item.name) for x in name):
+                if name and not all(x.is_valid(item[1].name) for x in name):
                     continue
 
                 if level and not all(x.is_valid(e_level) for x in level):
                     continue
 
-                if degrade and not all(x.is_valid(item.degrade) for x in degrade):
+                if degrade and not all(x.is_valid(item[1].degrade) for x in degrade):
                     continue
 
                 if forging and (item[1].rarity in ["forged", "set"] or item[1] in consumed_list):
@@ -1826,30 +1826,29 @@ class ArgumentConverter(Converter):
             else:
                 result[t] = None
 
-        if args:
-            # complex-form
-            for arg in args:
-                type_ = arg.group('type')
-                name = arg.group('name').lower()
-                val = arg.group('val')
-                if type_ == '-' and self.allow_shortform:
-                    for t in self.types.keys():
-                        if t.startswith(name):
-                            name = t
+        # complex-form
+        for arg in args:
+            type_ = arg.group('type')
+            name = arg.group('name').lower()
+            val = arg.group('val')
+            if type_ == '-' and self.allow_shortform:
+                for t in self.types.keys():
+                    if t.startswith(name):
+                        name = t
 
-                if name in self.types.keys():
-                    if self.types[name] == bool:
-                        final = True
-                    else:
-                        try:
-                            final = await ctx.command.do_conversion(ctx, self.types[name], val, name)
-                        except commands.BadArgument:
-                            continue
+            if name in self.types.keys():
+                if self.types[name] == bool:
+                    final = True
+                else:
+                    try:
+                        final = await ctx.command.do_conversion(ctx, self.types[name], val, name)
+                    except commands.BadArgument:
+                        continue
 
-                    if name in self.allow_multiple:
-                        result[name].append(final)
-                    else:
-                        result[name] = final
+                if name in self.allow_multiple:
+                    result[name].append(final)
+                else:
+                    result[name] = final
 
         if all(v in (None, []) for v in result.values()):
             # try using simple-form
@@ -1888,7 +1887,12 @@ class ArgumentConverter(Converter):
                     else:
                         result[arg_names[n]] = arg
 
-            result.update(ctx.kwargs)
+            for k, v in ctx.kwargs.items():
+                if v is not None:
+                    if k in self.allow_multiple:
+                        result[k].append(v)
+                    else:
+                        result[k] = v
 
         return result
 
