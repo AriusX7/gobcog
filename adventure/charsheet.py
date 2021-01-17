@@ -1784,7 +1784,9 @@ class PercentageConverter(Converter):
 
 
 class ArgumentConverter(Converter):
-    def __init__(self, types: typing.OrderedDict[str, Converter], *, allow_shortform: bool=True, block_simple: List[str]=[]):
+    def __init__(
+        self, types: typing.OrderedDict[str, Converter], *,
+        allow_shortform: bool=True, block_simple: List[str]=[], allow_multiple: List[str]=[]):
         """Parses complex-form arguments, e.g. --name=test.
         Also supports simple-form arguments
 
@@ -1805,34 +1807,49 @@ class ArgumentConverter(Converter):
         Useful if you have string converters to prevent it from absorbing everything.
         Arguments are parsed as Optional[Converter].
         Defaults to []
+
+        **allow_multiple: Optional[List[str]]
+        Allows multiple of the value in the response,
+        only supported when using complex-form.
+        Result will be List[ConverterReturnType]
+        Defaults to []
         """
         self.types = types
         self.allow_shortform = allow_shortform
         self.block_simple = block_simple
+        self.allow_multiple = allow_multiple
 
     async def convert(self, ctx, argument):
         args = list(re.finditer(r'(?P<type>(?:-)+)(?P<name>.*?) *(?:=| ) *\"?(?P<val>.*?)(?= -|$)', argument))
         result = {}
 
         for t in self.types.keys():
-            result[t] = None
+            if t in self.allow_multiple:
+                result[t] = []
+            else:
+                result[t] = None
 
         if args:
             # complex-form
             for arg in args:
                 type_ = arg.group('type')
-                name = arg.group('name')
+                name = arg.group('name').lower()
                 val = arg.group('val')
                 if type_ == '-' and self.allow_shortform:
                     for t in self.types.keys():
                         if t.startswith(name):
                             name = t
-                
-                if name.lower() in self.types.keys():
+
+                if name in self.types.keys():
                     try:
-                        result[name.lower()] = await ctx.command.do_conversion(ctx, self.types[name], val, name)
+                        final = await ctx.command.do_conversion(ctx, self.types[name], val, name)
                     except commands.BadArgument:
                         continue
+
+                    if name in self.allow_multiple:
+                        result[name].append(final)
+                    else:
+                        result[name] = final
 
         if all(v is None for v in result.values()):
             # try using simple-form
@@ -1865,7 +1882,10 @@ class ArgumentConverter(Converter):
 
             arg_names = [i for i in self.types.keys() if i not in self.block_simple]
             for n, arg in enumerate(ctx.args[2:]):
-                result[arg_names[n]] = arg
+                if arg_names[n] in self.allow_multiple:
+                    result[arg_names[n]].append(arg)
+                else:
+                    result[arg_names[n]] = arg
 
             result.update(ctx.kwargs)
 

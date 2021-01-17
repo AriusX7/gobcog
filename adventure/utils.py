@@ -297,6 +297,9 @@ class FilterInt:
 
         raise BadArgument(_('{} is not a valid filter number.').format(argument))
 
+    def is_valid(self, x):
+        return (self.sign == '+' and x > self.val) or (self.sign == '-' and x < self.val)
+
 
 class FilterStr:
     def __init__(self, val: str, sign: str):
@@ -311,6 +314,11 @@ class FilterStr:
             return cls(argument[1:], argument[0])
 
         raise BadArgument(_('{} is not a valid filter string.').format(argument))
+
+    def is_valid(self, x):
+        x = x.lower()
+        val = self.val.lower()
+        return (self.sign == '+' and val in x) or (self.sign == '-' and val not in x)
 
 
 def start_adding_reactions(

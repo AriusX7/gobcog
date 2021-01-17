@@ -568,7 +568,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 ('slot', SlotConverter),
                 ('name', FilterStr)
             )),
-            allow_shortform=True
+            allow_multiple=['level', 'degrade', 'name']
         )=None
     ):
         """Sell all items in your backpack. Optionally specify name filter, degrade filter, level filter, rarity or slot.
@@ -616,27 +616,39 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     _("{} is not a valid slot, select one of {}").format(slot, humanize_list(ORDER)),
                 )
 
-        if level and level.sign == "+":
-            level_str = _(" above level {}").format(level.val)
-        elif level and level.sign == "-":
-            level_str = _(" below level {}").format(level.val)
+        if level:
+            vals = []
+            for i in level:
+                if i.sign == "+":
+                    vals.append(_("above level {}").format(i.val))
+                elif i.sign == "-":
+                    vals.append(_("below level {}").format(i.val))
+            level_str = " " + " and ".join(vals)
         else:
             level_str = ""
 
-        if degrade and degrade.sign == "+":
-            degrade_str = _(" above degrade {}").format(degrade.val)
-        elif degrade and degrade.sign == "-":
-            degrade_str = _(" below degrade {}").format(degrade.val)
+        if degrade:
+            vals = []
+            for i in degrade:
+                if i.sign == "+":
+                    vals.append(_("above degrade {}").format(i.val))
+                elif i.sign == "-":
+                    vals.append(_("below degrade {}").format(i.val))
+            degrade_str = " " + " and ".join(vals)
         else:
             degrade_str = ""
 
         if rarity and rarity not in ('all', 'legendary', 'ascended'):
             degrade_str = ""
 
-        if name and name.sign == "+":
-            name_str = _(" with name {}").format(name.val)
-        elif name and name.sign == "-":
-            name_str = _(" without name {}").format(name.val)
+        if name:
+            vals = []
+            for i in name:
+                if i.sign == "+":
+                    vals.append(_("with name {}").format(i.val))
+                elif i.sign == "-":
+                    vals.append(_("without name {}").format(i.val))
+            name_str = " " + " and ".join(vals)
         else:
             name_str = ""
 
@@ -680,24 +692,14 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 async for item in AsyncIter(items):
                     e_level = equip_level(c, item)
 
-                    if name and name.sign == "+" and not item.name.lower().startswith(name.val.lower()):
-                        continue
-                    elif name and name.sign == "-" and item.name.lower().startswith(name.val.lower()):
+                    if name and not all(x.is_valid(item.name) for x in name):
                         continue
 
-                    if level and level.sign == "+":
-                        if e_level <= level.val:
-                            continue
-                    elif level and level.sign == "-":
-                        if e_level >= level.val:
-                            continue
+                    if level and not all(x.is_valid(e_level) for x in level):
+                        continue
 
-                    if degrade and degrade.sign == "+":
-                        if item.degrade and item.degrade <= degrade.val:
-                            continue
-                    elif degrade and degrade.sign == "-":
-                        if item.degrade and item.degrade >= degrade.val:
-                            continue
+                    if degrade and not all(x.is_valid(item.degrade) for x in degrade):
+                        continue
 
                     if rarity and item.rarity != rarity:
                         continue
