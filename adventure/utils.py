@@ -294,11 +294,13 @@ class FilterInt:
         elif argument.startswith("+") or argument.startswith("-"):
             if argument[1:].isnumeric():
                 return cls(int(argument[1:]), argument[0])
+        elif argument.isnumeric():
+            return cls(int(argument), None)
 
         raise BadArgument(_('{} is not a valid filter number.').format(argument))
 
     def is_valid(self, x):
-        return (self.sign == '+' and x > self.val) or (self.sign == '-' and x < self.val)
+        return (self.sign == '+' and x > self.val) or (self.sign == '-' and x < self.val) or (self.sign == None and x == self.val)
 
 
 class FilterStr:

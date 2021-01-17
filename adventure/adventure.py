@@ -440,7 +440,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 msgs.append(box(page, lang="css"))
             return await menu(ctx, msgs, MENU_CONTROLS)
 
-    @commands.group(name="backpack", autohelp=False, usage="--diff --level --degrade --rarity --order --slot --name")
+    @commands.group(name="backpack", autohelp=False, usage="--diff --level --degrade --rarity --order --slot --name", invoke_without_command=True)
     @commands.bot_has_permissions(add_reactions=True)
     async def _backpack(
         self,
@@ -690,6 +690,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     vals.append(_("above level {}").format(i.val))
                 elif i.sign == "-":
                     vals.append(_("below level {}").format(i.val))
+                elif i.sign == None:
+                    vals.append(_("at level {}").format(i.val))
             level_str = " " + " and ".join(vals)
         else:
             level_str = ""
@@ -701,6 +703,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     vals.append(_("above degrade {}").format(i.val))
                 elif i.sign == "-":
                     vals.append(_("below degrade {}").format(i.val))
+                elif i.sign == None:
+                    vals.append(_("at degrade {}").format(i.val))
             degrade_str = " " + " and ".join(vals)
         else:
             degrade_str = ""
