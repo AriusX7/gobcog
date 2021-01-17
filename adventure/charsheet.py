@@ -920,8 +920,9 @@ class Character(Item):
         self,
         forging: bool = False,
         consumed=None,
-        level=None,
-        degrade=None,
+        name=[],
+        level=[],
+        degrade=[],
         rarity=None,
         slot=None,
         show_delta=False,
@@ -950,19 +951,15 @@ class Character(Item):
             current_equipped = getattr(self, slot_name if slot != "two handed" else "left", None)
             async for item in AsyncIter(slot_group):
                 e_level = equip_level(self, item[1])
-                if level and level.sign == "+":
-                    if e_level <= level.val:
-                        continue
-                elif level and level.sign == "-":
-                    if e_level >= level.val:
-                        continue
 
-                if degrade and degrade.sign == "+":
-                    if item[1].degrade and item[1].degrade <= degrade.val:
-                        continue
-                elif degrade and degrade.sign == "-":
-                    if item[1].degrade and item[1].degrade >= degrade.val:
-                        continue
+                if name and not all(x.is_valid(item.name) for x in name):
+                    continue
+
+                if level and not all(x.is_valid(e_level) for x in level):
+                    continue
+
+                if degrade and not all(x.is_valid(item.degrade) for x in degrade):
+                    continue
 
                 if forging and (item[1].rarity in ["forged", "set"] or item[1] in consumed_list):
                     continue
@@ -1820,7 +1817,7 @@ class ArgumentConverter(Converter):
         self.allow_multiple = allow_multiple
 
     async def convert(self, ctx, argument):
-        args = list(re.finditer(r'(?P<type>(?:-)+)(?P<name>.*?) *(?:=| ) *\"?(?P<val>.*?)(?= -|$)', argument))
+        args = list(re.finditer(r'(?P<type>(?:-)+)(?P<name>.*?) *(?:=| |$) *\"?(?:(?= ?-|$)|(?P<val>.*?)(?= -|$))', argument))
         result = {}
 
         for t in self.types.keys():
@@ -1835,16 +1832,20 @@ class ArgumentConverter(Converter):
                 type_ = arg.group('type')
                 name = arg.group('name').lower()
                 val = arg.group('val')
+                print(val)
                 if type_ == '-' and self.allow_shortform:
                     for t in self.types.keys():
                         if t.startswith(name):
                             name = t
 
                 if name in self.types.keys():
-                    try:
-                        final = await ctx.command.do_conversion(ctx, self.types[name], val, name)
-                    except commands.BadArgument:
-                        continue
+                    if self.types[name] == bool:
+                        final = True
+                    else:
+                        try:
+                            final = await ctx.command.do_conversion(ctx, self.types[name], val, name)
+                        except commands.BadArgument:
+                            continue
 
                     if name in self.allow_multiple:
                         result[name].append(final)

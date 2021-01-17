@@ -303,18 +303,23 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         await self.config.user(ctx.author).set(user_data)
         await ctx.tick()
 
-    @commands.command(name="ebackpack")
+    @commands.command(name="ebackpack", usage="--diff --level --degrade --rarity --order --slot --name")
     @commands.bot_has_permissions(add_reactions=True)
     async def commands_equipable_backpack(
         self,
         ctx: Context,
-        show_diff: Optional[bool] = False,
-        level: Optional[FilterInt] = None,
-        degrade: Optional[FilterInt] = None,
-        rarity: Optional[RarityConverter] = None,
-        sort_order: Optional[SkillConverter] = None,
-        *,
-        slot: Optional[SlotConverter] = None,
+        *, args: ArgumentConverter(
+            OrderedDict((
+                ('diff', bool),
+                ('level', FilterInt),
+                ('degrade', FilterInt),
+                ('rarity', RarityConverter),
+                ('order', SkillConverter),
+                ('slot', SlotConverter),
+                ('name', FilterStr)
+            )),
+            allow_multiple=['level', 'degrade', 'name']
+        )=None
     ):
         """This shows the contents of your backpack that can be equipped.
 
@@ -322,6 +327,23 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
         Note: An item **degrade** level is how many rebirths it will last, before it is broken down.
         """
+        if args:
+            show_diff = args['diff']
+            level = args['level']
+            degrade = args['degrade']
+            rarity = args['rarity']
+            sort_order = args['order']
+            slot = args['slot']
+            name = args['name']
+        else:
+            show_diff = None
+            level = []
+            degrade = []
+            rarity = None
+            sort_order = None
+            slot = None
+            name = []
+
         assert isinstance(rarity, str) or rarity is None
         assert isinstance(slot, str) or slot is None
         if not await self.allow_in_dm(ctx):
@@ -343,25 +365,31 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
             backpack_contents = _("{author}'s backpack \n\n{backpack}\n").format(
                 author=self.escape(ctx.author.display_name),
-                backpack=await c.get_backpack(level=level, degrade=degrade, rarity=rarity, slot=slot, show_delta=show_diff, equippable=True, sort_order=sort_order),
+                backpack=await c.get_backpack(name=name, level=level, degrade=degrade, rarity=rarity, slot=slot, show_delta=show_diff, equippable=True, sort_order=sort_order),
             )
             msgs = []
             async for page in AsyncIter(pagify(backpack_contents, delims=["\n"], shorten_by=20, page_length=1900)):
                 msgs.append(box(page, lang="css"))
             return await menu(ctx, msgs, MENU_CONTROLS)
 
-    @commands.command(name="ubackpack")
+    @commands.command(name="ubackpack", usage="--diff --level --degrade --rarity --order --slot --name")
     @commands.bot_has_permissions(add_reactions=True)
     async def commands_unequipable_backpack(
         self,
         ctx: Context,
-        show_diff: Optional[bool] = False,
-        level: Optional[FilterInt] = None,
-        degrade: Optional[FilterInt] = None,
-        rarity: Optional[RarityConverter] = None,
-        sort_order: Optional[SkillConverter] = None,
-        *,
-        slot: Optional[SlotConverter] = None,
+        *, args: ArgumentConverter(
+            OrderedDict((
+                ('diff', bool),
+                ('level', FilterInt),
+                ('degrade', FilterInt),
+                ('rarity', RarityConverter),
+                ('order', SkillConverter),
+                ('slot', SlotConverter),
+                ('name', FilterStr)
+            )),
+            allow_multiple=['level', 'degrade', 'name']
+        )=None
+
     ):
         """This shows the contents of your backpack that cannot be equipped.
 
@@ -369,6 +397,23 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
         Note: An item **degrade** level is how many rebirths it will last, before it is broken down.
         """
+        if args:
+            show_diff = args['diff']
+            level = args['level']
+            degrade = args['degrade']
+            rarity = args['rarity']
+            sort_order = args['order']
+            slot = args['slot']
+            name = args['name']
+        else:
+            show_diff = None
+            level = []
+            degrade = []
+            rarity = None
+            sort_order = None
+            slot = None
+            name = []
+
         assert isinstance(rarity, str) or rarity is None
         assert isinstance(slot, str) or slot is None
         if not ctx.invoked_subcommand:
@@ -388,25 +433,30 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
             backpack_contents = _("{author}'s backpack \n\n{backpack}\n").format(
                 author=self.escape(ctx.author.display_name),
-                backpack=await c.get_backpack(level=level, degrade=degrade, rarity=rarity, slot=slot, show_delta=show_diff, unequippable=True, sort_order=sort_order),
+                backpack=await c.get_backpack(name=name, level=level, degrade=degrade, rarity=rarity, slot=slot, show_delta=show_diff, unequippable=True, sort_order=sort_order),
             )
             msgs = []
             async for page in AsyncIter(pagify(backpack_contents, delims=["\n"], shorten_by=20, page_length=1900)):
                 msgs.append(box(page, lang="css"))
             return await menu(ctx, msgs, MENU_CONTROLS)
 
-    @commands.group(name="backpack", autohelp=False)
+    @commands.group(name="backpack", autohelp=False, usage="--diff --level --degrade --rarity --order --slot --name")
     @commands.bot_has_permissions(add_reactions=True)
     async def _backpack(
         self,
         ctx: Context,
-        show_diff: Optional[bool] = False,
-        level: Optional[FilterInt] = None,
-        degrade: Optional[FilterInt] = None,
-        rarity: Optional[RarityConverter] = None,
-        sort_order: Optional[SkillConverter] = None,
-        *,
-        slot: Optional[SlotConverter] = None,
+        *, args: ArgumentConverter(
+            OrderedDict((
+                ('diff', bool),
+                ('level', FilterInt),
+                ('degrade', FilterInt),
+                ('rarity', RarityConverter),
+                ('order', SkillConverter),
+                ('slot', SlotConverter),
+                ('name', FilterStr)
+            )),
+            allow_multiple=['level', 'degrade', 'name']
+        )=None
     ):
         """This shows the contents of your backpack.
 
@@ -420,6 +470,23 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
         Note: An item **degrade** level is how many rebirths it will last, before it is broken down.
         """
+        if args:
+            show_diff = args['diff']
+            level = args['level']
+            degrade = args['degrade']
+            rarity = args['rarity']
+            sort_order = args['order']
+            slot = args['slot']
+            name = args['name']
+        else:
+            show_diff = None
+            level = []
+            degrade = []
+            rarity = None
+            sort_order = None
+            slot = None
+            name = []
+
         assert isinstance(rarity, str) or rarity is None
         assert isinstance(slot, str) or slot is None
 
@@ -440,7 +507,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
             backpack_contents = _("{author}'s backpack \n\n{backpack}\n").format(
                 author=self.escape(ctx.author.display_name),
-                backpack=await c.get_backpack(level=level, degrade=degrade, rarity=rarity, slot=slot, show_delta=show_diff, sort_order=sort_order),
+                backpack=await c.get_backpack(name=name, level=level, degrade=degrade, rarity=rarity, slot=slot, show_delta=show_diff, sort_order=sort_order),
             )
             msgs = []
             async for page in AsyncIter(pagify(backpack_contents, delims=["\n"], shorten_by=20, page_length=1900)):
@@ -589,9 +656,9 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             rarity = args['rarity']
             slot = args['slot']
         else:
-            name = None
-            level = None
-            degrade = None
+            name = []
+            level = []
+            degrade = []
             rarity = None
             slot = None
 
