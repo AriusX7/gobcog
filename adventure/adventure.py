@@ -724,38 +724,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             name_str = ""
 
         async with self.get_lock(ctx.author):
-            if rarity and slot:
-                msg = await ctx.send(
-                    "Are you sure you want to sell all {rarity} {slot} items{level}{degrade}{name} in your inventory?".format(
-                        rarity=rarity, slot=slot, level=level_str, degrade=degrade_str, name=name_str
-                    )
-                )
-            elif rarity or slot:
-                msg = await ctx.send(
-                    "Are you sure you want to sell all{rarity}{slot} items{level}{degrade}{name} in your inventory?".format(
-                        rarity=f" {rarity}" if rarity else "", slot=f" {slot}" if slot else "", level=level_str, degrade=degrade_str, name=name_str
-                    )
-                )
-            else:
-                msg = await ctx.send(
-                    "Are you sure you want to sell all items{level}{degrade}{name} in your inventory?".format(
-                        level=level_str, degrade=degrade_str, name=name_str
-                    )
-                )
-
-            start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
-            pred = ReactionPredicate.yes_or_no(msg, ctx.author)
-            try:
-                await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
-            except asyncio.TimeoutError:
-                await self._clear_react(msg)
-                return
-
-            if not pred.result:
-                await ctx.send("Not selling those items.")
-                return
-
-            msg = ""
+            fmt = ""
             c = await self.get_character_from_json(ctx.author)
             total_price = 0
             async with ctx.typing():
@@ -787,7 +756,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         if item.owned <= 0:
                             del c.backpack[item.name]
                     item_price = max(item_price, 0)
-                    msg += _("{old_item} sold for {price}.\n").format(
+                    fmt += _("{old_item} sold for {price}.\n").format(
                         old_item=str(old_owned) + " " + str(item), price=humanize_number(item_price),
                     )
                     total_price += item_price
@@ -798,20 +767,43 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         await bank.set_balance(ctx.author, e.max_balance)
                 c.last_known_currency = await bank.get_balance(ctx.author)
                 c.last_currency_check = time.time()
-                await self.config.user(ctx.author).set(await c.to_json(self.config))
-        msg_list = []
-        new_msg = _("{author} sold all their{rarity} items{level}{degrade}{name} for {price}.\n\n{items}").format(
-            author=self.escape(ctx.author.display_name),
-            rarity=f" {rarity}" if rarity else "",
-            price=humanize_number(total_price),
-            items=msg,
-            level=level_str,
-            degrade=degrade_str,
-            name=name_str
-        )
-        for page in pagify(new_msg, shorten_by=10, page_length=1900):
-            msg_list.append(box(page, lang="css"))
-        await menu(ctx, msg_list, MENU_CONTROLS)
+
+            msg_list = []
+            new_msg = _("Are you sure you want to sell all your{rarity} items{level}{degrade}{name} for {price}?\n\n{items}").format(
+                author=self.escape(ctx.author.display_name),
+                rarity=f" {rarity}" if rarity else "",
+                price=humanize_number(total_price),
+                items=fmt,
+                level=level_str,
+                degrade=degrade_str,
+                name=name_str
+            )
+            msg = await ctx.send('Loading...')
+            for page in pagify(new_msg, shorten_by=10, page_length=1900):
+                msg_list.append(box(page, lang="css"))
+            self.bot.loop.create_task(menu(ctx, msg_list, MENU_CONTROLS, message=msg))
+
+            start_adding_reactions(msg, ReactionPredicate.YES_OR_NO_EMOJIS)
+            pred = ReactionPredicate.yes_or_no(msg, ctx.author)
+            try:
+                await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
+            except asyncio.TimeoutError:
+                for r in ReactionPredicate.YES_OR_NO_EMOJIS:
+                    await msg.remove_reaction(r, ctx.guild.me)
+                return
+
+            for r in ReactionPredicate.YES_OR_NO_EMOJIS:
+                await msg.remove_reaction(r, ctx.guild.me)
+    
+            if not pred.result:
+                await ctx.send("Not selling those items.")
+                return
+
+            for r in ReactionPredicate.YES_OR_NO_EMOJIS:
+                await msg.remove_reaction(r, ctx.guild.me)
+            await self.config.user(ctx.author).set(await c.to_json(self.config))
+            await ctx.send('Items sold.')
+
 
     @_backpack.command(name="sell", cooldown_after_parsing=True)
     @commands.cooldown(rate=3, per=60, type=commands.BucketType.user)
