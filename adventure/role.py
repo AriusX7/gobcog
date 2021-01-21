@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone
 import logging
 from typing import Optional
@@ -12,7 +13,7 @@ from redbot.core.commands import Context
 from redbot.core.i18n import Translator, cog_i18n
 
 from .charsheet import parse_timedelta
-from .utils import smart_embed
+from .utils import smart_embed, AdventureCheckFailure
 
 _ = Translator("Adventure", __file__)
 
@@ -40,12 +41,12 @@ class RoleMixin(commands.Cog):
         await self.config.guild(ctx.guild).general_ping_role.set(getattr(role, "id", None))
 
         if not role:
-            await smart_embed(ctx, _("Unset all adventures role."), True)
+            await smart_embed(ctx, _("Unset all adventures role."), success=True)
         else:
             await smart_embed(
                 ctx,
                 _("Set {role} as all adventures role.").format(role=role.mention),
-                True
+                success=True
             )
 
     @_roleset.command(name="boss")
@@ -57,12 +58,12 @@ class RoleMixin(commands.Cog):
         await self.config.guild(ctx.guild).boss_ping_role.set(getattr(role, "id", None))
 
         if not role:
-            await smart_embed(ctx, _("Unset boss-only adventures role."), True)
+            await smart_embed(ctx, _("Unset boss-only adventures role."), success=True)
         else:
             await smart_embed(
                 ctx,
                 _("Set {role} as boss-only adventures role.").format(role=role.mention),
-                True
+                success=True
             )
 
     @staticmethod
@@ -87,26 +88,20 @@ class RoleMixin(commands.Cog):
 
         return guild.get_role(role_id)
 
-    @commands.command()
-    @commands.cooldown(rate=1, per=180, type=BucketType.guild)
-    @commands.bot_has_permissions(manage_roles=True)
-    @commands.guild_only()
-    async def pingadv(self, ctx: Context):
-        """Ping the all adventures role."""
-
-        role_id = await self.config.guild(ctx.guild).general_ping_role()
-        if not role_id:
-            ctx.command.reset_cooldown(ctx)
-            return await smart_embed(ctx, _("Role is not set."))
-
-        role = ctx.guild.get_role(role_id)
+    async def ping(self, ctx, role_iden: str):
+        role = await self.get_role(ctx.guild, role_iden + "_ping_role")
         if not role:
-            ctx.command.reset_cooldown(ctx)
-            return await smart_embed(ctx, _("I could not find the set role."))
+            raise AdventureCheckFailure(_("I could not find the set role."))
 
-        if not self.in_adventure(ctx):
-            ctx.command.reset_cooldown(ctx)
-            return await smart_embed(ctx, _("You must be in an adventure to use this command."))
+        session = self._sessions.get(ctx.guild.id)
+
+        if session is None:
+            raise AdventureCheckFailure(_("You must be in an adventure to use this command."))
+
+        if role_iden == 'boss' and not session.boss and not session.transcended:
+            raise AdventureCheckFailure(
+                _("You must be fighting a boss or transcended monster to use this command. Use `{prefix}pingadv` instead!").format(prefix=ctx.prefix)
+            )
 
         try:
             await self.make_mentionable(role)
@@ -120,13 +115,16 @@ class RoleMixin(commands.Cog):
                 )
             )
             return
-
         try:
-            await ctx.send(_("{mention}, {user} needs your assistance in fighting the monster ahead!").format(
-                    mention=role.mention, user=self.escape(ctx.author.display_name)
+            await ctx.send(_(
+                    "{mention}, an adventurer needs your assistance in fighting the"
+                    " **{session.attribute} {session.challenge}** ahead!"
+                ).format(
+                    mention=role.mention, session=session
                 ),
                 allowed_mentions=discord.AllowedMentions(roles=True)
             )
+            await asyncio.sleep(2)
         finally:
             try:
                 await self.make_unmentionable(role)
@@ -138,6 +136,14 @@ class RoleMixin(commands.Cog):
                         guild=role.guild.name
                     )
                 )
+
+    @commands.command()
+    @commands.cooldown(rate=1, per=180, type=BucketType.guild)
+    @commands.bot_has_permissions(manage_roles=True)
+    @commands.guild_only()
+    async def pingadv(self, ctx: Context):
+        """Ping the all adventures role."""
+        await self.ping(ctx, 'general')
 
     @commands.command()
     @commands.cooldown(rate=1, per=300, type=BucketType.guild)
@@ -145,51 +151,7 @@ class RoleMixin(commands.Cog):
     @commands.guild_only()
     async def pingboss(self, ctx: Context):
         """Ping the transcended or boss-only adventures role."""
-
-        role_id = await self.config.guild(ctx.guild).boss_ping_role()
-        if not role_id:
-            ctx.command.reset_cooldown(ctx)
-            return await smart_embed(ctx, _("Role is not set."))
-
-        role = ctx.guild.get_role(role_id)
-        if not role:
-            ctx.command.reset_cooldown(ctx)
-            return await smart_embed(ctx, _("I could not find the set role."))
-
-        if not self.in_adventure(ctx):
-            ctx.command.reset_cooldown(ctx)
-            return await smart_embed(ctx, _("You must be in an adventure to use this command."))
-
-        try:
-            await self.make_mentionable(role)
-        except discord.HTTPException:
-            log.exception(_("There was an error editing role permissions."))
-            return
-        except discord.Forbidden:
-            log.exception(
-                _("I don't have the permission to edit role permissions in {guild}.").format(
-                    guild=role.guild.name
-                )
-            )
-            return
-
-        try:
-            await ctx.send(_("{mention}, {user} needs your assistance in fighting the boss or transcended monster ahead!").format(
-                    mention=role.mention, user=self.escape(ctx.author.display_name)
-                ),
-                allowed_mentions=discord.AllowedMentions(roles=True)
-            ),
-        finally:
-            try:
-                await self.make_unmentionable(role)
-            except discord.HTTPException:
-                log.exception(_("There was an error editing role permissions."))
-            except discord.Forbidden:
-                log.exception(
-                    _("I don't have the permission to edit role permissions in {guild}.").format(
-                        guild=role.guild.name
-                    )
-                )
+        await self.ping(ctx, 'boss')
 
     async def add_ping_role(self, ctx: Context, role: discord.Role, duration: Optional[str], role_type: str):
         async def add_role():
@@ -209,8 +171,7 @@ class RoleMixin(commands.Cog):
 
         delta = parse_timedelta(duration)
         if not delta:
-            await smart_embed(ctx, _("Invalid duration provided."))
-            return False
+            raise AdventureCheckFailure(_("Invalid duration provided."))
 
         if await add_role() is False:
             return False
@@ -233,10 +194,10 @@ class RoleMixin(commands.Cog):
 
         role = await self.get_role(ctx.guild, "general_ping_role")
         if not role:
-            return await smart_embed(ctx, _("All adventures role is not set."))
+            raise AdventureCheckFailure(_("All adventures role is not set."))
 
         if await self.add_ping_role(ctx, role, duration, "general") is False:
-            return await smart_embed(ctx, _("Unable to add the role for unknown reason."))
+            raise AdventureCheckFailure(_("Unable to add the role for unknown reason."))
 
         await ctx.tick()
 
@@ -252,10 +213,10 @@ class RoleMixin(commands.Cog):
 
         role = await self.get_role(ctx.guild, "boss_ping_role")
         if not role:
-            return await smart_embed(ctx, _("Boss-only adventures role is not set."))
+            raise AdventureCheckFailure(_("Boss-only adventures role is not set."))
 
         if await self.add_ping_role(ctx, role, duration, "boss") is False:
-            return await smart_embed(ctx, _("Unable to add the role for unknown reason."))
+            raise AdventureCheckFailure(_("Unable to add the role for unknown reason."))
 
         await ctx.tick()
 
@@ -279,10 +240,10 @@ class RoleMixin(commands.Cog):
 
         role = await self.get_role(ctx.guild, "general_ping_role")
         if not role:
-            return await smart_embed(ctx, _("All adventures role is not set."))
+            raise AdventureCheckFailure(_("All adventures role is not set."))
 
         if not await self.remove_ping_role(ctx.author, role):
-            return await smart_embed(ctx, _("Unable to remove the role for unknown reason."))
+            raise AdventureCheckFailure(_("Unable to remove the role for unknown reason."))
 
         async with self.config.guild(ctx.guild).timed_roles() as timed_roles:
             str_id = str(ctx.author.id)
@@ -295,14 +256,14 @@ class RoleMixin(commands.Cog):
     @commands.guild_only()
     @commands.bot_has_permissions(manage_roles=True)
     async def rbossrole(self, ctx: Context):
-        """Removes the boss-only adventure role for optionally specified duration."""
+        """Removes the boss-only adventure role."""
 
         role = await self.get_role(ctx.guild, "boss_ping_role")
         if not role:
-            return await smart_embed(ctx, _("Boss-only adventures role is not set."))
+            raise AdventureCheckFailure(_("Boss-only adventures role is not set."))
 
         if not await self.remove_ping_role(ctx.author, role):
-            return await smart_embed(ctx, _("Unable to remove the role for unknown reason."))
+            raise AdventureCheckFailure(_("Unable to remove the role for unknown reason."))
 
 
         async with self.config.guild(ctx.guild).timed_roles() as timed_roles:

@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 import asyncio
+import inspect
 import logging
 import random
 import re
-from copy import copy
+import typing
+from copy import copy, deepcopy
+from collections import OrderedDict
 from datetime import date, datetime, timedelta
 from string import ascii_letters, digits
 from typing import Dict, List, Mapping, MutableMapping, Optional, Set, Tuple
@@ -16,10 +19,10 @@ from redbot.core import Config, commands
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import box, humanize_number
-from redbot.core.utils.menus import start_adding_reactions
 from redbot.core.utils.predicates import ReactionPredicate
 
 from . import bank
+from .utils import start_adding_reactions
 
 log = logging.getLogger("red.cogs.adventure")
 
@@ -401,11 +404,11 @@ class GameSession:
     reacted: bool = False
     participants: Set[discord.Member] = set()
     monster_modified_stats: MutableMapping = {}
-    fight: List[discord.Member] = []
-    magic: List[discord.Member] = []
-    talk: List[discord.Member] = []
-    pray: List[discord.Member] = []
-    run: List[discord.Member] = []
+    fight: Set[discord.Member] = []
+    magic: Set[discord.Member] = []
+    talk: Set[discord.Member] = []
+    pray: Set[discord.Member] = []
+    run: Set[discord.Member] = []
     message: discord.Message = None
     channel: discord.TextChannel = None
     countdown_message: discord.Message = None
@@ -427,12 +430,13 @@ class GameSession:
         self.message = kwargs.pop("message", 1)
         self.message_id: int = 0
         self.reacted = False
+        self.reactors: Set[discord.Member] = set()
         self.participants: Set[discord.Member] = set()
-        self.fight: List[discord.Member] = []
-        self.magic: List[discord.Member] = []
-        self.talk: List[discord.Member] = []
-        self.pray: List[discord.Member] = []
-        self.run: List[discord.Member] = []
+        self.fight: Set[discord.Member] = set()
+        self.magic: Set[discord.Member] = set()
+        self.talk: Set[discord.Member] = set()
+        self.pray: Set[discord.Member] = set()
+        self.run: Set[discord.Member] = set()
         self.transcended: bool = kwargs.pop("transcended", False)
         self.start_time = datetime.now()
         
@@ -442,10 +446,11 @@ class GameSession:
     def __getstate__(self):
         state = self.__dict__.copy()
         state['guild'] = state['guild'].id
-        state['fight'] = [i.id for i in state['fight']]
-        state['magic'] = [i.id for i in state['magic']]
-        state['talk'] = [i.id for i in state['talk']]
-        state['pray'] = [i.id for i in state['pray']]
+        state['fight'] = {i.id for i in state['fight']}
+        state['magic'] = {i.id for i in state['magic']}
+        state['talk'] = {i.id for i in state['talk']}
+        state['pray'] = {i.id for i in state['pray']}
+        state['reactors'] = {i.id for i in state['reactors']}
         state['participants'] = {i.id for i in state['participants']}
         state['channel'] = state['message'].channel.id
         state['message'] = state['message'].id
@@ -454,16 +459,24 @@ class GameSession:
     
     async def load_from_pickle(self, bot):
         self.guild = bot.get_guild(self.guild)
-        self.fight = [self.guild.get_member(i) for i in self.fight]
-        self.magic = [self.guild.get_member(i) for i in self.magic]
-        self.talk = [self.guild.get_member(i) for i in self.talk]
-        self.pray = [self.guild.get_member(i) for i in self.pray]
+        self.fight = {self.guild.get_member(i) for i in self.fight}
+        self.magic = {self.guild.get_member(i) for i in self.magic}
+        self.talk = {self.guild.get_member(i) for i in self.talk}
+        self.pray = {self.guild.get_member(i) for i in self.pray}
+        self.reactors = {self.guild.get_member(i) for i in self.reactors}
         self.participants = {self.guild.get_member(i) for i in self.participants}
 
         self.channel = self.guild.get_channel(self.channel)
         self.message = await self.channel.fetch_message(self.message)
         self.countdown_message = await self.channel.fetch_message(self.countdown_message)
 
+    @property
+    def fmt_attribute(self):
+        vowels = 'aeiou'
+        if any(self.attribute.startswith(x) for x in vowels):
+            return 'an ' + self.attribute
+        else:
+            return 'a ' + self.attribute
 
 class Character(Item):
     """An class to represent the characters stats."""
@@ -907,6 +920,9 @@ class Character(Item):
         self,
         forging: bool = False,
         consumed=None,
+        name=[],
+        level=[],
+        degrade=[],
         rarity=None,
         slot=None,
         show_delta=False,
@@ -934,6 +950,17 @@ class Character(Item):
             slot_string = ""
             current_equipped = getattr(self, slot_name if slot != "two handed" else "left", None)
             async for item in AsyncIter(slot_group):
+                e_level = equip_level(self, item[1])
+
+                if name and not all(x.is_valid(item[1].name) for x in name):
+                    continue
+
+                if level and not all(x.is_valid(e_level) for x in level):
+                    continue
+
+                if degrade and not all(x.is_valid(item[1].degrade) for x in degrade):
+                    continue
+
                 if forging and (item[1].rarity in ["forged", "set"] or item[1] in consumed_list):
                     continue
                 if forging and item[1].rarity == "ascended":
@@ -959,11 +986,10 @@ class Character(Item):
                 owned += f" | {item[1].owned}"
                 if item[1].set:
                     settext += f" | Set `{item[1].set}` ({item[1].parts}pcs)"
-                e_level = equip_level(self, item[1])
                 if e_level > self.lvl:
-                    level = f"[{e_level}]"
+                    fmt_level = f"[{e_level}]"
                 else:
-                    level = f"{e_level}"
+                    fmt_level = f"{e_level}"
 
                 if show_delta:
                     att = self.get_equipped_delta(current_equipped, item[1], "att")
@@ -988,7 +1014,7 @@ class Character(Item):
                     f"{luck_space}{luck:<{rjuststat}})"
                 )
 
-                slot_string += f"\n{str(item[1]):<{rjust}} - {stats} | Lvl {level:<5}{owned}{settext}"
+                slot_string += f"\n{str(item[1]):<{rjust}} - {stats} | Lvl {fmt_level:<5}{owned}{settext}"
             if slot_string:
                 form_string += f"\n\n {slot_name.title()} slot\n{slot_string}"
 
@@ -1429,12 +1455,12 @@ class EquipableItemConverter(Converter):
                 equipped_items.add(str(item))
         no_markdown = Item.remove_markdowns(argument)
         lookup = list(
-            i for x, i in c.backpack.items() if no_markdown.lower() in x.lower() and str(i) not in equipped_items
+            i for x, i in c.backpack.items() if no_markdown.lower() in x.lower() and str(i) not in equipped_items and can_equip(c, i)
         )
         lookup_m = list(
-            i for x, i in c.backpack.items() if argument.lower() == str(i).lower() and str(i) not in equipped_items
+            i for x, i in c.backpack.items() if argument.lower() == str(i).lower() and str(i) not in equipped_items and can_equip(c, i)
         )
-        lookup_e = list(i for x, i in c.backpack.items() if argument == str(i) and str(i) not in equipped_items)
+        lookup_e = list(i for x, i in c.backpack.items() if argument == str(i) and str(i) not in equipped_items and can_equip(c, i))
 
         _temp_items = set()
         for i in lookup:
@@ -1451,9 +1477,9 @@ class EquipableItemConverter(Converter):
         elif len(lookup_m) == 1:
             return lookup_m[0]
         elif len(lookup) == 0 and len(lookup_m) == 0:
-            raise BadArgument(_("`{}` doesn't seem to match any items you own.").format(argument))
+            raise BadArgument(_("`{}` doesn't seem to match any items you own and can equip.").format(argument))
         else:
-            lookup = list(i for x, i in c.backpack.items() if str(i) in _temp_items)
+            lookup = list(i for x, i in c.backpack.items() if str(i) in _temp_items and can_equip(c, i))
             if len(lookup) > 10:
                 raise BadArgument(
                     _("You have too many items matching the name `{}`, please be more specific.").format(argument)
@@ -1752,6 +1778,123 @@ class PercentageConverter(Converter):
         if arg < 0 or arg > 1:
             raise BadArgument(_("Percentage must be between 0% and 100%"))
         return arg
+
+
+class ArgumentConverter(Converter):
+    def __init__(
+        self, types: typing.OrderedDict[str, Converter], *,
+        allow_shortform: bool=True, block_simple: List[str]=[], allow_multiple: List[str]=[]):
+        """Parses complex-form arguments, e.g. --name=test.
+        Also supports simple-form arguments
+
+        Parameters
+        ----------
+        types: OrderedDict[str, Converter]
+        Key is the name of parameter,
+        value is a commands.Converter-ish object (e.g. str/bool/discord.Member etc are allowed)
+        Last type is registered as KEYWORD_ONLY instead of POSITIONAL_OR_KEYWORD
+
+        **allow_shortform: Optional[bool]
+        Allows shortform (e.g. -n instead of --name).
+        Shortforms are parsed as single-dash and a startswith.
+        Defaults to True
+
+        **block_simple: Optional[List[str]]
+        Blocks certain parameters in simple-form arguments.
+        Useful if you have string converters to prevent it from absorbing everything.
+        Arguments are parsed as Optional[Converter].
+        Defaults to []
+
+        **allow_multiple: Optional[List[str]]
+        Allows multiple of the value in the response,
+        only supported when using complex-form.
+        Result will be List[ConverterReturnType]
+        Defaults to []
+        """
+        self.types = types
+        self.allow_shortform = allow_shortform
+        self.block_simple = block_simple
+        self.allow_multiple = allow_multiple
+
+    async def convert(self, ctx, argument):
+        args = list(re.finditer(r'(?P<type>(?:-)+)(?P<name>.*?) *(?:=| |$) *\"?(?:(?= ?-|$)|(?P<val>.*?)(?= -|$))', argument))
+        result = {}
+
+        for t in self.types.keys():
+            if t in self.allow_multiple:
+                result[t] = []
+            else:
+                result[t] = None
+
+        # complex-form
+        for arg in args:
+            type_ = arg.group('type')
+            name = arg.group('name').lower()
+            val = arg.group('val')
+            if type_ == '-' and self.allow_shortform:
+                for t in self.types.keys():
+                    if t.startswith(name):
+                        name = t
+
+            if name in self.types.keys():
+                if self.types[name] == bool:
+                    final = True
+                else:
+                    try:
+                        final = await ctx.command.do_conversion(ctx, self.types[name], val, name)
+                    except commands.BadArgument:
+                        continue
+
+                if name in self.allow_multiple:
+                    result[name].append(final)
+                else:
+                    result[name] = final
+
+        if all(v in (None, []) for v in result.values()):
+            # try using simple-form
+            ctx = copy(ctx)
+            command = copy(ctx.command)
+            ctx.view.index = len(ctx.prefix)
+            ctx.view.previous = 0
+            ctx.view.skip_string(command.qualified_name) # advance to get the root command
+
+            command.params = OrderedDict((
+                ('self', command.params['self']),
+                ('ctx', command.params['ctx'])
+            ))
+
+            items = self.types.items()
+            n = 0
+            for k, v in items:
+                if k not in self.block_simple:
+                    if n == len(items) - 1:
+                        kind = inspect.Parameter.KEYWORD_ONLY
+                    else:
+                        kind = inspect.Parameter.POSITIONAL_OR_KEYWORD
+                    command.params[k] = inspect.Parameter(
+                        k, kind,
+                        default=None, annotation=Optional[v]
+                    )
+                n += 1
+
+            await command._parse_arguments(ctx)
+
+            arg_names = [i for i in self.types.keys() if i not in self.block_simple]
+            for n, arg in enumerate(ctx.args[2:]):
+                if arg is not None:
+                    if arg_names[n] in self.allow_multiple:
+                        result[arg_names[n]].append(arg)
+                    else:
+                        result[arg_names[n]] = arg
+
+            for k, v in ctx.kwargs.items():
+                if v is not None:
+                    if k in self.allow_multiple:
+                        result[k].append(v)
+                    else:
+                        result[k] = v
+
+        return result
 
 
 def equip_level(char, item):
