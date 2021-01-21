@@ -8,7 +8,7 @@ import os
 import random
 import re
 import time
-from collections import namedtuple
+from collections import OrderedDict, namedtuple
 from datetime import date, datetime
 from operator import itemgetter
 from types import SimpleNamespace
@@ -24,7 +24,7 @@ from redbot.core.errors import BalanceTooHigh
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter
 from redbot.core.utils.chat_formatting import box, humanize_list, humanize_number, humanize_timedelta, pagify
-from redbot.core.utils.menus import DEFAULT_CONTROLS, menu, start_adding_reactions
+from redbot.core.utils.menus import menu
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 from tabulate import tabulate
 
@@ -33,6 +33,7 @@ from .charsheet import (
     ORDER,
     RARITIES,
     AllItemConverter,
+    ArgumentConverter,
     Character,
     DayConverter,
     EquipableItemConverter,
@@ -66,12 +67,16 @@ from .utils import (
     AdventureResults,
     DynamicInt,
     FilterInt,
+    FilterStr,
     Member,
     check_global_setting_admin,
     can_use_ability,
     has_separated_economy,
     smart_embed,
-    AdventureCheckFailure
+    AdventureCheckFailure,
+    AdventureOnCooldown,
+    start_adding_reactions,
+    MENU_CONTROLS
 )
 
 _ = Translator("Adventure", __file__)
@@ -122,7 +127,6 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             self.emojis.magic,
             self.emojis.talk,
             self.emojis.pray,
-            self.emojis.run,
         ]
         self._adventure_controls = {
             "fight": self.emojis.attack,
@@ -299,16 +303,23 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         await self.config.user(ctx.author).set(user_data)
         await ctx.tick()
 
-    @commands.command(name="ebackpack")
+    @commands.command(name="ebackpack", usage="--diff --level --degrade --rarity --order --slot --name")
     @commands.bot_has_permissions(add_reactions=True)
     async def commands_equipable_backpack(
         self,
         ctx: Context,
-        show_diff: Optional[bool] = False,
-        rarity: Optional[RarityConverter] = None,
-        sort_order: Optional[SkillConverter] = None,
-        *,
-        slot: Optional[SlotConverter] = None,
+        *, args: ArgumentConverter(
+            OrderedDict((
+                ('diff', bool),
+                ('level', FilterInt),
+                ('degrade', FilterInt),
+                ('rarity', RarityConverter),
+                ('order', SkillConverter),
+                ('slot', SlotConverter),
+                ('name', FilterStr)
+            )),
+            allow_multiple=['level', 'degrade', 'name']
+        )=None
     ):
         """This shows the contents of your backpack that can be equipped.
 
@@ -316,6 +327,23 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
         Note: An item **degrade** level is how many rebirths it will last, before it is broken down.
         """
+        if args:
+            show_diff = args['diff']
+            level = args['level']
+            degrade = args['degrade']
+            rarity = args['rarity']
+            sort_order = args['order']
+            slot = args['slot']
+            name = args['name']
+        else:
+            show_diff = None
+            level = []
+            degrade = []
+            rarity = None
+            sort_order = None
+            slot = None
+            name = []
+
         assert isinstance(rarity, str) or rarity is None
         assert isinstance(slot, str) or slot is None
         if not await self.allow_in_dm(ctx):
@@ -337,23 +365,31 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
             backpack_contents = _("{author}'s backpack \n\n{backpack}\n").format(
                 author=self.escape(ctx.author.display_name),
-                backpack=await c.get_backpack(rarity=rarity, slot=slot, show_delta=show_diff, equippable=True, sort_order=sort_order),
+                backpack=await c.get_backpack(name=name, level=level, degrade=degrade, rarity=rarity, slot=slot, show_delta=show_diff, equippable=True, sort_order=sort_order),
             )
             msgs = []
             async for page in AsyncIter(pagify(backpack_contents, delims=["\n"], shorten_by=20, page_length=1900)):
                 msgs.append(box(page, lang="css"))
-            return await menu(ctx, msgs, DEFAULT_CONTROLS)
+            return await menu(ctx, msgs, MENU_CONTROLS)
 
-    @commands.command(name="ubackpack")
+    @commands.command(name="ubackpack", usage="--diff --level --degrade --rarity --order --slot --name")
     @commands.bot_has_permissions(add_reactions=True)
     async def commands_unequipable_backpack(
         self,
         ctx: Context,
-        show_diff: Optional[bool] = False,
-        rarity: Optional[RarityConverter] = None,
-        sort_order: Optional[SkillConverter] = None,
-        *,
-        slot: Optional[SlotConverter] = None,
+        *, args: ArgumentConverter(
+            OrderedDict((
+                ('diff', bool),
+                ('level', FilterInt),
+                ('degrade', FilterInt),
+                ('rarity', RarityConverter),
+                ('order', SkillConverter),
+                ('slot', SlotConverter),
+                ('name', FilterStr)
+            )),
+            allow_multiple=['level', 'degrade', 'name']
+        )=None
+
     ):
         """This shows the contents of your backpack that cannot be equipped.
 
@@ -361,6 +397,23 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
         Note: An item **degrade** level is how many rebirths it will last, before it is broken down.
         """
+        if args:
+            show_diff = args['diff']
+            level = args['level']
+            degrade = args['degrade']
+            rarity = args['rarity']
+            sort_order = args['order']
+            slot = args['slot']
+            name = args['name']
+        else:
+            show_diff = None
+            level = []
+            degrade = []
+            rarity = None
+            sort_order = None
+            slot = None
+            name = []
+
         assert isinstance(rarity, str) or rarity is None
         assert isinstance(slot, str) or slot is None
         if not ctx.invoked_subcommand:
@@ -380,27 +433,33 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
             backpack_contents = _("{author}'s backpack \n\n{backpack}\n").format(
                 author=self.escape(ctx.author.display_name),
-                backpack=await c.get_backpack(rarity=rarity, slot=slot, show_delta=show_diff, unequippable=True, sort_order=sort_order),
+                backpack=await c.get_backpack(name=name, level=level, degrade=degrade, rarity=rarity, slot=slot, show_delta=show_diff, unequippable=True, sort_order=sort_order),
             )
             msgs = []
             async for page in AsyncIter(pagify(backpack_contents, delims=["\n"], shorten_by=20, page_length=1900)):
                 msgs.append(box(page, lang="css"))
-            return await menu(ctx, msgs, DEFAULT_CONTROLS)
+            return await menu(ctx, msgs, MENU_CONTROLS)
 
-    @commands.group(name="backpack", autohelp=False)
+    @commands.group(name="backpack", autohelp=False, usage="--diff --level --degrade --rarity --order --slot --name", invoke_without_command=True)
     @commands.bot_has_permissions(add_reactions=True)
     async def _backpack(
         self,
         ctx: Context,
-        show_diff: Optional[bool] = False,
-        rarity: Optional[RarityConverter] = None,
-        sort_order: Optional[SkillConverter] = None,
-        *,
-        slot: Optional[SlotConverter] = None,
+        *, args: ArgumentConverter(
+            OrderedDict((
+                ('diff', bool),
+                ('level', FilterInt),
+                ('degrade', FilterInt),
+                ('rarity', RarityConverter),
+                ('order', SkillConverter),
+                ('slot', SlotConverter),
+                ('name', FilterStr)
+            )),
+            allow_multiple=['level', 'degrade', 'name']
+        )=None
     ):
         """This shows the contents of your backpack.
 
-        Give
         Give it a rarity and/or slot to filter what backpack items to show.
 
         Selling:     `[p]backpack sell item_name`
@@ -411,6 +470,23 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
         Note: An item **degrade** level is how many rebirths it will last, before it is broken down.
         """
+        if args:
+            show_diff = args['diff']
+            level = args['level']
+            degrade = args['degrade']
+            rarity = args['rarity']
+            sort_order = args['order']
+            slot = args['slot']
+            name = args['name']
+        else:
+            show_diff = None
+            level = []
+            degrade = []
+            rarity = None
+            sort_order = None
+            slot = None
+            name = []
+
         assert isinstance(rarity, str) or rarity is None
         assert isinstance(slot, str) or slot is None
 
@@ -431,12 +507,12 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
             backpack_contents = _("{author}'s backpack \n\n{backpack}\n").format(
                 author=self.escape(ctx.author.display_name),
-                backpack=await c.get_backpack(rarity=rarity, slot=slot, show_delta=show_diff, sort_order=sort_order),
+                backpack=await c.get_backpack(name=name, level=level, degrade=degrade, rarity=rarity, slot=slot, show_delta=show_diff, sort_order=sort_order),
             )
             msgs = []
             async for page in AsyncIter(pagify(backpack_contents, delims=["\n"], shorten_by=20, page_length=1900)):
                 msgs.append(box(page, lang="css"))
-            controls = DEFAULT_CONTROLS.copy()
+            controls = MENU_CONTROLS.copy()
 
             async def _backpack_info(
                 ctx: commands.Context,
@@ -548,15 +624,43 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     ),
                 )
 
-    @_backpack.command(name="sellall")
+    @_backpack.command(name="sellall", usage ='--name --level --degrade --rarity --slot')
     async def backpack_sellall(
-        self, ctx: Context, level: Optional[FilterInt] = None, rarity: Optional[RarityConverter] = None, *, slot: Optional[SlotConverter] = None,
+        self, ctx: Context,
+        *, args: ArgumentConverter(
+            OrderedDict((
+                ('level', FilterInt),
+                ('degrade', FilterInt),
+                ('rarity', RarityConverter),
+                ('slot', SlotConverter),
+                ('name', FilterStr)
+            )),
+            allow_multiple=['level', 'degrade', 'name']
+        )=None
     ):
-        """Sell all items in your backpack. Optionally specify level filter, rarity or slot.
+        """Sell all items in your backpack. Optionally specify name filter, degrade filter, level filter, rarity or slot.
 
         Level filter can be any number (level) followed by a `+` or a `-` sign. For example,
         if `70+` is specified, all items that can only be equipped above level 70 will be sold.
+
+        Degrade filter works the same as level filters but only work for legendary and ascended items.
+
+        Name filter works similarly to level and degrade filters, allowing you to include/exclude results.
+
+        Note: The level filter has to be specified (e.g. 0+) to use the degrade filter
         """
+        if args:
+            name = args['name']
+            level = args['level']
+            degrade = args['degrade']
+            rarity = args['rarity']
+            slot = args['slot']
+        else:
+            name = []
+            level = []
+            degrade = []
+            rarity = None
+            slot = None
 
         assert isinstance(rarity, str) or rarity is None
         assert isinstance(slot, str) or slot is None
@@ -579,30 +683,63 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     _("{} is not a valid slot, select one of {}").format(slot, humanize_list(ORDER)),
                 )
 
-        if level and level.sign == "+":
-            level_str = _(" above level {}").format(level.num)
-        elif level and level.sign == "-":
-            level_str = _(" below level {}").format(level.num)
+        if level:
+            vals = []
+            for i in level:
+                if i.sign == "+":
+                    vals.append(_("above level {}").format(i.val))
+                elif i.sign == "-":
+                    vals.append(_("below level {}").format(i.val))
+                elif i.sign == None:
+                    vals.append(_("at level {}").format(i.val))
+            level_str = " " + " and ".join(vals)
         else:
             level_str = ""
+
+        if degrade:
+            vals = []
+            for i in degrade:
+                if i.sign == "+":
+                    vals.append(_("above degrade {}").format(i.val))
+                elif i.sign == "-":
+                    vals.append(_("below degrade {}").format(i.val))
+                elif i.sign == None:
+                    vals.append(_("at degrade {}").format(i.val))
+            degrade_str = " " + " and ".join(vals)
+        else:
+            degrade_str = ""
+
+        if rarity and rarity not in ('all', 'legendary', 'ascended'):
+            degrade_str = ""
+
+        if name:
+            vals = []
+            for i in name:
+                if i.sign == "+":
+                    vals.append(_("with name {}").format(i.val))
+                elif i.sign == "-":
+                    vals.append(_("without name {}").format(i.val))
+            name_str = " " + " and ".join(vals)
+        else:
+            name_str = ""
 
         async with self.get_lock(ctx.author):
             if rarity and slot:
                 msg = await ctx.send(
-                    "Are you sure you want to sell all {rarity} {slot} items{level} in your inventory?".format(
-                        rarity=rarity, slot=slot, level=level_str
+                    "Are you sure you want to sell all {rarity} {slot} items{level}{degrade}{name} in your inventory?".format(
+                        rarity=rarity, slot=slot, level=level_str, degrade=degrade_str, name=name_str
                     )
                 )
             elif rarity or slot:
                 msg = await ctx.send(
-                    "Are you sure you want to sell all{rarity}{slot} items{level} in your inventory?".format(
-                        rarity=f" {rarity}" if rarity else "", slot=f" {slot}" if slot else "", level=level_str
+                    "Are you sure you want to sell all{rarity}{slot} items{level}{degrade}{name} in your inventory?".format(
+                        rarity=f" {rarity}" if rarity else "", slot=f" {slot}" if slot else "", level=level_str, degrade=degrade_str, name=name_str
                     )
                 )
             else:
                 msg = await ctx.send(
-                    "Are you sure you want to sell all items{level} in your inventory?".format(
-                        level=level_str
+                    "Are you sure you want to sell all items{level}{degrade}{name} in your inventory?".format(
+                        level=level_str, degrade=degrade_str, name=name_str
                     )
                 )
 
@@ -623,14 +760,18 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             total_price = 0
             async with ctx.typing():
                 items = [i for n, i in c.backpack.items() if i.rarity not in ["forged", "set"]]
-                count = 0
                 async for item in AsyncIter(items):
-                    if level and level.sign == "+":
-                        if item.lvl <= level.num:
-                            continue
-                    elif level and level.sign == "-":
-                        if item.lvl >= level.num:
-                            continue
+                    e_level = equip_level(c, item)
+
+                    if name and not all(x.is_valid(item.name) for x in name):
+                        continue
+
+                    if level and not all(x.is_valid(e_level) for x in level):
+                        continue
+
+                    if degrade and not all(x.is_valid(item.degrade) for x in degrade):
+                        continue
+
                     if rarity and item.rarity != rarity:
                         continue
                     if slot:
@@ -645,34 +786,32 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         item_price += self._sell(c, item)
                         if item.owned <= 0:
                             del c.backpack[item.name]
-                        if not count % 10:
-                            await asyncio.sleep(0.1)
-                        count += 1
+                    item_price = max(item_price, 0)
                     msg += _("{old_item} sold for {price}.\n").format(
                         old_item=str(old_owned) + " " + str(item), price=humanize_number(item_price),
                     )
                     total_price += item_price
-                    await asyncio.sleep(0.1)
-                    item_price = max(item_price, 0)
-                    if item_price > 0:
-                        try:
-                            await bank.deposit_credits(ctx.author, item_price)
-                        except BalanceTooHigh as e:
-                            await bank.set_balance(ctx.author, e.max_balance)
+                if total_price > 0:
+                    try:
+                        await bank.deposit_credits(ctx.author, total_price)
+                    except BalanceTooHigh as e:
+                        await bank.set_balance(ctx.author, e.max_balance)
                 c.last_known_currency = await bank.get_balance(ctx.author)
                 c.last_currency_check = time.time()
                 await self.config.user(ctx.author).set(await c.to_json(self.config))
         msg_list = []
-        new_msg = _("{author} sold all their{rarity} items{level} for {price}.\n\n{items}").format(
+        new_msg = _("{author} sold all their{rarity} items{level}{degrade}{name} for {price}.\n\n{items}").format(
             author=self.escape(ctx.author.display_name),
             rarity=f" {rarity}" if rarity else "",
             price=humanize_number(total_price),
             items=msg,
             level=level_str,
+            degrade=degrade_str,
+            name=name_str
         )
         for page in pagify(new_msg, shorten_by=10, page_length=1900):
             msg_list.append(box(page, lang="css"))
-        await menu(ctx, msg_list, DEFAULT_CONTROLS)
+        await menu(ctx, msg_list, MENU_CONTROLS)
 
     @_backpack.command(name="sell", cooldown_after_parsing=True)
     @commands.cooldown(rate=3, per=60, type=commands.BucketType.user)
@@ -1137,10 +1276,10 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 )
                 msg_list.append(box(msg, lang="css"))
                 count += 1
-            await menu(ctx, msg_list, DEFAULT_CONTROLS, page=index)
+            await menu(ctx, msg_list, MENU_CONTROLS, page=index)
 
     @loadout.command(name="equip", aliases=["load"], cooldown_after_parsing=True)
-    @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
+    @commands.cooldown(rate=1, per=360, type=commands.BucketType.user)
     async def equip_loadout(self, ctx: Context, name: str):
         """Equip a saved loadout."""
         if self.in_adventure(ctx):
@@ -1698,7 +1837,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             embed.set_image(url=image)
             embed_list.append(embed)
         if embed_list:
-            await menu(ctx, embed_list, DEFAULT_CONTROLS)
+            await menu(ctx, embed_list, MENU_CONTROLS)
 
     @themeset_list.command(name="pet")
     async def themeset_list_pet(self, ctx: Context, *, theme: str):
@@ -1722,7 +1861,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             embed = discord.Embed(title=pet, description=text)
             embed_list.append(embed)
         if embed_list:
-            await menu(ctx, embed_list, DEFAULT_CONTROLS)
+            await menu(ctx, embed_list, MENU_CONTROLS)
 
     @adventureset.command()
     @commands.admin_or_permissions(administrator=True)
@@ -2021,7 +2160,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 )
                 pages = pagify(forgeables, delims=["\n"], shorten_by=20, page_length=1900)
                 pages = [box(page, lang="css") for page in pages]
-                task = asyncio.create_task(menu(ctx, pages, DEFAULT_CONTROLS, timeout=180))
+                task = asyncio.create_task(menu(ctx, pages, MENU_CONTROLS, timeout=180))
                 await smart_embed(
                     ctx,
                     _(
@@ -2688,7 +2827,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
                     await self._open_chest(ctx, ctx.author, box_type, character=c)  # returns item and msg
         if msgs:
-            await menu(ctx, msgs, DEFAULT_CONTROLS)
+            await menu(ctx, msgs, MENU_CONTROLS)
 
     @commands.command(name="negaverse", aliases=["nv"], cooldown_after_parsing=True)
     @commands.cooldown(rate=1, per=3600, type=commands.BucketType.user)
@@ -3411,7 +3550,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         async for page in AsyncIter(pagify(backpack_contents, delims=["\n"], shorten_by=20, page_length=1950)):
             msg_list.append(box(page, lang="css"))
 
-        await menu(ctx, pages=msg_list, controls=DEFAULT_CONTROLS)
+        await menu(ctx, pages=msg_list, controls=MENU_CONTROLS)
 
     async def _setinfo_details(self, ctx: Context, title_cased_set_name: str):
         """
@@ -3450,7 +3589,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             legend=legend, equip=c.get_equipment(), user=c.user.display_name
         )
         await menu(
-            ctx, pages=[box(c, lang="css"), box(equipped_gear_msg, lang="css")], controls=DEFAULT_CONTROLS,
+            ctx, pages=[box(c, lang="css"), box(equipped_gear_msg, lang="css")], controls=MENU_CONTROLS,
         )
 
     async def _build_loadout_display(self, userdata, loadout=True):
@@ -3577,7 +3716,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             embed = discord.Embed(description=page)
             embed_list.append(embed)
         if len(embed_list) > 1:
-            await menu(ctx, embed_list, DEFAULT_CONTROLS)
+            await menu(ctx, embed_list, MENU_CONTROLS)
         else:
             await ctx.send(embed=embed_list[0])
 
@@ -3631,13 +3770,9 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         if cooldown + cooldown_time > time.time():
             cooldown_time = cooldown + cooldown_time - time.time()
             ctx.command.reset_cooldown(ctx)
-            return await smart_embed(
-                ctx,
-                _("No heroes are ready to depart in an adventure, try again in {}.").format(
-                    humanize_timedelta(seconds=int(cooldown_time)) if int(cooldown_time) >= 1 else _("1 second")
-                ),
-                delete_after=cooldown_time,
-                success=False
+            raise AdventureOnCooldown(
+                message=_("No heroes are ready to depart in an adventure, try again in {delay}."),
+                retry_after=cooldown_time
             )
 
         if challenge and not (self.is_dev(ctx.author) or await ctx.bot.is_owner(ctx.author)):
@@ -3869,7 +4004,6 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 tax=highest,
                 transfered=humanize_number(transfered),
             ),
-            success=True
         )
 
     @commands_atransfer.command(name="give")

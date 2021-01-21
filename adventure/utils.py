@@ -1,13 +1,17 @@
+import asyncio
+import contextlib
 import logging
 import time
 from typing import List, MutableMapping
 
 import discord
 from discord.ext import commands
+from discord.utils import get
 from redbot.core.utils.chat_formatting import humanize_timedelta
 from discord.ext.commands import BadArgument, CheckFailure, Converter
 from redbot.core.commands import Context, check
 from redbot.core.i18n import Translator
+from redbot.core.utils.menus import prev_page, next_page
 
 from . import bank
 
@@ -89,13 +93,12 @@ def can_use_ability():
                     c.heroclass["cooldown"] = cooldown_time + 1
                 if c.heroclass["cooldown"] > time.time():
                     cooldown_time = c.heroclass["cooldown"] - time.time()
-                    raise AdventureCheckFailure(
-                        _(
+                    raise AdventureOnCooldown(
+                        message=_(
                             "Your hero is currently recovering from the last time "
-                            "they used this skill. Try again in {}."
-                        ).format(
-                            humanize_timedelta(seconds=int(cooldown_time)) if int(cooldown_time) >= 1 else _("1 second")
+                            "they used this skill. Try again in {delay}."
                         ),
+                        retry_after=cooldown_time
                     )
         
         return True
@@ -204,6 +207,12 @@ class AdventureResults:
 
             for n, raid in enumerate(reversed(raids)):
                 if n < avg_count:
+                    if not raid.get("amount"):
+                        # Incrementing `avg_count` makes sure we still consider 3 raids (if possible).
+                        avg_count += 1
+                        # Similarly, incrementing `winrate_count` makes sure we consider 6 raids (if possible).
+                        winrate_count += 1
+                        continue
                     if raid["main_action"] == "attack":
                         num_attack += 1
                         dmg_amount += raid["amount"]
@@ -259,16 +268,117 @@ class AdventureResults:
 class AdventureCheckFailure(commands.CheckFailure):
     pass
 
+class AdventureOnCooldown(AdventureCheckFailure):
+    def __init__(self, retry_after, *, message=None):
+        self.retry_after = int(retry_after)
+
+        if message is None:
+            message = _("This command is on cooldown. Try again in {delay}.")
+
+        message = message.format(
+            delay=humanize_timedelta(seconds=self.retry_after) if self.retry_after >= 1 else _("1 second")
+        )
+        super().__init__(message)
+
 
 class FilterInt:
-    def __init__(self, num: int, sign: str):
-        self.num = num
+    def __init__(self, val: int, sign: str):
+        self.val = val
         self.sign = sign
 
     @classmethod
-    async def convert(cls, _: commands.Context, argument: str):
+    async def convert(cls, __: commands.Context, argument: str):
         if argument.endswith("+") or argument.endswith("-"):
-            if argument[0:-1].isnumeric:
+            if argument[0:-1].isnumeric():
                 return cls(int(argument[0:-1]), argument[-1])
+        elif argument.startswith("+") or argument.startswith("-"):
+            if argument[1:].isnumeric():
+                return cls(int(argument[1:]), argument[0])
+        elif argument.isnumeric():
+            return cls(int(argument), None)
 
         raise BadArgument(_('{} is not a valid filter number.').format(argument))
+
+    def is_valid(self, x):
+        return (self.sign == '+' and x > self.val) or (self.sign == '-' and x < self.val) or (self.sign == None and x == self.val)
+
+
+class FilterStr:
+    def __init__(self, val: str, sign: str):
+        self.val = val
+        self.sign = sign
+
+    @classmethod
+    async def convert(cls, __: commands.Context, argument: str):
+        if argument.endswith("+") or argument.endswith("-"):
+            return cls(argument[0:-1], argument[-1])
+        elif argument.startswith("+") or argument.startswith("-"):
+            return cls(argument[1:], argument[0])
+
+        raise BadArgument(_('{} is not a valid filter string.').format(argument))
+
+    def is_valid(self, x):
+        x = x.lower()
+        val = self.val.lower()
+        return (self.sign == '+' and val in x) or (self.sign == '-' and val not in x)
+
+
+def start_adding_reactions(
+    message: discord.Message, emojis
+) -> asyncio.Task:
+    """
+    [Overwrites original Red function to add a 0.3s delay]
+    Start adding reactions to a message.
+
+    This is a non-blocking operation - calling this will schedule the
+    reactions being added, but the calling code will continue to
+    execute asynchronously. There is no need to await this function.
+
+    This is particularly useful if you wish to start waiting for a
+    reaction whilst the reactions are still being added - in fact,
+    this is exactly what `menu` uses to do that.
+
+    Parameters
+    ----------
+    message: discord.Message
+        The message to add reactions to.
+    emojis : Iterable[Union[str, discord.Emoji]]
+        The emojis to react to the message with.
+
+    Returns
+    -------
+    asyncio.Task
+        The task for the coroutine adding the reactions.
+
+    """
+
+    async def task():
+        # The task should exit silently if the message is deleted
+        with contextlib.suppress(discord.NotFound):
+            for emoji in emojis:
+                await message.add_reaction(emoji)
+                await asyncio.sleep(0.3)
+
+    return asyncio.create_task(task())
+
+
+async def close_menu(
+    ctx: commands.Context,
+    pages: list,
+    controls: dict,
+    message: discord.Message,
+    page: int,
+    timeout: float,
+    emoji: str,
+):
+    with contextlib.suppress(discord.NotFound):
+        await ctx.tick()
+        await message.delete()
+
+
+
+MENU_CONTROLS = {
+    "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}": prev_page,
+    "\N{CROSS MARK}": close_menu,
+    "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}": next_page,
+}

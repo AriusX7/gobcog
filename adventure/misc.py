@@ -21,15 +21,15 @@ from redbot.core.data_manager import bundled_data_path, cog_data_path
 from redbot.core.errors import BalanceTooHigh
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
-from redbot.core.utils.chat_formatting import box, escape, humanize_list, humanize_number, pagify
+from redbot.core.utils.chat_formatting import box, escape, humanize_list, humanize_number, humanize_timedelta, pagify
 from redbot.core.utils.common_filters import filter_various_mentions
-from redbot.core.utils.menus import DEFAULT_CONTROLS, menu, start_adding_reactions
+from redbot.core.utils.menus import menu
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate
 
 import adventure.charsheet
 from . import bank
 from .charsheet import ORDER, RARITIES, Character, GameSession, Item, calculate_sp, can_equip, equip_level, has_funds
-from .utils import AdventureCheckFailure, smart_embed
+from .utils import AdventureCheckFailure, AdventureOnCooldown, smart_embed, start_adding_reactions, MENU_CONTROLS
 
 DEV_LIST = [208903205982044161, 154497072148643840, 218773382617890828]
 REBIRTH_LVL = 20
@@ -416,16 +416,27 @@ class MiscMixin(commands.Cog):
                 del item_dict["set"]
         return (new_name, item_dict)
 
-    def in_adventure(self, ctx=None, user=None):
+    def in_adventure(self, ctx=None, user=None, *, guild=False):
+        """guild argument ensures that user is in the guild of trigger"""
         author = user or ctx.author
-        sessions = self._sessions
+        
+        if guild:
+            guild_id = getattr(author.guild, 'id', None)
+            try:
+                sessions = {guild_id: self._sessions[guild_id]}
+            except KeyError:
+                return False
+        else:
+            sessions = self._sessions
+
         if not sessions:
             return False
+
         participants_ids = set(
             [
                 p.id
-                for _loop, session in self._sessions.items()
-                for p in [*session.fight, *session.magic, *session.pray, *session.talk, *session.run,]
+                for guild_id, session in sessions.items()
+                for p in session.reactors
             ]
         )
         return bool(author.id in participants_ids)
@@ -589,19 +600,16 @@ class MiscMixin(commands.Cog):
         else:
             attribute = random.choice(list(self.ATTRIBS.keys()))
 
-        if transcended:
+        if transcended and "Ascended" in challenge:
             new_challenge = challenge.replace("Ascended", "Transcended")
             if "Transcended" in new_challenge:
                 self.bot.dispatch("adventure_transcended", ctx)
         else:
+            transcended = False
             new_challenge = challenge
 
         if "Ascended" in new_challenge:
             self.bot.dispatch("adventure_ascended", ctx)
-        if attribute == "n immortal":
-            self.bot.dispatch("adventure_immortal", ctx)
-        if attribute == " possessed":
-            self.bot.dispatch("adventure_possessed", ctx)
         if monster_roster[challenge]["boss"]:
             timer = 60 * 5
             text = box(_("\n [{} Alarm!]").format(new_challenge), lang="css")
@@ -643,13 +651,13 @@ class MiscMixin(commands.Cog):
     async def _choice(self, ctx: Context, adventure_msg):
         session = self._sessions[ctx.guild.id]
         dragon_text = _(
-            "but **a{attr} {chall}** "
+            "but **{attr} {chall}** "
             "just landed in front of you glaring! \n\n"
             "What will you do and will other heroes be brave enough to help you?\n"
             "Heroes have 5 minutes to participate via reaction:"
             "\n\nReact with: {reactions}"
         ).format(
-            attr=session.attribute,
+            attr=session.fmt_attribute,
             chall=session.challenge,
             reactions="**"
             + _("Fight")
@@ -659,17 +667,15 @@ class MiscMixin(commands.Cog):
             + _("Talk")
             + "** - **"
             + _("Pray")
-            + "** - **"
-            + _("Run")
             + "**",
         )
         basilisk_text = _(
-            "but **a{attr} {chall}** stepped out looking around. \n\n"
+            "but **{attr} {chall}** stepped out looking around. \n\n"
             "What will you do and will other heroes help your cause?\n"
             "Heroes have 3 minutes to participate via reaction:"
             "\n\nReact with: {reactions}"
         ).format(
-            attr=session.attribute,
+            attr=session.fmt_attribute,
             chall=session.challenge,
             reactions="**"
             + _("Fight")
@@ -679,20 +685,19 @@ class MiscMixin(commands.Cog):
             + _("Talk")
             + "** - **"
             + _("Pray")
-            + "** - **"
-            + _("Run")
             + "**",
         )
         normal_text = _(
-            "but **a{attr} {chall}** "
+            "but **{attr} {chall}** "
             "is guarding it with{threat}. \n\n"
             "What will you do and will other heroes help your cause?\n"
-            "Heroes have 2 minutes to participate via reaction:"
+            "Heroes have {duration} minutes to participate via reaction:"
             "\n\nReact with: {reactions}"
         ).format(
-            attr=session.attribute,
+            attr=session.fmt_attribute,
             chall=session.challenge,
             threat=random.choice(self.THREATEE),
+            duration=3 if session.transcended else 2,
             reactions="**"
             + _("Fight")
             + "** - **"
@@ -701,8 +706,6 @@ class MiscMixin(commands.Cog):
             + _("Talk")
             + "** - **"
             + _("Pray")
-            + "** - **"
-            + _("Run")
             + "**",
         )
 
@@ -745,7 +748,9 @@ class MiscMixin(commands.Cog):
 
         session.message_id = adventure_msg.id
         session.message = adventure_msg
+        
         start_adding_reactions(adventure_msg, self._adventure_actions)
+
         timer = await self._adv_countdown(ctx, session.timer, "Time remaining")
         self.tasks[adventure_msg.id] = timer
         try:
@@ -798,9 +803,6 @@ class MiscMixin(commands.Cog):
         session = self._sessions[user.guild.id]
         has_fund = await has_funds(user, 250)
         for x in ["fight", "magic", "talk", "pray", "run"]:
-            if user in getattr(session, x, []):
-                getattr(session, x).remove(user)
-
             if not has_fund or user in getattr(session, x, []):
                 with contextlib.suppress(discord.HTTPException):
                     symbol = self._adventure_controls[x]
@@ -808,7 +810,37 @@ class MiscMixin(commands.Cog):
 
         restricted = await self.config.restrict()
         if user not in getattr(session, action, []):
-            if not has_fund:
+            if has_fund:
+                if restricted:
+                    all_users = []
+                    for (guild_id, guild_session) in self._sessions.items():
+                        guild_users_in_game = (
+                            guild_session.fight
+                            | guild_session.magic
+                            | guild_session.talk
+                            | guild_session.pray
+                            | guild_session.run
+                        )
+                        all_users = all_users + guild_users_in_game
+
+                    if user in all_users:
+                        user_id = f"{user.id}-{user.guild.id}"
+                        # iterating through reactions here and removing them seems to be expensive
+                        # so they can just keep their react on the adventures they can't join
+                        if user_id not in self._react_messaged:
+                            await reaction.message.channel.send(
+                                _(
+                                    "**{c}**, you are already in an existing adventure. "
+                                    "Wait for it to finish before joining another one."
+                                ).format(c=self.escape(user.display_name))
+                            )
+                            self._react_messaged.append(user_id)
+                            return
+                    else:
+                        session.reactors.add(user)
+                else:
+                    session.reactors.add(user)
+            else:
                 with contextlib.suppress(discord.HTTPException):
                     await user.send(
                         _(
@@ -821,38 +853,19 @@ class MiscMixin(commands.Cog):
                             "to tell them you are broke!"
                         )
                     )
-                return
-            if restricted:
-                all_users = []
-                for (guild_id, guild_session) in self._sessions.items():
-                    guild_users_in_game = (
-                        guild_session.fight
-                        + guild_session.magic
-                        + guild_session.talk
-                        + guild_session.pray
-                        + guild_session.run
-                    )
-                    all_users = all_users + guild_users_in_game
-
-                if user in all_users:
-                    user_id = f"{user.id}-{user.guild.id}"
-                    # iterating through reactions here and removing them seems to be expensive
-                    # so they can just keep their react on the adventures they can't join
-                    if user_id not in self._react_messaged:
-                        await reaction.message.channel.send(
-                            _(
-                                "**{c}**, you are already in an existing adventure. "
-                                "Wait for it to finish before joining another one."
-                            ).format(c=self.escape(user.display_name))
-                        )
-                        self._react_messaged.append(user_id)
-                        return
-                else:
-                    getattr(session, action).append(user)
-            else:
-                getattr(session, action).append(user)
 
     async def _handle_cart(self, reaction, user):
+        # This needs to be above here so a user isn't added to `_current_traders`
+        # if he's in an adventure.
+        if self.in_adventure(user=user):
+            with contextlib.suppress(discord.HTTPException):
+                await reaction.remove(user)
+            return await reaction.message.channel.send(
+                _("**{author}**, you have to be back in town to buy things from the cart!").format(
+                    author=self.escape(user.display_name)
+                ), delete_after=10
+            )
+
         guild = user.guild
         emojis = ReactionPredicate.NUMBER_EMOJIS
         itemindex = emojis.index(str(reaction.emoji)) - 1
@@ -860,15 +873,6 @@ class MiscMixin(commands.Cog):
         self._current_traders[guild.id]["users"].append(user)
         spender = user
         channel = reaction.message.channel
-
-        if self.in_adventure(user=user):
-            with contextlib.suppress(discord.HTTPException):
-                await reaction.remove(user)
-            return await channel.send(
-                _("**{author}**, you have to be back in town to buy things from the cart!").format(
-                    author=self.escape(user.display_name)
-                ), delete_after=10
-            )
 
         currency_name = await bank.get_currency_name(guild,)
         if currency_name.startswith("<"):
@@ -938,27 +942,33 @@ class MiscMixin(commands.Cog):
         attack = 0
         diplomacy = 0
         magic = 0
-        fumblelist: list = []
-        critlist: list = []
+        fumblelist: set = set()
+        critlist: set = set()
         failed = False
         lost = False
         session = self._sessions[ctx.guild.id]
+
+        # update message object
+        message = await message.channel.fetch_message(message.id)
+
+        for r in message.reactions:
+            if str(r.emoji) in self._adventure_actions:
+                action = {v: k for k, v in self._adventure_controls.items()}[str(r.emoji)]
+                async for user in r.users():
+                    if not user.bot:
+                        # only allow user to do one action, so remove from all
+                        # others if found
+                        for x in ["fight", "magic", "talk", "pray", "run"]:
+                            if user in getattr(session, x, []):
+                                getattr(session, x).remove(user)
+
+                        getattr(session, action).add(user)
+                await asyncio.sleep(0.3)
+
         with contextlib.suppress(discord.HTTPException):
             await message.clear_reactions()
 
-        fight_list = list(set(session.fight))
-        talk_list = list(set(session.talk))
-        pray_list = list(set(session.pray))
-        run_list = list(set(session.run))
-        magic_list = list(set(session.magic))
-
-        self._sessions[ctx.guild.id].fight = fight_list
-        self._sessions[ctx.guild.id].talk = talk_list
-        self._sessions[ctx.guild.id].pray = pray_list
-        self._sessions[ctx.guild.id].run = run_list
-        self._sessions[ctx.guild.id].magic = magic_list
-
-        people = len(fight_list) + len(magic_list) + len(talk_list) + len(pray_list) + len(run_list)
+        people = len(session.fight | session.magic | session.talk | session.pray | session.run)
 
         challenge = session.challenge
 
@@ -1013,13 +1023,13 @@ class MiscMixin(commands.Cog):
         talk_name_list = []
         pray_name_list = []
         repair_list = []
-        for user in fight_list:
+        for user in session.fight:
             fight_name_list.append(f"**{self.escape(user.display_name)}**")
-        for user in magic_list:
+        for user in session.magic:
             wizard_name_list.append(f"**{self.escape(user.display_name)}**")
-        for user in talk_list:
+        for user in session.talk:
             talk_name_list.append(f"**{self.escape(user.display_name)}**")
-        for user in pray_list:
+        for user in session.pray:
             pray_name_list.append(f"**{self.escape(user.display_name)}**")
 
         fighters_final_string = _(" and ").join(
@@ -1088,7 +1098,7 @@ class MiscMixin(commands.Cog):
             if treasure == [0, 0, 0, 0, 0, 0]:
                 treasure = False
         if session.miniboss and failed:
-            session.participants = set(fight_list + talk_list + pray_list + magic_list + fumblelist)
+            session.participants = session.fight | session.talk | session.pray | session.magic | fumblelist
             currency_name = await bank.get_currency_name(ctx.guild,)
             for user in session.participants:
                 c = await self.get_character_from_json(user)
@@ -1134,7 +1144,7 @@ class MiscMixin(commands.Cog):
             return await smart_embed(ctx, result_msg)
         if session.miniboss and not slain and not persuaded:
             lost = True
-            session.participants = set(fight_list + talk_list + pray_list + magic_list + fumblelist)
+            session.participants = session.fight | session.talk | session.pray | session.magic | fumblelist
             currency_name = await bank.get_currency_name(ctx.guild,)
             for user in session.participants:
                 c = await self.get_character_from_json(user)
@@ -1179,13 +1189,13 @@ class MiscMixin(commands.Cog):
         amount += int(amount * (0.25 * people))
         if people == 1:
             if slain:
-                group = fighters_final_string if len(fight_list) == 1 else wizards_final_string
+                group = fighters_final_string if len(session.fight) == 1 else wizards_final_string
                 text = _("{b_group} has slain the {chall} in an epic battle!").format(
                     b_group=group, chall=session.challenge
                 )
                 text += await self._reward(
                     ctx,
-                    [u for u in fight_list + magic_list + pray_list if u not in fumblelist],
+                    [u for u in session.fight | session.magic | session.pray if u not in fumblelist],
                     amount,
                     round(((attack if group == fighters_final_string else magic) / hp) * 0.25),
                     treasure,
@@ -1197,7 +1207,7 @@ class MiscMixin(commands.Cog):
                 )
                 text += await self._reward(
                     ctx,
-                    [u for u in talk_list + pray_list if u not in fumblelist],
+                    [u for u in session.talk | session.pray if u not in fumblelist],
                     amount,
                     round((diplomacy / dipl) * 0.25),
                     treasure,
@@ -1206,7 +1216,7 @@ class MiscMixin(commands.Cog):
             if not slain and not persuaded:
                 lost = True
                 currency_name = await bank.get_currency_name(ctx.guild,)
-                users = set(fight_list + magic_list + talk_list + pray_list + fumblelist)
+                users = session.fight | session.talk | session.pray | session.magic | fumblelist
                 for user in users:
                     c = await self.get_character_from_json(user)
                     multiplier = 0.2
@@ -1246,11 +1256,11 @@ class MiscMixin(commands.Cog):
                 text = random.choice(options)
         else:
             if slain and persuaded:
-                if len(pray_list) > 0:
+                if len(session.pray) > 0:
                     god = await self.config.god_name()
                     if await self.config.guild(ctx.guild).god_name():
                         god = await self.config.guild(ctx.guild).god_name()
-                    if len(magic_list) > 0 and len(fight_list) > 0:
+                    if len(session.magic) > 0 and len(session.fight) > 0:
                         text = _(
                             "{b_fighters} slayed the {chall} "
                             "in battle, while {b_talkers} distracted with flattery, "
@@ -1265,7 +1275,7 @@ class MiscMixin(commands.Cog):
                             god=god,
                         )
                     else:
-                        group = fighters_final_string if len(fight_list) > 0 else wizards_final_string
+                        group = fighters_final_string if len(session.fight) > 0 else wizards_final_string
                         text = _(
                             "{b_group} slayed the {chall} "
                             "in battle, while {b_talkers} distracted with flattery and "
@@ -1278,7 +1288,7 @@ class MiscMixin(commands.Cog):
                             god=god,
                         )
                 else:
-                    if len(magic_list) > 0 and len(fight_list) > 0:
+                    if len(session.magic) > 0 and len(session.fight) > 0:
                         text = _(
                             "{b_fighters} slayed the {chall} "
                             "in battle, while {b_talkers} distracted with insults and "
@@ -1290,20 +1300,20 @@ class MiscMixin(commands.Cog):
                             b_wizard=wizards_final_string,
                         )
                     else:
-                        group = fighters_final_string if len(fight_list) > 0 else wizards_final_string
+                        group = fighters_final_string if len(session.fight) > 0 else wizards_final_string
                         text = _(
                             "{b_group} slayed the {chall} in battle, while {b_talkers} distracted with insults."
                         ).format(b_group=group, chall=session.challenge, b_talkers=talkers_final_string)
                 text += await self._reward(
                     ctx,
-                    [u for u in fight_list + magic_list + pray_list + talk_list if u not in fumblelist],
+                    [u for u in session.fight | session.magic | session.pray | session.talk if u not in fumblelist],
                     amount,
                     round(((dmg_dealt / hp) + (diplomacy / dipl)) * 0.25),
                     treasure,
                 )
 
             if not slain and persuaded:
-                if len(pray_list) > 0:
+                if len(session.pray) > 0:
                     text = _("{b_talkers} talked the {chall} down with {b_preachers}'s blessing.").format(
                         b_talkers=talkers_final_string, chall=session.challenge, b_preachers=preachermen_final_string,
                     )
@@ -1313,15 +1323,15 @@ class MiscMixin(commands.Cog):
                     )
                 text += await self._reward(
                     ctx,
-                    [u for u in talk_list + pray_list if u not in fumblelist],
+                    [u for u in session.talk | session.pray if u not in fumblelist],
                     amount,
                     round((diplomacy / dipl) * 0.25),
                     treasure,
                 )
 
             if slain and not persuaded:
-                if len(pray_list) > 0:
-                    if len(magic_list) > 0 and len(fight_list) > 0:
+                if len(session.pray) > 0:
+                    if len(session.magic) > 0 and len(session.fight) > 0:
                         text = _(
                             "{b_fighters} killed the {chall} "
                             "in a most heroic battle with a little help from {b_preachers} and "
@@ -1333,13 +1343,13 @@ class MiscMixin(commands.Cog):
                             b_wizard=wizards_final_string,
                         )
                     else:
-                        group = fighters_final_string if len(fight_list) > 0 else wizards_final_string
+                        group = fighters_final_string if len(session.fight) > 0 else wizards_final_string
                         text = _(
                             "{b_group} killed the {chall} "
                             "in a most heroic battle with a little help from {b_preachers}."
                         ).format(b_group=group, chall=session.challenge, b_preachers=preachermen_final_string,)
                 else:
-                    if len(magic_list) > 0 and len(fight_list) > 0:
+                    if len(session.magic) > 0 and len(session.fight) > 0:
                         text = _(
                             "{b_fighters} killed the {chall} "
                             "in a most heroic battle with {b_wizard} chanting magical incantations."
@@ -1347,13 +1357,13 @@ class MiscMixin(commands.Cog):
                             b_fighters=fighters_final_string, chall=session.challenge, b_wizard=wizards_final_string,
                         )
                     else:
-                        group = fighters_final_string if len(fight_list) > 0 else wizards_final_string
+                        group = fighters_final_string if len(session.fight) > 0 else wizards_final_string
                         text = _("{b_group} killed the {chall} in an epic fight.").format(
                             b_group=group, chall=session.challenge
                         )
                 text += await self._reward(
                     ctx,
-                    [u for u in fight_list + magic_list + pray_list if u not in fumblelist],
+                    [u for u in session.fight | session.magic | session.pray if u not in fumblelist],
                     amount,
                     round((dmg_dealt / hp) * 0.25),
                     treasure,
@@ -1362,7 +1372,7 @@ class MiscMixin(commands.Cog):
             if not slain and not persuaded:
                 lost = True
                 currency_name = await bank.get_currency_name(ctx.guild,)
-                users = set(fight_list + magic_list + talk_list + pray_list + fumblelist)
+                users = session.fight | session.talk | session.pray | session.magic | fumblelist
                 for user in users:
                     c = await self.get_character_from_json(user)
                     multiplier = 0.2
@@ -1384,8 +1394,8 @@ class MiscMixin(commands.Cog):
                                 await bank.withdraw_credits(user, loss)
                             else:
                                 await bank.set_balance(user, 0)
-                if run_list:
-                    users = run_list
+                if session.run:
+                    users = session.run
                     for user in users:
                         c = await self.get_character_from_json(user)
                         multiplier = 0.2
@@ -1434,14 +1444,14 @@ class MiscMixin(commands.Cog):
         for i in output:
             await smart_embed(ctx, i, success=success)
         await self._data_check(ctx)
-        session.participants = set(fight_list + magic_list + talk_list + pray_list + run_list + fumblelist)
+        session.participants = session.fight | session.talk | session.pray | session.run | session.magic | fumblelist
 
         participants = {
-            "fight": fight_list,
-            "spell": magic_list,
-            "talk": talk_list,
-            "pray": pray_list,
-            "run": run_list,
+            "fight": session.fight,
+            "spell": session.magic,
+            "talk": session.talk,
+            "pray": session.pray,
+            "run": session.run,
             "fumbles": fumblelist,
         }
 
@@ -1463,7 +1473,7 @@ class MiscMixin(commands.Cog):
         runners = []
         msg = ""
         session = self._sessions[guild_id]
-        if len(list(session.run)) != 0:
+        if len(session.run) != 0:
             for user in session.run:
                 runners.append(f"**{self.escape(user.display_name)}**")
             msg += _("{} just ran away.\n").format(humanize_list(runners))
@@ -1471,9 +1481,7 @@ class MiscMixin(commands.Cog):
 
     async def handle_fight(self, guild_id, fumblelist, critlist, attack, magic, challenge):
         session = self._sessions[guild_id]
-        fight_list = list(set(session.fight))
-        magic_list = list(set(session.magic))
-        attack_list = list(set(fight_list + magic_list))
+        attack_list = session.fight | session.magic
         pdef = max(session.monster_modified_stats["pdef"], 0.5)
         mdef = max(session.monster_modified_stats["mdef"], 0.5)
 
@@ -1482,7 +1490,7 @@ class MiscMixin(commands.Cog):
         failed_emoji = self.emojis.fumble
         if len(attack_list) >= 1:
             msg = ""
-            if len(fight_list) >= 1:
+            if len(session.fight) >= 1:
                 # TODO: Remove me when psychic gets added
                 if pdef >= 1.5:
                     msg += _("Swords bounce off this monster as it's skin is **almost impenetrable!**\n")
@@ -1494,7 +1502,7 @@ class MiscMixin(commands.Cog):
                     msg += _("This monster is **soft and easy** to slice!\n")
                 elif pdef > 0 and pdef != 1:
                     msg += _("Swords slice through this monster like a **hot knife through butter!**\n")
-            if len(magic_list) >= 1:
+            if len(session.magic) >= 1:
                 if mdef >= 1.5:
                     msg += _("Magic? Pfft, your puny magic is **no match** for this creature!\n")
                 elif mdef >= 1.25:
@@ -1510,7 +1518,7 @@ class MiscMixin(commands.Cog):
         else:
             return (fumblelist, critlist, attack, magic, "")
 
-        for user in fight_list:
+        for user in session.fight:
             c = await self.get_character_from_json(user)
             crit_mod = max(max(c.dex, c.luck) + (c.total_att // 20), 1)  # Thanks GoaFan77
             mod = 0
@@ -1550,7 +1558,7 @@ class MiscMixin(commands.Cog):
                     )
                 else:
                     msg += _("**{}** fumbled the attack.\n").format(self.escape(user.display_name))
-                    fumblelist.append(user)
+                    fumblelist.add(user)
                     fumble_count += 1
             elif roll == max_roll or c.heroclass["name"] == "Berserker":
                 crit_str = ""
@@ -1558,7 +1566,7 @@ class MiscMixin(commands.Cog):
                 base_bonus = random.randint(5, 10) + rebirths
                 if roll == max_roll:
                     msg += _("**{}** landed a critical hit.\n").format(self.escape(user.display_name))
-                    critlist.append(user)
+                    critlist.add(user)
                     crit_bonus = random.randint(5, 20) + 2 * rebirths
                     crit_str = f"{self.emojis.crit} {humanize_number(crit_bonus)}"
                 if c.heroclass["ability"]:
@@ -1579,7 +1587,7 @@ class MiscMixin(commands.Cog):
                     f"{self.emojis.dice}({roll}) + "
                     f"{self.emojis.attack}{str(humanize_number(att_value))}\n"
                 )
-        for user in magic_list:
+        for user in session.magic:
             c = await self.get_character_from_json(user)
             crit_mod = max(max(c.dex, c.luck) + (c.total_int // 20), 0)
             mod = 0
@@ -1607,7 +1615,7 @@ class MiscMixin(commands.Cog):
                 msg += _("{}**{}** almost set themselves on fire.\n").format(
                     failed_emoji, self.escape(user.display_name)
                 )
-                fumblelist.append(user)
+                fumblelist.add(user)
                 fumble_count += 1
                 if c.heroclass["name"] == "Wizard" and c.heroclass["ability"]:
                     bonus_roll = random.randint(5, 15)
@@ -1627,7 +1635,7 @@ class MiscMixin(commands.Cog):
                 base_str = f"{self.emojis.magic_crit}️ {humanize_number(base_bonus)}"
                 if roll == max_roll:
                     msg += _("**{}** had a surge of energy.\n").format(self.escape(user.display_name))
-                    critlist.append(user)
+                    critlist.add(user)
                     crit_bonus = random.randint(5, 20) + 2 * rebirths
                     crit_str = f"{self.emojis.crit} {humanize_number(crit_bonus)}"
                 if c.heroclass["ability"]:
@@ -1660,17 +1668,13 @@ class MiscMixin(commands.Cog):
 
     async def handle_pray(self, guild_id, fumblelist, attack, diplomacy, magic):
         session = self._sessions[guild_id]
-        talk_list = list(set(session.talk))
-        pray_list = list(set(session.pray))
-        fight_list = list(set(session.fight))
-        magic_list = list(set(session.magic))
         god = await self.config.god_name()
         guild_god_name = await self.config.guild(self.bot.get_guild(guild_id)).god_name()
         if guild_god_name:
             god = guild_god_name
         msg = ""
         failed_emoji = self.emojis.fumble
-        for user in pray_list:
+        for user in session.pray:
             c = await self.get_character_from_json(user)
             rebirths = c.rebirths * (3 if c.heroclass["name"] == "Cleric" else 1)
             if c.heroclass["name"] == "Cleric":
@@ -1685,7 +1689,7 @@ class MiscMixin(commands.Cog):
                 elif (mod + 1) > 45:
                     mod = 45
                 roll = max(random.randint((1 + mod), max_roll), 1)
-                if len(fight_list + talk_list + magic_list) == 0:
+                if len(session.fight | session.talk | session.magic) == 0:
                     msg += _("**{}** blessed like a madman but nobody was there to receive it.\n").format(
                         self.escape(user.display_name)
                     )
@@ -1693,16 +1697,16 @@ class MiscMixin(commands.Cog):
                     pray_att_bonus = 0
                     pray_diplo_bonus = 0
                     pray_magic_bonus = 0
-                    if fight_list:
-                        pray_att_bonus = max((5 * len(fight_list)) - ((5 * len(fight_list)) * max(rebirths * 0.01, 1.5)), 0)
-                    if talk_list:
-                        pray_diplo_bonus = max((5 * len(talk_list)) - ((5 * len(talk_list)) * max(rebirths * 0.01, 1.5)), 0)
-                    if magic_list:
-                        pray_magic_bonus = max((5 * len(magic_list)) - ((5 * len(magic_list)) * max(rebirths * 0.01, 1.5)), 0)
+                    if session.fight:
+                        pray_att_bonus = max((5 * len(session.fight)) - ((5 * len(session.fight)) * max(rebirths * 0.01, 1.5)), 0)
+                    if session.talk:
+                        pray_diplo_bonus = max((5 * len(session.talk)) - ((5 * len(session.talk)) * max(rebirths * 0.01, 1.5)), 0)
+                    if session.magic:
+                        pray_magic_bonus = max((5 * len(session.magic)) - ((5 * len(session.magic)) * max(rebirths * 0.01, 1.5)), 0)
                     attack -= pray_att_bonus
                     diplomacy -= pray_diplo_bonus
                     magic -= pray_magic_bonus
-                    fumblelist.append(user)
+                    fumblelist.add(user)
                     msg += _(
                         "**{user}'s** sermon offended the mighty {god}. {failed_emoji}"
                         "(-{len_f_list}{attack}/-{len_t_list}{talk}/-{len_m_list}{magic}) {roll_emoji}({roll})\n"
@@ -1726,17 +1730,17 @@ class MiscMixin(commands.Cog):
                     pray_diplo_bonus = 0
                     pray_magic_bonus = 0
 
-                    if fight_list:
+                    if session.fight:
                         pray_att_bonus = int(
-                            (mod * len(fight_list)) + ((mod * len(fight_list)) * max(rebirths * 0.1, 1.5))
+                            (mod * len(session.fight)) + ((mod * len(session.fight)) * max(rebirths * 0.1, 1.5))
                         )
-                    if talk_list:
+                    if session.talk:
                         pray_diplo_bonus = int(
-                            (mod * len(talk_list)) + ((mod * len(talk_list)) * max(rebirths * 0.1, 1.5))
+                            (mod * len(session.talk)) + ((mod * len(session.talk)) * max(rebirths * 0.1, 1.5))
                         )
-                    if magic_list:
+                    if session.magic:
                         pray_magic_bonus = int(
-                            (mod * len(magic_list)) + ((mod * len(magic_list)) * max(rebirths * 0.1, 1.5))
+                            (mod * len(session.magic)) + ((mod * len(session.magic)) * max(rebirths * 0.1, 1.5))
                         )
                     attack += max(pray_att_bonus, 0)
                     magic += max(pray_magic_bonus, 0)
@@ -1765,7 +1769,7 @@ class MiscMixin(commands.Cog):
                     )
             else:
                 roll = random.randint(1, 10)
-                if len(fight_list + talk_list + magic_list) == 0:
+                if len(session.fight | session.talk | session.magic) == 0:
                     msg += _("**{}** prayed like a madman but nobody else helped them.\n").format(
                         self.escape(user.display_name)
                     )
@@ -1774,12 +1778,12 @@ class MiscMixin(commands.Cog):
                     attack_buff = 0
                     talk_buff = 0
                     magic_buff = 0
-                    if fight_list:
-                        attack_buff = 10 * (len(fight_list) + rebirths // 15)
-                    if talk_list:
-                        talk_buff = 10 * (len(talk_list) + rebirths // 15)
-                    if magic_list:
-                        magic_buff = 10 * (len(magic_list) + rebirths // 15)
+                    if session.fight:
+                        attack_buff = 10 * (len(session.fight) + rebirths // 15)
+                    if session.talk:
+                        talk_buff = 10 * (len(session.talk) + rebirths // 15)
+                    if session.magic:
+                        magic_buff = 10 * (len(session.magic) + rebirths // 15)
 
                     attack += max(attack_buff, 0)
                     magic += max(magic_buff, 0)
@@ -1800,26 +1804,25 @@ class MiscMixin(commands.Cog):
                         roll=roll,
                     )
                 else:
-                    fumblelist.append(user)
+                    fumblelist.add(user)
                     msg += _("{}**{}'s** prayers went unanswered.\n").format(
                         failed_emoji, self.escape(user.display_name)
                     )
         for user in fumblelist:
-            if user in pray_list:
-                pray_list.remove(user)
+            if user in session.pray:
+                session.pray.remove(user)
         return (fumblelist, attack, diplomacy, magic, msg)
 
     async def handle_talk(self, guild_id, fumblelist, critlist, diplomacy):
         session = self._sessions[guild_id]
-        talk_list = list(set(session.talk))
-        if len(talk_list) >= 1:
+        if len(session.talk) >= 1:
             report = _("Talking Party: \n\n")
             msg = ""
             fumble_count = 0
         else:
             return (fumblelist, critlist, diplomacy, "")
         failed_emoji = self.emojis.fumble
-        for user in talk_list:
+        for user in session.talk:
             c = await self.get_character_from_json(user)
             crit_mod = max(max(c.dex, c.luck) + (c.total_int // 50) + (c.total_cha // 20), 1)
             mod = 0
@@ -1839,13 +1842,13 @@ class MiscMixin(commands.Cog):
                     diplomacy += max(roll - bonus + dipl_value + rebirths, 0)
                     report += (
                         f"**{self.escape(user.display_name)}** "
-                        f"🎲({roll}) +💥{bonus} +🗨{humanize_number(dipl_value)} | "
+                        f"🎲({roll}) +💥{bonus} +🗨{humanize_number(dipl_value)}\n"
                     )
                 else:
                     msg += _("{}**{}** accidentally offended the enemy.\n").format(
                         failed_emoji, self.escape(user.display_name)
                     )
-                    fumblelist.append(user)
+                    fumblelist.add(user)
                     fumble_count += 1
             elif roll == max_roll or c.heroclass["name"] == "Bard":
                 crit_str = ""
@@ -1853,7 +1856,7 @@ class MiscMixin(commands.Cog):
                 base_bonus = random.randint(5, 10) + rebirths
                 if roll == max_roll:
                     msg += _("**{}** made a compelling argument.\n").format(self.escape(user.display_name))
-                    critlist.append(user)
+                    critlist.add(user)
                     crit_bonus = random.randint(5, 20) + 2 * rebirths
                     crit_str = f"{self.emojis.crit} {crit_bonus}"
 
@@ -1875,21 +1878,17 @@ class MiscMixin(commands.Cog):
                     f"{self.emojis.dice}({roll}) + "
                     f"{self.emojis.talk}{humanize_number(dipl_value)}\n"
                 )
-        if fumble_count == len(talk_list):
+        if fumble_count == len(session.talk):
             report += _("No one!")
         msg = msg + report + "\n"
         for user in fumblelist:
-            if user in talk_list:
+            if user in session.talk:
                 session.talk.remove(user)
         return (fumblelist, critlist, diplomacy, msg)
 
     async def handle_basilisk(self, ctx: Context, failed):
         session = self._sessions[ctx.guild.id]
-        fight_list = list(set(session.fight))
-        talk_list = list(set(session.talk))
-        pray_list = list(set(session.pray))
-        magic_list = list(set(session.magic))
-        participants = list(set(fight_list + talk_list + pray_list + magic_list))
+        participants = session.fight | session.talk | session.pray | session.magic
         if session.miniboss:
             failed = True
             req_item, slot = session.miniboss["requirements"]
@@ -2150,8 +2149,6 @@ class MiscMixin(commands.Cog):
                     price += price_shown
                     if item.owned <= 0:
                         del character.backpack[item.name]
-                    if not count % 10:
-                        await asyncio.sleep(0.1)
                     count += 1
                 msg += _("**{author}** sold all their {old_item} for {price} {currency_name}.\n").format(
                     author=self.escape(ctx.author.display_name),
@@ -2169,8 +2166,7 @@ class MiscMixin(commands.Cog):
                 emoji == "\N{CLOCKWISE RIGHTWARDS AND LEFTWARDS OPEN CIRCLE ARROWS WITH CIRCLED ONE OVERLAY}"
             ):  # user wants to sell all but one.
                 if item.owned == 1:
-                    ctx.command.reset_cooldown(ctx)
-                    return await smart_embed(ctx, _("You already only own one of those items."))
+                    raise AdventureCheckFailure(_("You already only own one of those items."))
                 price = 0
                 old_owned = item.owned
                 count = 0
@@ -2206,7 +2202,7 @@ class MiscMixin(commands.Cog):
             await self.config.user(ctx.author).set(await character.to_json(self.config))
             pages = [page for page in pagify(msg, delims=["\n"], page_length=1900)]
             if len(pages) > 1:
-                await menu(ctx, pages, DEFAULT_CONTROLS)
+                await menu(ctx, pages, MENU_CONTROLS)
             else:
                 await ctx.send(pages[0])
 
@@ -2760,41 +2756,46 @@ class MiscMixin(commands.Cog):
             [", ".join(rewards_list[:-1]), rewards_list[-1]] if len(rewards_list) > 2 else rewards_list
         )
 
+        if int(newcp) > 0:
+            newcp = f' {humanize_number(int(newcp))}'
+        else:
+            newcp = ''
+
         word = "has" if len(userlist) == 1 else "have"
         if special is not False and sum(special) == 1:
             types = [" normal", " rare", "n epic", " legendary", " ascended", " set"]
             chest_type = types[special.index(1)]
             phrase += _(
-                "\n{b_reward} {word} been awarded {xp} xp and found "
+                "\n{b_reward} {word} been awarded {xp} xp and found"
                 "{cp} {currency_name} (split based on stats). "
                 "You also secured **a{chest_type} treasure chest**!"
             ).format(
                 b_reward=to_reward,
                 word=word,
                 xp=humanize_number(int(newxp)),
-                cp=humanize_number(int(newcp)),
+                cp=newcp,
                 currency_name=currency_name,
                 chest_type=chest_type,
             )
         elif special is not False and sum(special) > 1:
             phrase += _(
-                "\n{b_reward} {word} been awarded {xp} xp and found {cp} {currency_name} (split based on stats). "
+                "\n{b_reward} {word} been awarded {xp} xp and found{cp} {currency_name} (split based on stats). "
                 "You also secured **several treasure chests**!"
             ).format(
                 b_reward=to_reward,
                 word=word,
                 xp=humanize_number(int(newxp)),
-                cp=humanize_number(int(newcp)),
+                cp=newcp,
                 currency_name=currency_name,
             )
         else:
             phrase += _(
-                "\n{b_reward} {word} been awarded {xp} xp and found {cp} {currency_name} (split based on stats)."
+                "\n{b_reward} {word} been awarded {xp} xp and found{cp} {currency_name} (split based on stats)."
             ).format(
                 b_reward=to_reward,
                 word=word,
                 xp=humanize_number(int(newxp)),
-                cp=humanize_number(int(newcp)),
+                cp=newcp,
                 currency_name=currency_name,
             )
         return phrase
@@ -3078,7 +3079,7 @@ class MiscMixin(commands.Cog):
             if reaction.message.id == self._sessions[guild.id].message_id:
                 if guild.id in self._adventure_countdown:
                     (timer, done, sremain) = self._adventure_countdown[guild.id]
-                    if sremain > 3:
+                    if sremain > 0:
                         await self._handle_adventure(reaction, user)
         if guild.id in self._current_traders:
             if reaction.message.id == self._current_traders[guild.id]["msg"]:
@@ -3086,8 +3087,32 @@ class MiscMixin(commands.Cog):
                     return
                 if guild.id in self._trader_countdown:
                     (timer, done, sremain) = self._trader_countdown[guild.id]
-                    if sremain > 3:
+                    if sremain > 0:
                         await self._handle_cart(reaction, user)
+
+    @commands.Cog.listener()
+    async def on_reaction_remove(self, reaction, user):
+        """This will be a cog level reaction_add listener for game logic."""
+        await self.bot.wait_until_ready()
+        if user.bot:
+            return
+        try:
+            guild = user.guild
+        except AttributeError:
+            return
+        emojis = ReactionPredicate.NUMBER_EMOJIS + self._adventure_actions
+        if str(reaction.emoji) not in emojis:
+            return
+        if not await self.has_perm(user):
+            return
+        if guild.id in self._sessions:
+            if reaction.message.id == self._sessions[guild.id].message_id:
+                if guild.id in self._adventure_countdown:
+                    (timer, done, sremain) = self._adventure_countdown[guild.id]
+                    if sremain > 0:
+                        session = self._sessions[guild.id]
+                        if user in session.reactors:
+                            session.run.add(user)
 
     @commands.Cog.listener()
     async def on_message_without_command(self, message):
@@ -3111,7 +3136,15 @@ class MiscMixin(commands.Cog):
                 await self._trader(ctx)
 
     async def cog_command_error(self, ctx: Context, error: Exception):
-        if isinstance(error, AdventureCheckFailure):
+        if isinstance(error, commands.CommandOnCooldown):
+            error = AdventureOnCooldown(retry_after=error.retry_after)
+
+        if isinstance(error, AdventureOnCooldown):
+            await smart_embed(ctx, str(error), success=False, delete_after=error.retry_after)
+            await asyncio.sleep(error.retry_after)
+            await ctx.tick()
+
+        elif isinstance(error, AdventureCheckFailure):
             ctx.command.reset_cooldown(ctx)
             await smart_embed(ctx, str(error), success=False, delete_after=15)
             await asyncio.sleep(15)
