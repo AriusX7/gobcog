@@ -4141,6 +4141,11 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             return
 
         if pred.result:
+            if self.in_adventure(ctx):
+                raise AdventureCheckFailure(
+                    _("You tried to equip your item but the monster ahead nearly decapitated you.")
+                )
+
             equiplevel = equip_level(character, item)
             if self.is_dev(ctx.author):
                 equiplevel = 0
