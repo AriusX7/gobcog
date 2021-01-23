@@ -760,13 +760,6 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         old_item=str(old_owned) + " " + str(item), price=humanize_number(item_price),
                     )
                     total_price += item_price
-                if total_price > 0:
-                    try:
-                        await bank.deposit_credits(ctx.author, total_price)
-                    except BalanceTooHigh as e:
-                        await bank.set_balance(ctx.author, e.max_balance)
-                c.last_known_currency = await bank.get_balance(ctx.author)
-                c.last_currency_check = time.time()
 
             msg_list = []
             new_msg = _("Are you sure you want to sell all your{rarity} items{level}{degrade}{name} for {price}?\n\n{items}").format(
@@ -802,6 +795,15 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             for r in ReactionPredicate.YES_OR_NO_EMOJIS:
                 await msg.remove_reaction(r, ctx.guild.me)
             await self.config.user(ctx.author).set(await c.to_json(self.config))
+            
+            if total_price > 0:
+                try:
+                    await bank.deposit_credits(ctx.author, total_price)
+                except BalanceTooHigh as e:
+                    await bank.set_balance(ctx.author, e.max_balance)
+            c.last_known_currency = await bank.get_balance(ctx.author)
+            c.last_currency_check = time.time()
+
             await ctx.send('Items sold.')
 
 
