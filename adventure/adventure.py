@@ -782,18 +782,18 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 await ctx.bot.wait_for("reaction_add", check=pred, timeout=60)
             except asyncio.TimeoutError:
                 for r in ReactionPredicate.YES_OR_NO_EMOJIS:
-                    await msg.remove_reaction(r, ctx.guild.me)
+                    await msg.remove_reaction(r, self.bot.user)
                 return
 
             for r in ReactionPredicate.YES_OR_NO_EMOJIS:
-                await msg.remove_reaction(r, ctx.guild.me)
+                await msg.remove_reaction(r, self.bot.user)
     
             if not pred.result:
                 await ctx.send("Not selling those items.")
                 return
 
             for r in ReactionPredicate.YES_OR_NO_EMOJIS:
-                await msg.remove_reaction(r, ctx.guild.me)
+                await msg.remove_reaction(r, self.bot.user)
             await self.config.user(ctx.author).set(await c.to_json(self.config))
             
             if total_price > 0:
