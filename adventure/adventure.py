@@ -756,7 +756,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         if item.owned <= 0:
                             del c.backpack[item.name]
                     item_price = max(item_price, 0)
-                    fmt += _("{old_item} sold for {price}.\n").format(
+                    fmt += _("{old_item} sells for {price}.\n").format(
                         old_item=str(old_owned) + " " + str(item), price=humanize_number(item_price),
                     )
                     total_price += item_price
