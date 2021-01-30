@@ -1,0 +1,126 @@
+{
+  "Fine": {
+    "att": 1,
+    "cha": 1,
+    "dex": 1,
+    "int": 1,
+    "luck": 1
+  },
+  "Firm": {
+    "att": 2,
+    "int": 2
+  },
+  "Invisible": {},
+  "Patched": {
+    "att": -1,
+    "dex": 1,
+    "int": -1,
+    "luck": 2
+  },
+  "Reforged": {
+    "att": 1,
+    "cha": 1,
+    "int": 1
+  },
+  "Rugged": {
+    "att": 2,
+    "cha": 2,
+    "int": 2
+  },
+  "Savage": {
+    "att": 3,
+    "cha": -2,
+    "int": 3
+  },
+  "Scarred": {
+    "att": -2,
+    "cha": -2,
+    "int": -2,
+    "luck": -2
+  },
+  "Sinister": {
+    "att": 4,
+    "cha": -2,
+    "int": -2
+  },
+  "Tiny": {
+    "att": -2,
+    "cha": 1,
+    "dex": 2,
+    "int": -2
+  },
+  "Unholy": {
+    "cha": -2,
+    "int": 3,
+    "luck": -3
+  },
+  "Zealous": {
+    "att": 2,
+    "cha": 2,
+    "dex": 1
+  },
+  "Cursed": {
+    "att": 5,
+    "cha": -2,
+    "dex": -3,
+    "luck": -50
+  },
+  "Enchanted": {
+    "att": 5,
+    "cha": 3,
+    "dex": 5
+  },
+  "Shiny": {
+    "cha": 3
+  },
+  "Blessed": {
+    "att": 2,
+    "cha": 4,
+    "dex": 1,
+    "int": 8,
+    "luck": 12
+  },
+  "Godly": {
+    "att": 8,
+    "cha": 8,
+    "dex": 8,
+    "int": 8,
+    "luck": 8
+  },
+  "Ultimate": {
+    "att": 12,
+    "cha": 12,
+    "dex": 12,
+    "int": 12,
+    "luck": 12
+  },
+  "Fancy": {
+    "cha": 15
+  },
+  "Comfortable": {
+    "dex": 15
+  },
+  "Barbaric": {
+    "att": 15
+  },
+  "Strange": {
+    "int": 15
+  },
+  "Lucky": {
+    "luck": 15
+  },
+  "Celestial": {
+    "att": 5,
+    "cha": 10,
+    "dex": 2,
+    "int": 16,
+    "luck": 20
+  },
+  "Demonic": {
+    "att": 18,
+    "cha": 10,
+    "dex": 2,
+    "int": 5,
+    "luck": 10
+  }
+}
