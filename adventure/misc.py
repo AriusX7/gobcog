@@ -1747,7 +1747,7 @@ class MiscMixin(commands.Cog):
                     diplomacy += max(pray_diplo_bonus, 0)
                     if roll == 50:
                         roll_msg = _(
-                            "{user} turned into an avatar of mighty {god}. "
+                            "**{user}** turned into an avatar of mighty {god}. "
                             "(+{len_f_list}{attack}/+{len_t_list}{talk}/+{len_m_list}{magic}) {roll_emoji}({roll})\n"
                         )
                     else:
