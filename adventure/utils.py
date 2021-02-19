@@ -378,7 +378,6 @@ async def close_menu(
         await message.delete()
 
 
-
 MENU_CONTROLS = {
     "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}": prev_page,
     "\N{CROSS MARK}": close_menu,
