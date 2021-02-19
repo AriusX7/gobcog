@@ -71,7 +71,7 @@ from .utils import (
     Member,
     check_global_setting_admin,
     can_use_ability,
-    has_separated_economy,
+    has_separated_economy, order_slots_dict,
     smart_embed,
     AdventureCheckFailure,
     AdventureOnCooldown,
@@ -3531,6 +3531,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 d.update({v["slot"][1]: {k: v}})
             else:
                 d.update({v["slot"][0]: {k: v}})
+
+        d = order_slots_dict(d)
 
         loadout_display = await self._build_loadout_display({"items": d}, loadout=False)
         set_msg = _("{set_name} Set Pieces\n\n").format(set_name=title_cased_set_name)

@@ -383,3 +383,20 @@ MENU_CONTROLS = {
     "\N{CROSS MARK}": close_menu,
     "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}": next_page,
 }
+
+
+def order_slots_dict(d: dict) -> dict:
+    ORDER = {
+        "head": 0,
+        "neck": 1,
+        "chest": 2,
+        "gloves": 3,
+        "belt": 4,
+        "legs": 5,
+        "boots": 6,
+        "left": 7,
+        "right": 8,
+        "ring": 9,
+        "charm": 10,
+    }
+    return {k: d[k] for k in sorted(d.keys(), key=lambda item: ORDER[item])}
