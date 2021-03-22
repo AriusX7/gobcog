@@ -19,7 +19,7 @@ from discord.ext.commands.errors import BadArgument
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.commands import Context, get_dict_converter
-from redbot.core.data_manager import cog_data_path
+from redbot.core.data_manager import bundled_data_path, cog_data_path
 from redbot.core.errors import BalanceTooHigh
 from redbot.core.i18n import Translator, cog_i18n
 from redbot.core.utils import AsyncIter
@@ -71,7 +71,7 @@ from .utils import (
     Member,
     check_global_setting_admin,
     can_use_ability,
-    has_separated_economy,
+    has_separated_economy, order_slots_dict,
     smart_embed,
     AdventureCheckFailure,
     AdventureOnCooldown,
@@ -1648,7 +1648,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             await smart_embed(ctx, _("Going back to the default theme."), success=True)
             await self.initialize()
             return
-        if theme not in os.listdir(cog_data_path(self)):
+        if theme not in os.listdir(bundled_data_path(self)):
             raise AdventureCheckFailure(_("That theme pack does not exist!"))
         good_files = [
             "as_monsters.json",
@@ -1665,7 +1665,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             "suffixes.json",
             "set_bonuses.json",
         ]
-        missing_files = set(good_files).difference(os.listdir(cog_data_path(self) / theme))
+        missing_files = set(good_files).difference(os.listdir(bundled_data_path(self) / theme))
 
         if missing_files:
             await smart_embed(
@@ -3531,6 +3531,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 d.update({v["slot"][1]: {k: v}})
             else:
                 d.update({v["slot"][0]: {k: v}})
+
+        d = order_slots_dict(d)
 
         loadout_display = await self._build_loadout_display({"items": d}, loadout=False)
         set_msg = _("{set_name} Set Pieces\n\n").format(set_name=title_cased_set_name)
