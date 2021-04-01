@@ -18,6 +18,24 @@ from . import bank
 _ = Translator("Adventure", __file__)
 log = logging.getLogger("red.cogs.adventure")
 
+
+SLOT_ORDER = {
+    "head": 0,
+    "neck": 1,
+    "chest": 2,
+    "gloves": 3,
+    "belt": 4,
+    "legs": 5,
+    "boots": 6,
+    "left": 7,
+    "right": 8,
+    "two handed": 9,
+    "twohanded": 9,
+    "ring": 10,
+    "charm": 11,
+}
+
+
 async def smart_embed(ctx, message, success=None, **kwargs):
     # use_emebd has been disabled here.. for reasons
     if await ctx.embed_requested():
@@ -378,9 +396,12 @@ async def close_menu(
         await message.delete()
 
 
-
 MENU_CONTROLS = {
     "\N{LEFTWARDS BLACK ARROW}\N{VARIATION SELECTOR-16}": prev_page,
     "\N{CROSS MARK}": close_menu,
     "\N{BLACK RIGHTWARDS ARROW}\N{VARIATION SELECTOR-16}": next_page,
 }
+
+
+def order_slots_dict(d: dict) -> dict:
+    return {k: d[k] for k in sorted(d.keys(), key=lambda item: SLOT_ORDER[item])}
