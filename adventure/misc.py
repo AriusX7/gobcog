@@ -612,7 +612,7 @@ class MiscMixin(commands.Cog):
             self.bot.dispatch("adventure_ascended", ctx)
         if monster_roster[challenge]["boss"]:
             timer = 60 * 5
-            text = box(_("\n [Ascended 4JR Alarm!]").format(new_challenge), lang="css")
+            text = box(_("\n [Transcended 4JR Alarm!]").format(new_challenge), lang="css")
             self.bot.dispatch("adventure_boss", ctx)  # dispatches an event on bosses
         elif monster_roster[challenge]["miniboss"]:
             timer = 60 * 3
