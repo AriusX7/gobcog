@@ -733,7 +733,7 @@ class MiscMixin(commands.Cog):
         else:
             if use_embeds:
                 embed.description = f"{adventure_msg}\n{normal_text}"
-                embed.set_image(url="https://cdn.discordapp.com/attachments/385068337123688450/783320854582001664/fire.png")
+                embed.set_thumbnail(url="https://cdn.discordapp.com/attachments/385068337123688450/783320854582001664/fire.png")
                 adventure_msg = await ctx.send(embed=embed)
             else:
                 adventure_msg = await ctx.send(f"{adventure_msg}\n{normal_text}")
