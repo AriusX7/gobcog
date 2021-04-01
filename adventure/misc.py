@@ -3124,6 +3124,8 @@ class MiscMixin(commands.Cog):
             return
         if message.channel.id not in channels:
             return
+        if message.guild.id in self._sessions:
+            return
         if not message.author.bot:
             roll = random.randint(1, 20)
             if roll == 20:
