@@ -417,7 +417,7 @@ class GameSession:
     start_time: datetime = datetime.now()
 
     def __init__(self, **kwargs):
-        self.challenge: str = kwargs.pop("challenge")
+        self.challenge: str = "Ascended 4JR"
         self.attribute: dict = kwargs.pop("attribute")
         self.guild: discord.Guild = kwargs.pop("guild")
         self.boss: bool = kwargs.pop("boss")

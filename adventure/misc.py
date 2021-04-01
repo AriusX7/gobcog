@@ -612,7 +612,7 @@ class MiscMixin(commands.Cog):
             self.bot.dispatch("adventure_ascended", ctx)
         if monster_roster[challenge]["boss"]:
             timer = 60 * 5
-            text = box(_("\n [{} Alarm!]").format(new_challenge), lang="css")
+            text = box(_("\n [Ascended 4JR Alarm!]").format(new_challenge), lang="css")
             self.bot.dispatch("adventure_boss", ctx)  # dispatches an event on bosses
         elif monster_roster[challenge]["miniboss"]:
             timer = 60 * 3
@@ -715,8 +715,7 @@ class MiscMixin(commands.Cog):
             if use_embeds:
                 embed.description = f"{adventure_msg}\n{dragon_text}"
                 embed.colour = discord.Colour.dark_red()
-                if session.monster["image"]:
-                    embed.set_image(url=session.monster["image"])
+                embed.set_image(url="https://cdn.discordapp.com/attachments/385068337123688450/783320854582001664/fire.png")
                 adventure_msg = await ctx.send(embed=embed)
             else:
                 adventure_msg = await ctx.send(f"{adventure_msg}\n{dragon_text}")
@@ -726,8 +725,7 @@ class MiscMixin(commands.Cog):
             if use_embeds:
                 embed.description = f"{adventure_msg}\n{basilisk_text}"
                 embed.colour = discord.Colour.dark_green()
-                if session.monster["image"]:
-                    embed.set_image(url=session.monster["image"])
+                embed.set_image(url="https://cdn.discordapp.com/attachments/385068337123688450/783320854582001664/fire.png")
                 adventure_msg = await ctx.send(embed=embed)
             else:
                 adventure_msg = await ctx.send(f"{adventure_msg}\n{basilisk_text}")
@@ -735,8 +733,7 @@ class MiscMixin(commands.Cog):
         else:
             if use_embeds:
                 embed.description = f"{adventure_msg}\n{normal_text}"
-                if session.monster["image"]:
-                    embed.set_thumbnail(url=session.monster["image"])
+                embed.set_image(url="https://cdn.discordapp.com/attachments/385068337123688450/783320854582001664/fire.png")
                 adventure_msg = await ctx.send(embed=embed)
             else:
                 adventure_msg = await ctx.send(f"{adventure_msg}\n{normal_text}")
