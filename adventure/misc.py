@@ -1709,7 +1709,7 @@ class MiscMixin(commands.Cog):
                     fumblelist.add(user)
                     msg += _(
                         "**{user}'s** sermon offended the mighty {god}. {failed_emoji}"
-                        "(-{len_f_list}{attack}/-{len_t_list}{talk}/-{len_m_list}{magic}) {roll_emoji}({roll})\n"
+                        "(-{len_f_list}{attack}/-{len_m_list}{magic}/-{len_t_list}{talk}) {roll_emoji}({roll})\n"
                     ).format(
                         user=self.escape(user.display_name),
                         god=god,
@@ -1747,13 +1747,13 @@ class MiscMixin(commands.Cog):
                     diplomacy += max(pray_diplo_bonus, 0)
                     if roll == 50:
                         roll_msg = _(
-                            "{user} turned into an avatar of mighty {god}. "
-                            "(+{len_f_list}{attack}/+{len_t_list}{talk}/+{len_m_list}{magic}) {roll_emoji}({roll})\n"
+                            "**{user}** turned into an avatar of mighty {god}. "
+                            "(+{len_f_list}{attack}/+{len_m_list}{magic}/+{len_t_list}{talk}) {roll_emoji}({roll})\n"
                         )
                     else:
                         roll_msg = _(
                             "**{user}** blessed you all in {god}'s name. "
-                            "(+{len_f_list}{attack}/+{len_t_list}{talk}/+{len_m_list}{magic}) {roll_emoji}({roll})\n"
+                            "(+{len_f_list}{attack}/+{len_m_list}{magic}/+{len_t_list}{talk}) {roll_emoji}({roll})\n"
                         )
                     msg += roll_msg.format(
                         user=self.escape(user.display_name),
@@ -1790,7 +1790,7 @@ class MiscMixin(commands.Cog):
                     diplomacy += max(talk_buff, 0)
                     msg += _(
                         "**{user}'s** prayer called upon the mighty {god} to help you. "
-                        "(+{len_f_list}{attack}/+{len_t_list}{talk}/+{len_m_list}{magic}) {roll_emoji}({roll})\n"
+                        "(+{len_f_list}{attack}/+{len_m_list}{magic}/+{len_t_list}{talk}) {roll_emoji}({roll})\n"
                     ).format(
                         user=self.escape(user.display_name),
                         god=god,
