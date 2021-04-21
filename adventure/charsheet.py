@@ -390,12 +390,13 @@ class Item:
 
 
 class GameSession:
-    """A class to represent and hold current game sessions per server."""
+    """A class to represent and hold current game sessions per channel."""
 
     challenge: str
     attribute: str
     timer: int
     timeout: int
+    channel: discord.TextChannel
     guild: discord.Guild
     boss: bool
     miniboss: dict
@@ -419,7 +420,8 @@ class GameSession:
     def __init__(self, **kwargs):
         self.challenge: str = kwargs.pop("challenge")
         self.attribute: dict = kwargs.pop("attribute")
-        self.guild: discord.Guild = kwargs.pop("guild")
+        self.channel: discord.TextChannel = kwargs.pop("channel")
+        self.guild: discord.Guild = self.channel.guild
         self.boss: bool = kwargs.pop("boss")
         self.miniboss: dict = kwargs.pop("miniboss")
         self.timer: int = kwargs.pop("timer")
@@ -439,12 +441,10 @@ class GameSession:
         self.run: Set[discord.Member] = set()
         self.transcended: bool = kwargs.pop("transcended", False)
         self.start_time = datetime.now()
-        
-        if isinstance(self.message, discord.Message):
-            self.channel = self.message.channel
 
     def __getstate__(self):
         state = self.__dict__.copy()
+        state['channel'] = state['channel'].id
         state['guild'] = state['guild'].id
         state['fight'] = {i.id for i in state['fight']}
         state['magic'] = {i.id for i in state['magic']}
@@ -458,7 +458,8 @@ class GameSession:
         return state
     
     async def load_from_pickle(self, bot):
-        self.guild = bot.get_guild(self.guild)
+        self.channel = bot.get_channel(self.channel)
+        self.guild = self.channel.guild
         self.fight = {self.guild.get_member(i) for i in self.fight}
         self.magic = {self.guild.get_member(i) for i in self.magic}
         self.talk = {self.guild.get_member(i) for i in self.talk}
@@ -466,7 +467,6 @@ class GameSession:
         self.reactors = {self.guild.get_member(i) for i in self.reactors}
         self.participants = {self.guild.get_member(i) for i in self.participants}
 
-        self.channel = self.guild.get_channel(self.channel)
         self.message = await self.channel.fetch_message(self.message)
         self.countdown_message = await self.channel.fetch_message(self.countdown_message)
 

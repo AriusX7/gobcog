@@ -6,6 +6,7 @@ from typing import List, MutableMapping
 
 import discord
 from discord.ext import commands
+from discord.ext.commands.errors import UserInputError
 from discord.utils import get
 from redbot.core.utils.chat_formatting import humanize_timedelta
 from discord.ext.commands import BadArgument, CheckFailure, Converter
@@ -179,16 +180,16 @@ class AdventureResults:
         :num_ppl: Number of people in adventure.
         :success: Whether adventure was successful or not.
         """
-        if ctx.guild.id not in self._last_raids:
-            self._last_raids[ctx.guild.id] = []
+        if ctx.channel.id not in self._last_raids:
+            self._last_raids[ctx.channel.id] = []
 
-        if len(self._last_raids.get(ctx.guild.id, [])) >= self._num_raids:
-            if ctx.guild.id in self._last_raids:
-                self._last_raids[ctx.guild.id].pop(0)
+        if len(self._last_raids.get(ctx.channel.id, [])) >= self._num_raids:
+            if ctx.channel.id in self._last_raids:
+                self._last_raids[ctx.channel.id].pop(0)
         raid_dict = {}
         for var in ("main_action", "amount", "num_ppl", "success", "boss"):
             raid_dict[var] = locals()[var]
-        self._last_raids[ctx.guild.id].append(raid_dict)
+        self._last_raids[ctx.channel.id].append(raid_dict)
 
     def get_stat_range(self, ctx: Context):
         """Return reasonable stat range for monster pool to have based
@@ -199,10 +200,10 @@ class AdventureResults:
         # how much % to increase damage for solo raiders so that they
         # can't just solo every monster based on their own average
         # damage
-        if ctx.guild.id not in self._last_raids:
-            self._last_raids[ctx.guild.id] = []
+        if ctx.channel.id not in self._last_raids:
+            self._last_raids[ctx.channel.id] = []
         SOLO_RAID_SCALE = 0.25
-        if len(self._last_raids.get(ctx.guild.id, [])) == 0:
+        if len(self._last_raids.get(ctx.channel.id, [])) == 0:
             return {"stat_type": "hp", "min_stat": 0, "max_stat": 0}
 
         # tally up stats for raids
@@ -213,7 +214,7 @@ class AdventureResults:
         num_wins = 0
         stat_type = "hp"
         avg_amount = 0
-        raids = self._last_raids.get(ctx.guild.id, [])
+        raids = self._last_raids.get(ctx.channel.id, [])
         raid_count = len(raids)
         if raid_count == 0:
             num_wins = self._num_raids // 2
@@ -265,7 +266,7 @@ class AdventureResults:
 
     def can_spawn_boss(self, ctx):
         """Ensures that the last 2 monsters are not bosses"""
-        raids = self._last_raids.get(ctx.guild.id, [])[-2:]
+        raids = self._last_raids.get(ctx.channel.id, [])[-2:]
         if any(i["boss"] for i in raids):
             return False
         return True
