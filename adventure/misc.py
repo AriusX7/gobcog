@@ -204,22 +204,22 @@ class MiscMixin(commands.Cog):
 
                     try:
                         await self._result(ctx, v.message)
-                        if ctx.guild.id not in self._sessions:
+                        if ctx.channel.id not in self._sessions:
                             reward = None
                             participants = None
                         else:
                             reward = self._rewards
-                            participants = self._sessions[ctx.guild.id].participants
+                            participants = self._sessions[ctx.channel.id].participants
                     except Exception as exc:
-                        await self.config.guild(ctx.guild).cooldown.set(0)
+                        await self.config.channel(ctx.channel).cooldown.set(0)
                         log.exception("Something went wrong controlling the game", exc_info=exc)
-                        while ctx.guild.id in self._sessions:
-                            del self._sessions[ctx.guild.id]
+                        while ctx.channel.id in self._sessions:
+                            del self._sessions[ctx.channel.id]
                         return
                     if not reward and not participants:
-                        await self.config.guild(ctx.guild).cooldown.set(0)
-                        while ctx.guild.id in self._sessions:
-                            del self._sessions[ctx.guild.id]
+                        await self.config.channel(ctx.channel).cooldown.set(0)
+                        while ctx.channel.id in self._sessions:
+                            del self._sessions[ctx.channel.id]
                         return
                     reward_copy = reward.copy()
                     send_message = ""
@@ -247,8 +247,8 @@ class MiscMixin(commands.Cog):
                                     c.last_currency_check = time.time()
                                 await self.config.user(user).set(await c.to_json(self.config))
 
-                    while ctx.guild.id in self._sessions:
-                        del self._sessions[ctx.guild.id]
+                    while ctx.channel.id in self._sessions:
+                        del self._sessions[ctx.channel.id]
 
                 task = self.bot.loop.create_task(refresh_timer())
                 self.tasks[v.countdown_message.id] = task
@@ -416,14 +416,14 @@ class MiscMixin(commands.Cog):
                 del item_dict["set"]
         return (new_name, item_dict)
 
-    def in_adventure(self, ctx=None, user=None, *, guild=False):
-        """guild argument ensures that user is in the guild of trigger"""
+    def in_adventure(self, ctx=None, user=None, *, channel=False):
+        """channel argument ensures that user is in the guild of trigger"""
         author = user or ctx.author
         
-        if guild:
-            guild_id = getattr(author.guild, 'id', None)
+        if channel:
+            channel_id = getattr(channel, 'id', None)
             try:
-                sessions = {guild_id: self._sessions[guild_id]}
+                sessions = {channel_id: self._sessions[channel_id]}
             except KeyError:
                 return False
         else:
@@ -435,7 +435,7 @@ class MiscMixin(commands.Cog):
         participants_ids = set(
             [
                 p.id
-                for guild_id, session in sessions.items()
+                for _channel_id, session in sessions.items()
                 for p in session.reactors
             ]
         )
@@ -623,10 +623,10 @@ class MiscMixin(commands.Cog):
         if transcended and not monster_roster[challenge]["boss"] and not monster_roster[challenge]["miniboss"]:
             timer = 60 * 3
 
-        self._sessions[ctx.guild.id] = GameSession(
+        self._sessions[ctx.channel.id] = GameSession(
             challenge=new_challenge,
             attribute=attribute,
-            guild=ctx.guild,
+            channel=ctx.channel,
             boss=monster_roster[challenge]["boss"],
             miniboss=monster_roster[challenge]["miniboss"],
             timer=timer,
@@ -642,14 +642,14 @@ class MiscMixin(commands.Cog):
             f"**{self.escape(ctx.author.display_name)}**{random.choice(self.RAISINS)}"
         )
         await self._choice(ctx, adventure_msg)
-        if ctx.guild.id not in self._sessions:
+        if ctx.channel.id not in self._sessions:
             return (None, None)
         rewards = self._rewards
-        participants = self._sessions[ctx.guild.id].participants
+        participants = self._sessions[ctx.channel.id].participants
         return (rewards, participants)
 
     async def _choice(self, ctx: Context, adventure_msg):
-        session = self._sessions[ctx.guild.id]
+        session = self._sessions[ctx.channel.id]
         dragon_text = _(
             "but **{attr} {chall}** "
             "just landed in front of you glaring! \n\n"
@@ -799,8 +799,9 @@ class MiscMixin(commands.Cog):
             return await self.local_perms(user) or await self.global_perms(user)
 
     async def _handle_adventure(self, reaction, user):
+        channel = reaction.message.channel
         action = {v: k for k, v in self._adventure_controls.items()}[str(reaction.emoji)]
-        session = self._sessions[user.guild.id]
+        session = self._sessions[channel.id]
         has_fund = await has_funds(user, 250)
         for x in ["fight", "magic", "talk", "pray", "run"]:
             if not has_fund or user in getattr(session, x, []):
@@ -813,22 +814,22 @@ class MiscMixin(commands.Cog):
             if has_fund:
                 if restricted:
                     all_users = []
-                    for (guild_id, guild_session) in self._sessions.items():
-                        guild_users_in_game = (
-                            guild_session.fight
-                            | guild_session.magic
-                            | guild_session.talk
-                            | guild_session.pray
-                            | guild_session.run
+                    for (channel_id, channel_session) in self._sessions.items():
+                        channel_users_in_game = (
+                            channel_session.fight
+                            | channel_session.magic
+                            | channel_session.talk
+                            | channel_session.pray
+                            | channel_session.run
                         )
-                        all_users = all_users + guild_users_in_game
+                        all_users = all_users + channel_users_in_game
 
                     if user in all_users:
-                        user_id = f"{user.id}-{user.guild.id}"
+                        user_id = f"{user.id}-{channel.id}"
                         # iterating through reactions here and removing them seems to be expensive
                         # so they can just keep their react on the adventures they can't join
                         if user_id not in self._react_messaged:
-                            await reaction.message.channel.send(
+                            await channel.send(
                                 _(
                                     "**{c}**, you are already in an existing adventure. "
                                     "Wait for it to finish before joining another one."
@@ -936,7 +937,7 @@ class MiscMixin(commands.Cog):
             self._current_traders[guild.id]["users"].remove(user)
 
     async def _result(self, ctx: Context, message: discord.Message):
-        if ctx.guild.id not in self._sessions:
+        if ctx.channel.id not in self._sessions:
             return
         calc_msg = await ctx.send(_("Calculating..."))
         attack = 0
@@ -946,7 +947,7 @@ class MiscMixin(commands.Cog):
         critlist: set = set()
         failed = False
         lost = False
-        session = self._sessions[ctx.guild.id]
+        session = self._sessions[ctx.channel.id]
 
         # update message object
         message = await message.channel.fetch_message(message.id)
@@ -972,18 +973,18 @@ class MiscMixin(commands.Cog):
 
         challenge = session.challenge
 
-        attack, diplomacy, magic, run_msg = await self.handle_run(ctx.guild.id, attack, diplomacy, magic)
+        attack, diplomacy, magic, run_msg = await self.handle_run(ctx.channel.id, attack, diplomacy, magic)
         failed = await self.handle_basilisk(ctx, failed)
         fumblelist, attack, diplomacy, magic, pray_msg = await self.handle_pray(
-            ctx.guild.id, fumblelist, attack, diplomacy, magic
+            ctx.channel.id, fumblelist, attack, diplomacy, magic
         )
         fumblelist, critlist, diplomacy, talk_msg = await self.handle_talk(
-            ctx.guild.id, fumblelist, critlist, diplomacy
+            ctx.channel.id, fumblelist, critlist, diplomacy
         )
 
         # need to pass challenge because we need to query MONSTERS[challenge]["pdef"] (and mdef)
         fumblelist, critlist, attack, magic, fight_msg = await self.handle_fight(
-            ctx.guild.id, fumblelist, critlist, attack, magic, challenge
+            ctx.channel.id, fumblelist, critlist, attack, magic, challenge
         )
 
         result_msg = run_msg + pray_msg + talk_msg + fight_msg
@@ -1469,18 +1470,18 @@ class MiscMixin(commands.Cog):
                     parsed_users.append(user)
                 await self.config.user(user).set(await c.to_json(self.config))
 
-    async def handle_run(self, guild_id, attack, diplomacy, magic):
+    async def handle_run(self, channel_id, attack, diplomacy, magic):
         runners = []
         msg = ""
-        session = self._sessions[guild_id]
+        session = self._sessions[channel_id]
         if len(session.run) != 0:
             for user in session.run:
                 runners.append(f"**{self.escape(user.display_name)}**")
             msg += _("{} just ran away.\n").format(humanize_list(runners))
         return (attack, diplomacy, magic, msg)
 
-    async def handle_fight(self, guild_id, fumblelist, critlist, attack, magic, challenge):
-        session = self._sessions[guild_id]
+    async def handle_fight(self, channel_id, fumblelist, critlist, attack, magic, challenge):
+        session = self._sessions[channel_id]
         attack_list = session.fight | session.magic
         pdef = max(session.monster_modified_stats["pdef"], 0.5)
         mdef = max(session.monster_modified_stats["mdef"], 0.5)
@@ -1666,10 +1667,10 @@ class MiscMixin(commands.Cog):
                 session.magic.remove(user)
         return (fumblelist, critlist, attack, magic, msg)
 
-    async def handle_pray(self, guild_id, fumblelist, attack, diplomacy, magic):
-        session = self._sessions[guild_id]
+    async def handle_pray(self, channel_id, fumblelist, attack, diplomacy, magic):
+        session = self._sessions[channel_id]
         god = await self.config.god_name()
-        guild_god_name = await self.config.guild(self.bot.get_guild(guild_id)).god_name()
+        guild_god_name = await self.config.guild(session.guild).god_name()
         if guild_god_name:
             god = guild_god_name
         msg = ""
@@ -1813,8 +1814,8 @@ class MiscMixin(commands.Cog):
                 session.pray.remove(user)
         return (fumblelist, attack, diplomacy, magic, msg)
 
-    async def handle_talk(self, guild_id, fumblelist, critlist, diplomacy):
-        session = self._sessions[guild_id]
+    async def handle_talk(self, channel_id, fumblelist, critlist, diplomacy):
+        session = self._sessions[channel_id]
         if len(session.talk) >= 1:
             report = _("Talking Party: \n\n")
             msg = ""
@@ -1887,7 +1888,7 @@ class MiscMixin(commands.Cog):
         return (fumblelist, critlist, diplomacy, msg)
 
     async def handle_basilisk(self, ctx: Context, failed):
-        session = self._sessions[ctx.guild.id]
+        session = self._sessions[ctx.channel.id]
         participants = session.fight | session.talk | session.pray | session.magic
         if session.miniboss:
             failed = True
@@ -1994,15 +1995,15 @@ class MiscMixin(commands.Cog):
             adv_end = await self._get_epoch(secondint)
             timer, done, sremain = await self._remaining(adv_end)
 
-            message_adv = self._sessions[ctx.guild.id].countdown_message
+            message_adv = self._sessions[ctx.channel.id].countdown_message
             if message_adv is None:
                 message_adv = await ctx.send(f"⏳ [{title}] {timer}s")
-                self._sessions[ctx.guild.id].countdown_message = message_adv
+                self._sessions[ctx.channel.id].countdown_message = message_adv
 
             deleted = False
             while not done:
                 timer, done, sremain = await self._remaining(adv_end)
-                self._adventure_countdown[ctx.guild.id] = (timer, done, sremain)
+                self._adventure_countdown[ctx.channel.id] = (timer, done, sremain)
                 if done:
                     if not deleted:
                         await message_adv.delete()
@@ -2964,9 +2965,9 @@ class MiscMixin(commands.Cog):
 
     async def _data_check(self, ctx: Context):
         try:
-            self._adventure_countdown[ctx.guild.id]
+            self._adventure_countdown[ctx.channel.id]
         except KeyError:
-            self._adventure_countdown[ctx.guild.id] = 0
+            self._adventure_countdown[ctx.channel.id] = 0
         try:
             self._rewards[ctx.author.id]
         except KeyError:
@@ -3067,6 +3068,7 @@ class MiscMixin(commands.Cog):
         if user.bot:
             return
         try:
+            channel = reaction.message.channel
             guild = user.guild
         except AttributeError:
             return
@@ -3075,10 +3077,10 @@ class MiscMixin(commands.Cog):
             return
         if not await self.has_perm(user):
             return
-        if guild.id in self._sessions:
-            if reaction.message.id == self._sessions[guild.id].message_id:
-                if guild.id in self._adventure_countdown:
-                    (timer, done, sremain) = self._adventure_countdown[guild.id]
+        if channel.id in self._sessions:
+            if reaction.message.id == self._sessions[channel.id].message_id:
+                if channel.id in self._adventure_countdown:
+                    (timer, done, sremain) = self._adventure_countdown[channel.id]
                     if sremain > 0:
                         await self._handle_adventure(reaction, user)
         if guild.id in self._current_traders:
@@ -3097,7 +3099,7 @@ class MiscMixin(commands.Cog):
         if user.bot:
             return
         try:
-            guild = user.guild
+            channel = reaction.message.channel
         except AttributeError:
             return
         emojis = ReactionPredicate.NUMBER_EMOJIS + self._adventure_actions
@@ -3105,12 +3107,12 @@ class MiscMixin(commands.Cog):
             return
         if not await self.has_perm(user):
             return
-        if guild.id in self._sessions:
-            if reaction.message.id == self._sessions[guild.id].message_id:
-                if guild.id in self._adventure_countdown:
-                    (timer, done, sremain) = self._adventure_countdown[guild.id]
+        if channel.id in self._sessions:
+            if reaction.message.id == self._sessions[channel.id].message_id:
+                if channel.id in self._adventure_countdown:
+                    (timer, done, sremain) = self._adventure_countdown[channel.id]
                     if sremain > 0:
-                        session = self._sessions[guild.id]
+                        session = self._sessions[channel.id]
                         if user in session.reactors:
                             session.run.add(user)
 
@@ -3124,7 +3126,7 @@ class MiscMixin(commands.Cog):
             return
         if message.channel.id not in channels:
             return
-        if message.guild.id in self._sessions:
+        if message.channel.id in self._sessions:
             return
         if not message.author.bot:
             roll = random.randint(1, 20)
@@ -3212,10 +3214,10 @@ class MiscMixin(commands.Cog):
         delta = timedelta(minutes=6)
         with contextlib.suppress(asyncio.CancelledError):
             while True:
-                async for guild_id, session in AsyncIter(self._sessions.copy(), steps=5):
+                async for channel_id, session in AsyncIter(self._sessions.copy(), steps=5):
                     if session.start_time + delta > datetime.now():
-                        if guild_id in self._sessions:
-                            del self._sessions[guild_id]
+                        if channel_id in self._sessions:
+                            del self._sessions[channel_id]
                 await asyncio.sleep(5)
 
     @commands.Cog.listener()
