@@ -204,7 +204,6 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             "god_name": "",
             "cart_name": "",
             "embed": True,
-            "cooldown": 0,
             "cartroom": None,
             "cart_timeout": 10800,
             "cooldown_timer_manual": 120,
@@ -220,6 +219,11 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 "boss": {}
             },
         }
+
+        default_channel = {
+            "cooldown": 0,
+        }
+
         default_global = {
             "god_name": _("Herbert"),
             "cart_name": _("Hawl's brother"),
@@ -250,6 +254,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         self.PETS: dict = None
 
         self.config.register_guild(**default_guild)
+        self.config.register_channel(**default_channel)
         self.config.register_global(**default_global)
         self.config.register_user(**default_user)
         self.cleanup_loop = self.bot.loop.create_task(self.cleanup_tasks())
@@ -1411,8 +1416,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     @adventureset_locks.command(name="adventure")
     async def adventureset_locks_adventure(self, ctx: Context):
         """[Admin] Reset the adventure game lock for the server."""
-        while ctx.guild.id in self._sessions:
-            del self._sessions[ctx.guild.id]
+        while ctx.channel.id in self._sessions:
+            del self._sessions[ctx.channel.id]
         await ctx.tick()
 
     @adventureset.command()
@@ -2649,7 +2654,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
     @staticmethod
     def check_running_adventure(ctx):
-        for (guild_id, session) in ctx.bot.get_cog("Adventure")._sessions.items():
+        for (channel_id, session) in ctx.bot.get_cog("Adventure")._sessions.items():
             user_ids: list = []
             options = ["fight", "magic", "talk", "pray", "run"]
             for i in options:
@@ -3723,7 +3728,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         """[Dev] Resets the after-adventure cooldown in this server."""
         if not await no_dev_prompt(ctx):
             return
-        await self.config.guild(ctx.guild).cooldown.set(0)
+        await self.config.channel(ctx.channel).cooldown.set(0)
         await ctx.tick()
 
     @commands.cooldown(rate=1, per=5, type=commands.BucketType.guild)
@@ -3736,13 +3741,13 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         You play by reacting with the offered emojis.
         """
 
-        if ctx.guild.id in self._sessions:
-            adventure_obj = self._sessions[ctx.guild.id]
+        if ctx.channel.id in self._sessions:
+            adventure_obj = self._sessions[ctx.channel.id]
             link = adventure_obj.message.jump_url
 
             raise AdventureCheckFailure(
                 _(
-                    f"There's already another adventure going on in this server.\n"
+                    f"There's already another adventure going on in this channel.\n"
                     f"Currently fighting: [{adventure_obj.challenge}]({link})"
                 )
             )
@@ -3758,10 +3763,10 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             raise AdventureCheckFailure(_("You need {req} {name} to start an adventure.{extra}").format(
                 req=250, name=currency_name, extra=extra)
             )
-        guild_settings = await self.config.guild(ctx.guild).all()
-        cooldown = guild_settings["cooldown"]
+        channel_settings = await self.config.channel(ctx.channel).all()
+        cooldown = channel_settings["cooldown"]
 
-        cooldown_time = guild_settings["cooldown_timer_manual"]
+        cooldown_time = await self.config.guild(ctx.guild).cooldown_timer_manual()
 
         if cooldown + cooldown_time > time.time():
             cooldown_time = cooldown + cooldown_time - time.time()
@@ -3778,17 +3783,17 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         adventure_msg = _("You feel adventurous, **{}**?").format(self.escape(ctx.author.display_name))
         try:
             reward, participants = await self._simple(ctx, adventure_msg, challenge)
-            await self.config.guild(ctx.guild).cooldown.set(time.time())
+            await self.config.channel(ctx.channel).cooldown.set(time.time())
         except Exception as exc:
-            await self.config.guild(ctx.guild).cooldown.set(0)
+            await self.config.channel(ctx.channel).cooldown.set(0)
             log.exception("Something went wrong controlling the game", exc_info=exc)
-            while ctx.guild.id in self._sessions:
-                del self._sessions[ctx.guild.id]
+            while ctx.channel.id in self._sessions:
+                del self._sessions[ctx.channel.id]
             return
         if not reward and not participants:
-            await self.config.guild(ctx.guild).cooldown.set(0)
-            while ctx.guild.id in self._sessions:
-                del self._sessions[ctx.guild.id]
+            await self.config.channel(ctx.channel).cooldown.set(0)
+            while ctx.channel.id in self._sessions:
+                del self._sessions[ctx.channel.id]
             return
         reward_copy = reward.copy()
         send_message = ""
@@ -3812,7 +3817,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     if c.heroclass["name"] != "Ranger" and c.heroclass["ability"]:
 
                         cooldown_time = 0
-                        session = self._sessions[ctx.guild.id]
+                        session = self._sessions[ctx.channel.id]
                         if c.heroclass["name"] == "Berserker" and user in session.fight:
                             cooldown_time = max(240, (1140 - ((c.luck + c.total_att) * 2)))
                         elif c.heroclass["name"] == "Bard" and user in session.talk:
@@ -3831,8 +3836,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         c.last_currency_check = time.time()
                     await self.config.user(user).set(await c.to_json(self.config))
 
-        while ctx.guild.id in self._sessions:
-            del self._sessions[ctx.guild.id]
+        while ctx.channel.id in self._sessions:
+            del self._sessions[ctx.channel.id]
 
     @_adventure.error
     async def _error_handler(self, ctx: commands.Context, error: Exception) -> None:
@@ -3841,8 +3846,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             error,
             (commands.CheckFailure, commands.UserInputError, commands.DisabledCommand, commands.CommandOnCooldown),
         ):
-            while ctx.guild.id in self._sessions:
-                del self._sessions[ctx.guild.id]
+            while ctx.channel.id in self._sessions:
+                del self._sessions[ctx.channel.id]
 
     @commands.command()
     @commands.bot_has_permissions(add_reactions=True, embed_links=True)
