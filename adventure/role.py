@@ -93,7 +93,7 @@ class RoleMixin(commands.Cog):
         if not role:
             raise AdventureCheckFailure(_("I could not find the set role."))
 
-        session = self._sessions.get(ctx.guild.id)
+        session = self._sessions.get(ctx.channel.id)
 
         if session is None:
             raise AdventureCheckFailure(_("You must be in an adventure to use this command."))
