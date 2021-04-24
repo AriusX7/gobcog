@@ -59,24 +59,20 @@ class MiscMixin(commands.Cog):
             _config = self.config
             theme = await self.config.theme()
             self._separate_economy = await self.config.separate_economy()
-            if "default" == theme:
-                get_path = bundled_data_path
-            else:
-                get_path = cog_data_path
 
-            as_monster_fp = get_path(self) / f"{theme}" / "as_monsters.json"
-            attribs_fp = get_path(self) / f"{theme}" / "attribs.json"
-            locations_fp = get_path(self) / f"{theme}" / "locations.json"
-            monster_fp = get_path(self) / f"{theme}" / "monsters.json"
-            pets_fp = get_path(self) / f"{theme}" / "pets.json"
-            raisins_fp = get_path(self) / f"{theme}" / "raisins.json"
-            threatee_fp = get_path(self) / f"{theme}" / "threatee.json"
-            tr_set_fp = get_path(self) / f"{theme}" / "tr_set.json"
-            prefixes_fp = get_path(self) / f"{theme}" / "prefixes.json"
-            materials_fp = get_path(self) / f"{theme}" / "materials.json"
-            equipment_fp = get_path(self) / f"{theme}" / "equipment.json"
-            suffixes_fp = get_path(self) / f"{theme}" / "suffixes.json"
-            set_bonuses = get_path(self) / f"{theme}" / "set_bonuses.json"
+            as_monster_fp = bundled_data_path(self) / f"{theme}" / "as_monsters.json"
+            attribs_fp = bundled_data_path(self) / f"{theme}" / "attribs.json"
+            locations_fp = bundled_data_path(self) / f"{theme}" / "locations.json"
+            monster_fp = bundled_data_path(self) / f"{theme}" / "monsters.json"
+            pets_fp = bundled_data_path(self) / f"{theme}" / "pets.json"
+            raisins_fp = bundled_data_path(self) / f"{theme}" / "raisins.json"
+            threatee_fp = bundled_data_path(self) / f"{theme}" / "threatee.json"
+            tr_set_fp = bundled_data_path(self) / f"{theme}" / "tr_set.json"
+            prefixes_fp = bundled_data_path(self) / f"{theme}" / "prefixes.json"
+            materials_fp = bundled_data_path(self) / f"{theme}" / "materials.json"
+            equipment_fp = bundled_data_path(self) / f"{theme}" / "equipment.json"
+            suffixes_fp = bundled_data_path(self) / f"{theme}" / "suffixes.json"
+            set_bonuses = bundled_data_path(self) / f"{theme}" / "set_bonuses.json"
             files = {
                 "pets": pets_fp,
                 "attr": attribs_fp,
