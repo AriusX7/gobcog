@@ -1,0 +1,1402 @@
+{
+    "Ascended Star Shelly": {
+        "hp": 865.4,
+        "pdef": 2.6,
+        "mdef": 2.5,
+        "dipl": 755.3,
+        "image": "https://i.imgur.com/aiq98GX.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Bandita Shelly": {
+        "hp": 778.2,
+        "pdef": 3,
+        "mdef": 2.8,
+        "dipl": 865.2,
+        "image": "https://i.imgur.com/KxkSa5n.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended PSG Shelly": {
+        "hp": 906.8,
+        "pdef": 1.6,
+        "mdef": 2.8,
+        "dipl": 1084,
+        "image": "https://i.imgur.com/uRwglkE.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Witch Shelly": {
+        "hp": 985,
+        "pdef": 1.4,
+        "mdef": 2.6,
+        "dipl": 694.3,
+        "image": "https://i.imgur.com/j3H1Ik3.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Panda Nita": {
+        "hp": 678.2,
+        "pdef": 2.9,
+        "mdef": 2.7,
+        "dipl": 850,
+        "image": "https://i.imgur.com/KR01utf.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Koala Nita": {
+        "hp": 677.9,
+        "pdef": 2.4,
+        "mdef": 2,
+        "dipl": 605.4,
+        "image": "https://i.imgur.com/0LRY4FF.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Red Nose Nita": {
+        "hp": 1127.6,
+        "pdef": 2.4,
+        "mdef": 1.4,
+        "dipl": 1193.1,
+        "image": "https://i.imgur.com/mmjmO6g.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Shiba Nita": {
+        "hp": 860.8,
+        "pdef": 1.3,
+        "mdef": 1,
+        "dipl": 821.2,
+        "image": "https://i.imgur.com/2UlowNL.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Rockstar Colt": {
+        "hp": 929.1,
+        "pdef": 1,
+        "mdef": 1.7,
+        "dipl": 535.7,
+        "image": "https://i.imgur.com/GCOIbXM.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Royal Agent Colt": {
+        "hp": 829.9,
+        "pdef": 1.5,
+        "mdef": 1.9,
+        "dipl": 652.1,
+        "image": "https://i.imgur.com/rwPY1Ck.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Corsair Colt": {
+        "hp": 1101.9,
+        "pdef": 2.7,
+        "mdef": 1.6,
+        "dipl": 550.9,
+        "image": "https://i.imgur.com/fVoiTSH.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Challenger Colt": {
+        "hp": 778.6,
+        "pdef": 3,
+        "mdef": 2,
+        "dipl": 639,
+        "image": "https://i.imgur.com/YARee0A.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Barbarian King Bull": {
+        "hp": 1071.7,
+        "pdef": 2,
+        "mdef": 1.5,
+        "dipl": 1129.3,
+        "image": "https://i.imgur.com/YAve2mA.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Viking Bull": {
+        "hp": 697.5,
+        "pdef": 2,
+        "mdef": 1.1,
+        "dipl": 893.3,
+        "image": "https://i.imgur.com/yMO48Jp.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Touchdown Bull": {
+        "hp": 652.8,
+        "pdef": 2.4,
+        "mdef": 2,
+        "dipl": 552.6,
+        "image": "https://i.imgur.com/HitviYx.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Red Dragon Jessie": {
+        "hp": 1172.5,
+        "pdef": 0.9,
+        "mdef": 1,
+        "dipl": 956.2,
+        "image": "https://i.imgur.com/TLrmErR.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Summer Jessie": {
+        "hp": 693.3,
+        "pdef": 1.9,
+        "mdef": 2.6,
+        "dipl": 679.1,
+        "image": "https://i.imgur.com/sXkx8Zm.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Dragon Knight Jessie": {
+        "hp": 844.8,
+        "pdef": 1.4,
+        "mdef": 1,
+        "dipl": 1010.4,
+        "image": "https://i.imgur.com/t8DqE7y.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Shadow Knight Jessie": {
+        "hp": 1167.6,
+        "pdef": 2.6,
+        "mdef": 1.3,
+        "dipl": 600.1,
+        "image": "https://i.imgur.com/MIiM1x2.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Tanuki Jessie": {
+        "hp": 614.6,
+        "pdef": 2,
+        "mdef": 1.4,
+        "dipl": 560.3,
+        "image": "https://i.imgur.com/9ND7crm.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Old School Brock": {
+        "hp": 693,
+        "pdef": 1.5,
+        "mdef": 1.6,
+        "dipl": 822.7,
+        "image": "https://i.imgur.com/tyHel6X.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Beach Brock": {
+        "hp": 778.6,
+        "pdef": 2.8,
+        "mdef": 2,
+        "dipl": 618.1,
+        "image": "https://i.imgur.com/AEJS9Vb.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Boombox Brock": {
+        "hp": 693.6,
+        "pdef": 1.7,
+        "mdef": 2.8,
+        "dipl": 900.1,
+        "image": "https://i.imgur.com/LzrWtQu.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Lion Dance Brock": {
+        "hp": 1141.7,
+        "pdef": 0.9,
+        "mdef": 1.3,
+        "dipl": 561.3,
+        "image": "https://i.imgur.com/3nbYg15.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Hot Rod Brock": {
+        "hp": 1182.8,
+        "pdef": 1.4,
+        "mdef": 1.6,
+        "dipl": 1070.8,
+        "image": "https://i.imgur.com/44TGXw4.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Super Ranger Brock": {
+        "hp": 973.4,
+        "pdef": 2.9,
+        "mdef": 1.4,
+        "dipl": 866.2,
+        "image": "https://i.imgur.com/jkLZzbO.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Santa Mike": {
+        "hp": 1102.8,
+        "pdef": 2.2,
+        "mdef": 2.9,
+        "dipl": 1156.1,
+        "image": "https://i.imgur.com/63YkgZb.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Spicy Mike": {
+        "hp": 626.9,
+        "pdef": 2.7,
+        "mdef": 2,
+        "dipl": 1152.5,
+        "image": "https://i.imgur.com/sblYew4.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Coach Mike": {
+        "hp": 954.4,
+        "pdef": 1.2,
+        "mdef": 1.4,
+        "dipl": 523.5,
+        "image": "https://i.imgur.com/KSFQxlg.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Robo Mike": {
+        "hp": 963.5,
+        "pdef": 1.5,
+        "mdef": 2.8,
+        "dipl": 1031.5,
+        "image": "https://i.imgur.com/P3c9Jr7.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Bellhop Mike": {
+        "hp": 1000.8,
+        "pdef": 0.8,
+        "mdef": 0.9,
+        "dipl": 822.8,
+        "image": "https://i.imgur.com/quXrZJf.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Horus Bo": {
+        "hp": 768.6,
+        "pdef": 2.1,
+        "mdef": 2.9,
+        "dipl": 1056.8,
+        "image": "https://i.imgur.com/QcomO2e.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Underworld Bo": {
+        "hp": 842.7,
+        "pdef": 2.3,
+        "mdef": 2.6,
+        "dipl": 743.9,
+        "image": "https://i.imgur.com/RlGLhHx.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Mecha Bo": {
+        "hp": 1142.8,
+        "pdef": 1.3,
+        "mdef": 1.1,
+        "dipl": 547.4,
+        "image": "https://i.imgur.com/7l3EBqU.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended King Crab Tick": {
+        "hp": 662.1,
+        "pdef": 1.2,
+        "mdef": 1.7,
+        "dipl": 1186.4,
+        "image": "https://i.imgur.com/2NmyZmZ.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Snowman Tick": {
+        "hp": 948.6,
+        "pdef": 2,
+        "mdef": 2.2,
+        "dipl": 791.3,
+        "image": "https://i.imgur.com/2yFmtII.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Classic 8-Bit": {
+        "hp": 870.1,
+        "pdef": 1.1,
+        "mdef": 1.3,
+        "dipl": 871.4,
+        "image": "https://i.imgur.com/KdrCSLp.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Virus 8-Bit": {
+        "hp": 1016.9,
+        "pdef": 1.3,
+        "mdef": 1,
+        "dipl": 559.4,
+        "image": "https://i.imgur.com/99B9cDo.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Super Fan EMZ": {
+        "hp": 1112.9,
+        "pdef": 2.4,
+        "mdef": 2.4,
+        "dipl": 849.8,
+        "image": "https://i.imgur.com/rHXbo56.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended El Rudo": {
+        "hp": 1157.5,
+        "pdef": 1.6,
+        "mdef": 1.3,
+        "dipl": 630.8,
+        "image": "https://i.imgur.com/PExvyIL.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended El Brown": {
+        "hp": 891.6,
+        "pdef": 1.4,
+        "mdef": 0.9,
+        "dipl": 716.3,
+        "image": "https://i.imgur.com/OHkwGrM.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended El Ray": {
+        "hp": 661.9,
+        "pdef": 1.2,
+        "mdef": 2.8,
+        "dipl": 853.6,
+        "image": "https://i.imgur.com/XH0WuQC.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended El Atomico": {
+        "hp": 992.5,
+        "pdef": 2.5,
+        "mdef": 1.9,
+        "dipl": 873.4,
+        "image": "https://i.imgur.com/9m7JD9J.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Wizard Barley": {
+        "hp": 1092.6,
+        "pdef": 2.6,
+        "mdef": 2.6,
+        "dipl": 667.9,
+        "image": "https://i.imgur.com/ni0j49y.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Canadian Barley, eh?": {
+        "hp": 1086.4,
+        "pdef": 1.6,
+        "mdef": 1.3,
+        "dipl": 798,
+        "image": "https://i.imgur.com/NjXXMYo.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Bakesale Barley": {
+        "hp": 1018.8,
+        "pdef": 1.2,
+        "mdef": 2.7,
+        "dipl": 921,
+        "image": "https://i.imgur.com/rud59QS.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Pirate Poco": {
+        "hp": 831.1,
+        "pdef": 1.7,
+        "mdef": 2.7,
+        "dipl": 1118.3,
+        "image": "https://i.imgur.com/5cJ6X9J.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Serenade Poco": {
+        "hp": 816.5,
+        "pdef": 1.2,
+        "mdef": 2,
+        "dipl": 756.5,
+        "image": "https://i.imgur.com/gW34Jzt.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Starr Poco": {
+        "hp": 661.2,
+        "pdef": 1.5,
+        "mdef": 2.4,
+        "dipl": 1054.6,
+        "image": "https://i.imgur.com/U6zu4Vr.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Brawl-O-Ween Rosa": {
+        "hp": 1108.2,
+        "pdef": 1.2,
+        "mdef": 2.1,
+        "dipl": 850.8,
+        "image": "https://i.imgur.com/XcEHops.jpg",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Ricochet": {
+        "hp": 746.6,
+        "pdef": 2,
+        "mdef": 1.9,
+        "dipl": 735.1,
+        "image": "https://i.imgur.com/y1t2gmZ.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended King Rico": {
+        "hp": 1160.1,
+        "pdef": 2.5,
+        "mdef": 1.1,
+        "dipl": 509.8,
+        "image": "https://i.imgur.com/gsp32To.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Popcorn Rico": {
+        "hp": 942.5,
+        "pdef": 0.9,
+        "mdef": 1.6,
+        "dipl": 818.6,
+        "image": "https://i.imgur.com/bTuMn5X.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Guard Rico": {
+        "hp": 830.2,
+        "pdef": 1.3,
+        "mdef": 2,
+        "dipl": 766.7,
+        "image": "https://i.imgur.com/9DeLQaK.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Dumpling Darryl": {
+        "hp": 1021,
+        "pdef": 1.9,
+        "mdef": 0.8,
+        "dipl": 758.2,
+        "image": "https://i.imgur.com/4H1eRZF.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Soccer Mascot Darryl": {
+        "hp": 1113.4,
+        "pdef": 2,
+        "mdef": 2.6,
+        "dipl": 1002.7,
+        "image": "https://i.imgur.com/lNuIUGS.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Lil Helper Penny": {
+        "hp": 1184,
+        "pdef": 1.8,
+        "mdef": 2.4,
+        "dipl": 730.4,
+        "image": "https://i.imgur.com/EdL9bSL.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Dark Bunny Penny": {
+        "hp": 699,
+        "pdef": 2.9,
+        "mdef": 1.8,
+        "dipl": 954.3,
+        "image": "https://i.imgur.com/VOSV26r.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Road Rage Carl": {
+        "hp": 1007.2,
+        "pdef": 0.9,
+        "mdef": 2.6,
+        "dipl": 718.1,
+        "image": "https://i.imgur.com/EOckpCL.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Hog Rider Carl": {
+        "hp": 1053.1,
+        "pdef": 2.1,
+        "mdef": 2.7,
+        "dipl": 510.2,
+        "image": "https://i.imgur.com/dPIFdT6.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Leonard Carl": {
+        "hp": 848.9,
+        "pdef": 2.7,
+        "mdef": 1.5,
+        "dipl": 686.4,
+        "image": "https://i.imgur.com/EFy1URi.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Captain Carl": {
+        "hp": 716.4,
+        "pdef": 1.9,
+        "mdef": 1.1,
+        "dipl": 559.7,
+        "image": "https://i.imgur.com/Nk2PKf3.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Ultra Driller Jacky": {
+        "hp": 861.5,
+        "pdef": 1.5,
+        "mdef": 2,
+        "dipl": 567.2,
+        "image": "https://i.imgur.com/hUbfvsn.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Calavera Piper": {
+        "hp": 930.5,
+        "pdef": 2.7,
+        "mdef": 2.9,
+        "dipl": 1139,
+        "image": "https://i.imgur.com/Wp1s1r0.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Cupid Piper": {
+        "hp": 606.9,
+        "pdef": 1.3,
+        "mdef": 2.4,
+        "dipl": 807.2,
+        "image": "https://i.imgur.com/7WqMAO0.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Choco Piper": {
+        "hp": 1026.6,
+        "pdef": 1.8,
+        "mdef": 1,
+        "dipl": 859.6,
+        "image": "https://i.imgur.com/NL47VCu.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Summer Pam": {
+        "hp": 1194.2,
+        "pdef": 1.4,
+        "mdef": 2.8,
+        "dipl": 844.9,
+        "image": "https://i.imgur.com/lxiGI36.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Caveman Frank": {
+        "hp": 820.6,
+        "pdef": 1.9,
+        "mdef": 2.6,
+        "dipl": 681.5,
+        "image": "https://i.imgur.com/buaw4CL.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Holiday Frank": {
+        "hp": 690.4,
+        "pdef": 2.9,
+        "mdef": 1.1,
+        "dipl": 609,
+        "image": "https://i.imgur.com/2BkNJOX.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended DJ Frank": {
+        "hp": 736,
+        "pdef": 3,
+        "mdef": 1.6,
+        "dipl": 574.3,
+        "image": "https://i.imgur.com/svqV01B.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Heroine Bibi": {
+        "hp": 668.6,
+        "pdef": 3,
+        "mdef": 2.4,
+        "dipl": 1199.1,
+        "image": "https://i.imgur.com/2K8isdR.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Zombibi": {
+        "hp": 1103.9,
+        "pdef": 1.7,
+        "mdef": 0.8,
+        "dipl": 550.3,
+        "image": "https://i.imgur.com/EBlBXcR.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Bibilante": {
+        "hp": 893,
+        "pdef": 0.9,
+        "mdef": 2.8,
+        "dipl": 845.4,
+        "image": "https://i.imgur.com/fek9nBq.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Ladybug Bea": {
+        "hp": 1130.5,
+        "pdef": 2,
+        "mdef": 2,
+        "dipl": 646.5,
+        "image": "https://i.imgur.com/CIlj0iZ.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Mega Beetle Bea": {
+        "hp": 716.4,
+        "pdef": 2.1,
+        "mdef": 2.6,
+        "dipl": 810.2,
+        "image": "https://i.imgur.com/U0YWm7Y.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Sally Nani": {
+        "hp": 699.1,
+        "pdef": 1.6,
+        "mdef": 1.4,
+        "dipl": 1190.1,
+        "image": "https://i.imgur.com/hLqxe4w.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Retro Nani": {
+        "hp": 662.5,
+        "pdef": 1.8,
+        "mdef": 1.7,
+        "dipl": 908.9,
+        "image": "https://i.imgur.com/2weiI5B.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Rockability Mortis": {
+        "hp": 817,
+        "pdef": 2.7,
+        "mdef": 2.1,
+        "dipl": 1031.5,
+        "image": "https://i.imgur.com/kuN0wLO.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Night Witch Mortis": {
+        "hp": 748.4,
+        "pdef": 2.7,
+        "mdef": 2.9,
+        "dipl": 1123.8,
+        "image": "https://i.imgur.com/hSobSSf.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Rogue Mortis": {
+        "hp": 1026.1,
+        "pdef": 1.1,
+        "mdef": 1.4,
+        "dipl": 760.3,
+        "image": "https://i.imgur.com/7WS6FGE.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Street Ninja Tara": {
+        "hp": 1173.7,
+        "pdef": 1.1,
+        "mdef": 2.7,
+        "dipl": 721.4,
+        "image": "https://i.imgur.com/csZnT9b.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Pirate Gene": {
+        "hp": 652.3,
+        "pdef": 1.5,
+        "mdef": 2,
+        "dipl": 791.9,
+        "image": "https://i.imgur.com/pisP6I8.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Evil Gene": {
+        "hp": 1151.8,
+        "pdef": 1.8,
+        "mdef": 1.5,
+        "dipl": 809.5,
+        "image": "https://i.imgur.com/5P3WqEK.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Cony Max": {
+        "hp": 899.2,
+        "pdef": 1.4,
+        "mdef": 2.2,
+        "dipl": 953.4,
+        "image": "https://i.imgur.com/10DrW28.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Street Wear Max": {
+        "hp": 1162.8,
+        "pdef": 2.6,
+        "mdef": 2.3,
+        "dipl": 794.8,
+        "image": "https://i.imgur.com/BXzCc2B.jpeg",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Agent P": {
+        "hp": 1091.9,
+        "pdef": 1.7,
+        "mdef": 1.8,
+        "dipl": 1089.4,
+        "image": "https://i.imgur.com/qLCpfin.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Tropical Sprout": {
+        "hp": 664.2,
+        "pdef": 1.1,
+        "mdef": 2.7,
+        "dipl": 978,
+        "image": "https://i.imgur.com/inysjLD.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Lunar Sprout": {
+        "hp": 824.1,
+        "pdef": 2.7,
+        "mdef": 2,
+        "dipl": 939.4,
+        "image": "https://i.imgur.com/F41pu0z.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Mask Spike": {
+        "hp": 1016.9,
+        "pdef": 2.8,
+        "mdef": 2.4,
+        "dipl": 672.4,
+        "image": "https://i.imgur.com/OmMhsmk.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Sakura Spike": {
+        "hp": 1026.6,
+        "pdef": 2.5,
+        "mdef": 2.2,
+        "dipl": 849.9,
+        "image": "https://i.imgur.com/vycc5kL.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Robo Spike": {
+        "hp": 878.2,
+        "pdef": 2.6,
+        "mdef": 1.3,
+        "dipl": 914.7,
+        "image": "https://i.imgur.com/nB3CzSI.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Dark Lord Spike": {
+        "hp": 1175.8,
+        "pdef": 1.8,
+        "mdef": 1.5,
+        "dipl": 1178.4,
+        "image": "https://i.imgur.com/tXgpEC8.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended White Craw": {
+        "hp": 1161.7,
+        "pdef": 1.6,
+        "mdef": 1.2,
+        "dipl": 593,
+        "image": "https://i.imgur.com/5WaqqW9.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Phoenix Craw": {
+        "hp": 844.1,
+        "pdef": 2,
+        "mdef": 1.9,
+        "dipl": 1128.6,
+        "image": "https://i.imgur.com/Rhxk4dM.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Mecha Craw": {
+        "hp": 952.1,
+        "pdef": 1.8,
+        "mdef": 2.2,
+        "dipl": 898.4,
+        "image": "https://i.imgur.com/mLmT1os.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Shark Leon": {
+        "hp": 644.1,
+        "pdef": 2.8,
+        "mdef": 1.4,
+        "dipl": 1111.8,
+        "image": "https://i.imgur.com/IxsArKI.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Werewolf Leon": {
+        "hp": 998.3,
+        "pdef": 1.3,
+        "mdef": 0.9,
+        "dipl": 836.3,
+        "image": "https://i.imgur.com/Ht0DJeH.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Duck Leon": {
+        "hp": 828.7,
+        "pdef": 1,
+        "mdef": 1.4,
+        "dipl": 591.6,
+        "image": "https://i.imgur.com/C7sxt3O.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Sandy In Pajamas": {
+        "hp": 1144,
+        "pdef": 1.1,
+        "mdef": 1.4,
+        "dipl": 940.8,
+        "image": "https://i.imgur.com/9ShCGJI.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Sandy With El Primo Face Cotton Candy": {
+        "hp": 774.7,
+        "pdef": 1.4,
+        "mdef": 1.1,
+        "dipl": 912.4,
+        "image": "https://i.imgur.com/J383vdO.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Nutcracker Gale": {
+        "hp": 980.1,
+        "pdef": 2.8,
+        "mdef": 1.9,
+        "dipl": 644.8,
+        "image": "https://i.imgur.com/ReJ8Yue.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Merchant Gale": {
+        "hp": 750.6,
+        "pdef": 2.7,
+        "mdef": 1.7,
+        "dipl": 1105.4,
+        "image": "https://i.imgur.com/3ucB1U0.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Mecha Paladin Surge": {
+        "hp": 701.6,
+        "pdef": 2,
+        "mdef": 2.3,
+        "dipl": 840.5,
+        "image": "https://i.imgur.com/I0Bieqw.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Trixie Colette": {
+        "hp": 691.2,
+        "pdef": 2.4,
+        "mdef": 2.5,
+        "dipl": 975.3,
+        "image": "https://i.imgur.com/niFqNG4.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Navigator Colette": {
+        "hp": 1172.3,
+        "pdef": 2.4,
+        "mdef": 2.1,
+        "dipl": 1172,
+        "image": "https://i.imgur.com/KZfeDrU.jpeg",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended King Canny": {
+        "hp": 847.8,
+        "pdef": 2.6,
+        "mdef": 1.3,
+        "dipl": 524.1,
+        "image": "https://i.imgur.com/yTXoyHG.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Smooth Canny": {
+        "hp": 727.6,
+        "pdef": 1.5,
+        "mdef": 2.7,
+        "dipl": 983,
+        "image": "https://i.imgur.com/Q8cv3Is.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Ronin Doggo": {
+        "hp": 1029.6,
+        "pdef": 1.2,
+        "mdef": 2.9,
+        "dipl": 837.6,
+        "image": "https://i.imgur.com/VizMu8H.png",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Superstar Stu": {
+        "hp": 1088,
+        "pdef": 2.6,
+        "mdef": 2.2,
+        "dipl": 1160,
+        "image": "https://imgur.com/a/XBUoAkt",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Bibi": {
+        "hp": 875.1,
+        "pdef": 2.8,
+        "mdef": 1.7,
+        "dipl": 519.7,
+        "image": "https://imgur.com/a/5oy1VlS",
+        "boss": false,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended 1998 [Bot]": {
+        "hp": 2750,
+        "pdef": 200,
+        "mdef": 20,
+        "dipl": 6999,
+        "image": "https://i.imgur.com/Hyn5Byb.gif",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended 4JR": {
+        "hp": 4999,
+        "pdef": 40,
+        "mdef": 40,
+        "dipl": 4999,
+        "image": "https://i.imgur.com/2F1ADuc.png",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Alex before you're banned": {
+        "hp": 2750,
+        "pdef": 1,
+        "mdef": 1,
+        "dipl": 1750,
+        "image": "https://i.imgur.com/gwyarmK.jpg",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Alexandrito": {
+        "hp": 750,
+        "pdef": 1,
+        "mdef": 1,
+        "dipl": 2750,
+        "image": "https://i.imgur.com/6ATSgL7.jpg",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Aqua": {
+        "hp": 1420,
+        "pdef": 1.3,
+        "mdef": 1.4,
+        "dipl": 1500,
+        "image": "https://i.imgur.com/vnE94R8.png",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended BEANBOM": {
+        "hp": 2110,
+        "pdef": 0.5,
+        "mdef": 6,
+        "dipl": 4880,
+        "image": "https://i.imgur.com/GiNVEl2.png",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended BOMBANOS": {
+        "hp": 5080,
+        "pdef": 3,
+        "mdef": 3,
+        "dipl": 5080,
+        "image": "https://i.imgur.com/eBZSQ39.png",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Cam E Leon": {
+        "hp": 1620,
+        "pdef": 1.5,
+        "mdef": 1.7,
+        "dipl": 2300,
+        "image": "https://i.imgur.com/ZNBNj6m.png",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Canny": {
+        "hp": 5600,
+        "pdef": 5,
+        "mdef": 0.6,
+        "dipl": 3360,
+        "image": "https://i.imgur.com/IJqiSk6.png",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Chicken Little Joba": {
+        "hp": 999,
+        "pdef": 0.9,
+        "mdef": 1.9,
+        "dipl": 999,
+        "image": "https://i.imgur.com/nTDgOd8.jpg",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Clone of Zrib": {
+        "hp": 1025,
+        "pdef": 1500,
+        "mdef": 1.2,
+        "dipl": 1,
+        "image": "https://i.imgur.com/vwj8PB4.jpg",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Dilapidated Bom": {
+        "hp": 2110,
+        "pdef": 2,
+        "mdef": 2,
+        "dipl": 2110,
+        "image": "https://i.imgur.com/AP0fgND.png",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended DistractedCat from Cannyland": {
+        "hp": 5950,
+        "pdef": 1.2,
+        "mdef": 1.2,
+        "dipl": 3360,
+        "image": "https://i.imgur.com/dxVZkzp.png",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended DoofusDog from Cannyda": {
+        "hp": 2928,
+        "pdef": 2.4,
+        "mdef": 2.4,
+        "dipl": 3360,
+        "image": "https://i.imgur.com/j89vMyi.png",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended DrakapiLips": {
+        "hp": 2700,
+        "pdef": 0.9,
+        "mdef": 1.2,
+        "dipl": 2650,
+        "image": "https://i.imgur.com/n5iByTI.png",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Evie": {
+        "hp": 3360,
+        "pdef": 0.8,
+        "mdef": 2,
+        "dipl": 6666,
+        "image": "https://i.imgur.com/xIw7bW4.png",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended FishKapi": {
+        "hp": 600,
+        "pdef": 2,
+        "mdef": 3,
+        "dipl": 2000,
+        "image": "https://i.imgur.com/JtyNyNo.png",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended KillerKrew": {
+        "hp": 2750,
+        "pdef": 1.2,
+        "mdef": 1.7,
+        "dipl": 4999,
+        "image": "https://i.imgur.com/OPgpkqf.png",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended KillerKrew on a losing streak": {
+        "hp": 4999,
+        "pdef": 20,
+        "mdef": 20,
+        "dipl": 6999,
+        "image": "https://i.imgur.com/N3vuIgA.png",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended KillerKrew ranting about map maker": {
+        "hp": 1999,
+        "pdef": 10,
+        "mdef": 5,
+        "dipl": 1200,
+        "image": "https://i.imgur.com/Lg0AlSK.png",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Llama Bandit": {
+        "hp": 1600,
+        "pdef": 1.1,
+        "mdef": 1.2,
+        "dipl": 2250,
+        "image": "https://i.imgur.com/92VMlTn.jpg",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended ModsEmergency": {
+        "hp": 10000,
+        "pdef": 250,
+        "mdef": 250,
+        "dipl": 12000,
+        "image": "https://i.imgur.com/PcLAZK9.jpg",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended OkapiBrains": {
+        "hp": 3800,
+        "pdef": 2,
+        "mdef": 2.5,
+        "dipl": 30,
+        "image": "https://i.imgur.com/mzSSSOu.png",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended shazil": {
+        "hp": 800,
+        "pdef": 1,
+        "mdef": 2,
+        "dipl": 1900,
+        "image": "https://i.imgur.com/5ckPGmI.jpg",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Seal Seal after a server raid": {
+        "hp": 200,
+        "pdef": 1,
+        "mdef": 0.9,
+        "dipl": 1500,
+        "image": "https://i.imgur.com/wMXSGn9.png",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Seal with the mighty banhammer": {
+        "hp": 4000,
+        "pdef": 1.2,
+        "mdef": 1.2,
+        "dipl": 3000,
+        "image": "https://i.imgur.com/04eUkfQ.png",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Trikshot": {
+        "hp": 4999,
+        "pdef": 39,
+        "mdef": 39,
+        "dipl": 4999,
+        "image": "https://i.imgur.com/OT6LV8E.jpg",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended TurkapiLips": {
+        "hp": 1200,
+        "pdef": 0.8,
+        "mdef": 0.7,
+        "dipl": 1300,
+        "image": "https://i.imgur.com/fpeeyWq.png",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Zrib's Fury": {
+        "hp": 4750,
+        "pdef": 5,
+        "mdef": 10,
+        "dipl": 3500,
+        "image": "https://i.imgur.com/EKETfBF.gif",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Krew's Mongoose Tail": {
+        "hp": 600,
+        "pdef": 1,
+        "mdef": 1,
+        "dipl": 500,
+        "image": "https://i.imgur.com/A34d98e.png",
+        "boss": true,
+        "miniboss": {},
+        "color": ""
+    }
+}
