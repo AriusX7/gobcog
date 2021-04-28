@@ -108,6 +108,8 @@ def can_use_ability():
                         _("**{}**, ability already in use.").format(ctx.cog.escape(ctx.author.display_name))
                     )
                 cooldown_time = max(240, (1140 - ((c.luck + c.total_int) * 2)))
+                if c.heroclass["name"] == "bless":
+                    cooldown_time *= 3
                 if "cooldown" not in c.heroclass:
                     c.heroclass["cooldown"] = cooldown_time + 1
                 if c.heroclass["cooldown"] > time.time():
