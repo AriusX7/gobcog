@@ -1675,7 +1675,7 @@ class MiscMixin(commands.Cog):
             c = await self.get_character_from_json(user)
             rebirths = c.rebirths * (3 if c.heroclass["name"] == "Cleric" else 1)
             if c.heroclass["name"] == "Cleric":
-                crit_mod = max(c.dex, c.luck) + (c.total_int // 20)
+                crit_mod = c.dex + (c.total_int // 20)
                 mod = 0
                 max_roll = 50 if c.rebirths >= 15 else 20
                 if crit_mod != 0:
