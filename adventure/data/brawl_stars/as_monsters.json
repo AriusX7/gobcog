@@ -919,7 +919,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended White Craw": {
+    "Ascended White Crow": {
         "hp": 1161.7,
         "pdef": 1.6,
         "mdef": 1.2,
@@ -929,7 +929,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Phoenix Craw": {
+    "Ascended Phoenix Crow": {
         "hp": 844.1,
         "pdef": 2,
         "mdef": 1.9,
@@ -939,7 +939,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Mecha Craw": {
+    "Ascended Mecha Crow": {
         "hp": 952.1,
         "pdef": 1.8,
         "mdef": 2.2,
@@ -1396,6 +1396,16 @@
         "dipl": 500,
         "image": "https://i.imgur.com/A34d98e.png",
         "boss": true,
+        "miniboss": {},
+        "color": ""
+    },
+    "Ascended Smug Craw": {
+        "hp": 970,
+        "pdef": 1,
+        "mdef": 1.5,
+        "dipl": 999,
+        "image": "https://i.imgur.com/SwDWQrS.png",
+        "boss": false,
         "miniboss": {},
         "color": ""
     }
