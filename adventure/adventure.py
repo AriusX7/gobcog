@@ -4048,6 +4048,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
     @commands.command(name="balance", aliases=["bal", "credits"])
     async def _balance(self, ctx: commands.Context, *, member: Member = None):
+        """Show your or a specific member's balance."""
+
         member = member or ctx.author
         bal = await bank.get_balance(member)
 
