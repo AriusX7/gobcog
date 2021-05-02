@@ -76,7 +76,8 @@ from .utils import (
     AdventureCheckFailure,
     AdventureOnCooldown,
     start_adding_reactions,
-    MENU_CONTROLS
+    MENU_CONTROLS,
+    is_dm,
 )
 
 _ = Translator("Adventure", __file__)
@@ -354,6 +355,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         if not await self.allow_in_dm(ctx):
             raise AdventureCheckFailure(_("This command is not available in DM's on this bot."))
         if not ctx.invoked_subcommand:
+            if ctx.guild:
+                raise AdventureCheckFailure(_("This command is only available in DMs."))
             c = await self.get_character_from_json(ctx.author)
             if rarity:
                 rarity = rarity.lower()
@@ -496,6 +499,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         assert isinstance(slot, str) or slot is None
 
         if not ctx.invoked_subcommand:
+            if ctx.guild:
+                raise AdventureCheckFailure(_("This command is only available in DMs."))
             c = await self.get_character_from_json(ctx.author)
             if rarity:
                 rarity = rarity.lower()
@@ -538,6 +543,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             return await menu(ctx, msgs, controls)
 
     @_backpack.command(name="equip")
+    @is_dm()
     async def backpack_equip(self, ctx: Context, *, equip_item: EquipableItemConverter):
         """Equip an item from your backpack."""
         assert isinstance(equip_item, Item)
@@ -630,6 +636,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 )
 
     @_backpack.command(name="sellall", usage ='--name --level --degrade --rarity --slot')
+    @is_dm()
     async def backpack_sellall(
         self, ctx: Context,
         *, args: ArgumentConverter(
@@ -2109,6 +2116,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 )
 
     @commands.command()
+    @is_dm()
     async def equip(self, ctx: Context, *, item: EquipableItemConverter):
         """This equips an item from your backpack."""
         if self.in_adventure(ctx):
@@ -2665,6 +2673,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
     @commands.command(cooldown_after_parsing=True)
     @commands.bot_has_permissions(add_reactions=True)
+    @is_dm()
     @commands.cooldown(rate=1, per=4, type=commands.BucketType.user)
     async def loot(self, ctx: Context, box_type: str = None, number: DynamicInt = 1):
         """This opens one of your precious treasure chests.
@@ -3576,6 +3585,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
     @commands.command()
     @commands.bot_has_permissions(add_reactions=True)
+    @is_dm()
     async def stats(self, ctx: Context, *, user: Member = None):
         """This draws up a character sheet of you or an optionally specified member."""
 
