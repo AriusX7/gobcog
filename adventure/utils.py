@@ -127,6 +127,15 @@ def can_use_ability():
     return check(predicate)
 
 
+def is_dm():
+    async def predicate(ctx):
+        if ctx.guild:
+            raise AdventureCheckFailure(_("This command is only available in DMs."))
+        return True
+
+    return check(predicate)
+
+
 class DynamicInt(Converter):
     async def convert(self, ctx, argument):
         if argument == "all":
