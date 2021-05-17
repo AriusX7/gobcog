@@ -2635,8 +2635,10 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         if c.skill["pool"] < 0:
                             c.skill["pool"] = 0
                         c.heroclass = classes[clz]
-                        if c.heroclass["name"] in ["Wizard", "Cleric"]:
+                        if c.heroclass["name"] == "Wizard":
                             c.heroclass["cooldown"] = max(240, (1140 - ((c.luck + c.total_int) * 2))) + time.time()
+                        elif c.heroclass["name"] == "Cleric":
+                            c.heroclass["cooldown"] = 3 * max(240, (1140 - ((c.luck + c.total_int) * 2))) + time.time()
                         elif c.heroclass["name"] == "Ranger":
                             c.heroclass["cooldown"] = max(1800, (7200 - (c.luck * 2 + c.total_int * 2))) + time.time()
                             c.heroclass["catch_cooldown"] = (
@@ -3835,7 +3837,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         elif c.heroclass["name"] == "Wizard" and user in session.magic:
                             cooldown_time = max(240, (1140 - ((c.luck + c.total_int) * 2)))
                         elif c.heroclass["name"] == "Cleric" and user in session.pray:
-                            cooldown_time = max(240, (1140 - ((c.luck + c.total_int) * 2)))
+                            cooldown_time = 3 * max(240, (1140 - ((c.luck + c.total_int) * 2)))
 
                         if cooldown_time:
                             c.heroclass["ability"] = False
