@@ -3923,7 +3923,12 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         """Get some free gold."""
         author = ctx.author
         adventure_credits_name = await bank.get_currency_name(ctx.guild)
-        amount = 500  # Make Customizable?
+
+        try:
+            amount = 250 * await self.config.user(ctx.author).get_raw("rebirths")
+        except KeyError:
+            amount = 500 # default
+
         try:
             await bank.deposit_credits(author, amount)
         except BalanceTooHigh as exc:
