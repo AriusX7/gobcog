@@ -2066,15 +2066,5 @@
         "boss": false,
         "miniboss": {},
         "color": ""
-    },
-    "Ascended MusicMeister Hosting an FNF": {
-        "hp": 1000,
-        "pdef": 0.9,
-        "mdef": 1.1,
-        "dipl": 2800,
-        "image": "https://imgur.com/a/qWGNOby",
-        "boss": true,
-        "miniboss": {},
-        "color": ""
     }
 }
