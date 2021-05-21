@@ -3927,7 +3927,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         adventure_credits_name = await bank.get_currency_name(ctx.guild)
 
         try:
-            amount = 250 * await self.config.user(ctx.author).get_raw("rebirths")
+            amount = 250 * max(await self.config.user(ctx.author).get_raw("rebirths"), 2)
         except KeyError:
             amount = 500 # default
 
