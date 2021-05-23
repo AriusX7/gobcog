@@ -1135,7 +1135,7 @@ class MiscMixin(commands.Cog):
                             )
                         )
                         temp_repair.append(user)
-                result_msg += _("\n{loss_list} to repay a passing cleric that unfroze the group.").format(
+                result_msg += _("\n{loss_list} to repay a passing samaritan that unfroze the group.").format(
                     loss_list=humanize_list(loss_list)
                 )
             return await smart_embed(ctx, result_msg)
@@ -1179,7 +1179,7 @@ class MiscMixin(commands.Cog):
                 "The {miniboss}'s "
                 "{special} was countered, but he still managed to kill you."
                 "\n{loss_l} to repay a passing "
-                "cleric that resurrected the group."
+                "samaritan that resurrected the group."
             ).format(miniboss=miniboss, special=special, loss_l=humanize_list(loss_list))
         amount = 1 * session.monster_stats
         amount *= (hp + dipl) if slain and persuaded else hp if slain else dipl
@@ -1607,14 +1607,14 @@ class MiscMixin(commands.Cog):
                 elif roll > 25 and pet_crit >= 95:
                     roll = random.randint(roll, max_roll)
             int_value = c.total_int
-            rebirths = c.rebirths * 3 if c.heroclass["name"] == "Wizard" else 0
+            rebirths = c.rebirths * 3 if c.heroclass["name"] == "Autoaimer" else 0
             if roll == 1:
                 msg += _("{}**{}** almost set themselves on fire.\n").format(
                     failed_emoji, self.escape(user.display_name)
                 )
                 fumblelist.add(user)
                 fumble_count += 1
-                if c.heroclass["name"] == "Wizard" and c.heroclass["ability"]:
+                if c.heroclass["name"] == "Autoaimer" and c.heroclass["ability"]:
                     bonus_roll = random.randint(5, 15)
                     bonus_multi = random.choice([0.2, 0.3, 0.4, 0.5])
                     bonus = max(bonus_roll, int((roll + int_value + rebirths) * bonus_multi))
@@ -1625,7 +1625,7 @@ class MiscMixin(commands.Cog):
                         f"{self.emojis.magic_crit}{humanize_number(bonus)} + "
                         f"{self.emojis.magic}{str(humanize_number(int_value))}\n"
                     )
-            elif roll == max_roll or (c.heroclass["name"] == "Wizard"):
+            elif roll == max_roll or (c.heroclass["name"] == "Autoaimer"):
                 crit_str = ""
                 crit_bonus = 0
                 base_bonus = random.randint(5, 10) + rebirths
@@ -1673,8 +1673,8 @@ class MiscMixin(commands.Cog):
         failed_emoji = self.emojis.fumble
         for user in session.pray:
             c = await self.get_character_from_json(user)
-            rebirths = c.rebirths * (3 if c.heroclass["name"] == "Cleric" else 1)
-            if c.heroclass["name"] == "Cleric":
+            rebirths = c.rebirths * (3 if c.heroclass["name"] == "Samaritan" else 1)
+            if c.heroclass["name"] == "Samaritan":
                 crit_mod = c.dex + (c.total_int // 20)
                 mod = 0
                 max_roll = 50 if c.rebirths >= 15 else 20
@@ -1832,9 +1832,9 @@ class MiscMixin(commands.Cog):
                 mod = 45
             roll = max(random.randint((1 + mod), max_roll), 1)
             dipl_value = c.total_cha
-            rebirths = c.rebirths * 3 if c.heroclass["name"] == "Bard" else 0
+            rebirths = c.rebirths * 3 if c.heroclass["name"] == "Tilter" else 0
             if roll == 1:
-                if c.heroclass["name"] == "Bard" and c.heroclass["ability"]:
+                if c.heroclass["name"] == "Tilter" and c.heroclass["ability"]:
                     bonus = random.randint(5, 15)
                     diplomacy += max(roll - bonus + dipl_value + rebirths, 0)
                     report += (
@@ -1847,7 +1847,7 @@ class MiscMixin(commands.Cog):
                     )
                     fumblelist.add(user)
                     fumble_count += 1
-            elif roll == max_roll or c.heroclass["name"] == "Bard":
+            elif roll == max_roll or c.heroclass["name"] == "Tilter":
                 crit_str = ""
                 crit_bonus = 0
                 base_bonus = random.randint(5, 10) + rebirths
