@@ -9,13 +9,13 @@ If you have something you would like to request for this cog, PLEASE OPEN AN ISS
 Start an adventure do `[p]adventure` and anyone can choose 🗡 to attack the monster, 🗨 to talk with the monster, 🛐 to pray to the god Herbert (Customizable per server for admins or globally for bot owner) for help, or 🏃‍♀️ to run away from the monster. The more people helping the easier it is to defeat the monster and acquire its loot.
 
 To start an adventure type `[p]adventure` and everyone can join in.
-Classes can be chosen at level 10 and you can choose between Tinkerer, Berserker, Cleric, Ranger and Bard using `[p]heroclass`.
+Classes can be chosen at level 10 and you can choose between Tinkerer, Berserker, Autoaimer, Tilter and Samaritan using `[p]heroclass`.
 
 Tinkerers can forge two different items into a device bound to their very soul. Use the forge command.
-Berserkers have the option to rage and add big bonuses to attacks, but fumbles hurt. Use the rage command when attacking in an adventure.
-Clerics can bless the entire group when praying. Use the bless command when fighting in an adventure.
+Berserkers have the option to use their super and add big bonuses to attacks, but fumbles hurt. Use the super command when attacking in an adventure.
+Clerics can report the opponent group when praying. Use the report command when fighting in an adventure.
 Rangers can gain a special pet, which can find items and give reward bonuses. Use the pet command to see pet options.
-Bards can perform to aid their comrades in diplomacy. Use the music command when being diplomatic in an adventure.
+Bards can perform to aid their comrades in diplomacy. Use the emote command when being diplomatic in an adventure.
 
 Occasionally you will earn loot chests from the monsters use `[p]loot <rarity>` to open them and become stronger.
 

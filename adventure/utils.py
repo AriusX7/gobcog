@@ -90,10 +90,10 @@ def has_separated_economy():
 def can_use_ability():
     async def predicate(ctx):
         heroclass = {
-            'bless': 'Cleric',
-            'rage': 'Berserker',
-            'focus': 'Wizard',
-            'music': 'Bard'
+            'report': 'Samaritan',
+            'super': 'Berserker',
+            'gadget': 'Autoaimer',
+            'emote': 'Tilter'
         }
 
         async with ctx.cog.get_lock(ctx.author):
@@ -108,7 +108,7 @@ def can_use_ability():
                         _("**{}**, ability already in use.").format(ctx.cog.escape(ctx.author.display_name))
                     )
                 cooldown_time = max(240, (1140 - ((c.luck + c.total_int) * 2)))
-                if ctx.command.name == "bless":
+                if ctx.command.name == "report":
                     cooldown_time *= 3
                 if "cooldown" not in c.heroclass:
                     c.heroclass["cooldown"] = cooldown_time + 1

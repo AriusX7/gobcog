@@ -115,11 +115,11 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         self.emojis.no = "\N{NEGATIVE SQUARED CROSS MARK}"
         self.emojis.sell = "\N{MONEY BAG}"
         self.emojis.skills = SimpleNamespace()
-        self.emojis.skills.bless = "\N{SCROLL}"
+        self.emojis.skills.report = "\N{SCROLL}"
         # self.emojis.skills.psychic = "\N{SIX POINTED STAR WITH MIDDLE DOT}"
         self.emojis.skills.berserker = self.emojis.berserk
-        self.emojis.skills.wizzard = self.emojis.magic_crit
-        self.emojis.skills.bard = "\N{EIGHTH NOTE}\N{BEAMED EIGHTH NOTES}\N{BEAMED SIXTEENTH NOTES}"
+        self.emojis.skills.autoaimer = self.emojis.magic_crit
+        self.emojis.skills.tilter = "\N{EIGHTH NOTE}\N{BEAMED EIGHTH NOTES}\N{BEAMED SIXTEENTH NOTES}"
         self.emojis.hp = "\N{HEAVY BLACK HEART}\N{VARIATION SELECTOR-16}"
         self.emojis.dipl = self.emojis.talk
 
@@ -2426,13 +2426,13 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             raise AdventureCheckFailure(_("The monster ahead growls menacingly, and will not let you leave."))
 
         classes = {
-            "Wizard": {
-                "name": _("Wizard"),
+            "Autoaimer": {
+                "name": _("Autoaimer"),
                 "ability": False,
                 "desc": _(
-                    "Wizards have the option to focus and add large bonuses to their magic, "
-                    "but their focus can sometimes go astray...\n"
-                    "Use the focus command when attacking in an adventure."
+                    "Autoaimers have the option to use their gadget and add large bonuses to their magic, "
+                    "but their gadget can sometimes go astray...\n"
+                    "Use the gadget command when attacking in an adventure."
                 ),
                 "cooldown": time.time(),
             },
@@ -2449,17 +2449,17 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 "name": _("Berserker"),
                 "ability": False,
                 "desc": _(
-                    "Berserkers have the option to rage and add big bonuses to attacks, "
-                    "but fumbles hurt.\nUse the rage command when attacking in an adventure."
+                    "Berserkers have the option to use their super and add big bonuses to attacks, "
+                    "but fumbles hurt.\nUse the super command when attacking in an adventure."
                 ),
                 "cooldown": time.time(),
             },
-            "Cleric": {
-                "name": _("Cleric"),
+            "Samaritan": {
+                "name": _("Samaritan"),
                 "ability": False,
                 "desc": _(
-                    "Clerics can bless the entire group when praying.\n"
-                    "Use the bless command when fighting in an adventure."
+                    "Clerics can report the opponent group when playing.\n"
+                    "Use the report command when fighting in an adventure."
                 ),
                 "cooldown": time.time(),
             },
@@ -2474,12 +2474,12 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 "cooldown": time.time(),
                 "catch_cooldown": time.time(),
             },
-            "Bard": {
-                "name": _("Bard"),
+            "Tilter": {
+                "name": _("Tilter"),
                 "ability": False,
                 "desc": _(
                     "Bards can perform to aid their comrades in diplomacy.\n"
-                    "Use the music command when being diplomatic in an adventure."
+                    "Use the emote command when being diplomatic in an adventure."
                 ),
                 "cooldown": time.time(),
             },
@@ -2492,7 +2492,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 _(
                     "So you feel like taking on a class, **{author}**?\n"
                     "Available classes are: Tinkerer, Berserker, "
-                    "Wizard, Cleric, Ranger and Bard.\n"
+                    "Autoaimer, Samaritan, Ranger and Tilter.\n"
                     "Use `{prefix}heroclass name-of-class` to choose one."
                 ).format(author=self.escape(ctx.author.display_name), prefix=ctx.prefix),
             )
@@ -2635,9 +2635,9 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         if c.skill["pool"] < 0:
                             c.skill["pool"] = 0
                         c.heroclass = classes[clz]
-                        if c.heroclass["name"] == "Wizard":
+                        if c.heroclass["name"] == "Autoaimer":
                             c.heroclass["cooldown"] = max(240, (1140 - ((c.luck + c.total_int) * 2))) + time.time()
-                        elif c.heroclass["name"] == "Cleric":
+                        elif c.heroclass["name"] == "Samaritan":
                             c.heroclass["cooldown"] = 3 * max(240, (1140 - ((c.luck + c.total_int) * 2))) + time.time()
                         elif c.heroclass["name"] == "Ranger":
                             c.heroclass["cooldown"] = max(1800, (7200 - (c.luck * 2 + c.total_int * 2))) + time.time()
@@ -2646,7 +2646,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                             )
                         elif c.heroclass["name"] == "Berserker":
                             c.heroclass["cooldown"] = max(240, (1140 - ((c.luck + c.total_att) * 2))) + time.time()
-                        elif c.heroclass["name"] == "Bard":
+                        elif c.heroclass["name"] == "Tilter":
                             c.heroclass["cooldown"] = max(240, (1140 - ((c.luck + c.total_cha) * 2))) + time.time()
                         elif c.heroclass["name"] == "Tinkerer":
                             c.heroclass["cooldown"] = max(900, (3600 - (c.luck + c.total_int) * 2)) + time.time()
@@ -3272,10 +3272,10 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
     @can_use_ability()
     @commands.command()
-    async def bless(self, ctx: Context):
-        """[Cleric Class Only]
+    async def report(self, ctx: Context):
+        """[Samaritan Class Only]
 
-        This allows a praying Cleric to add substantial bonuses for heroes fighting the battle.
+        This allows a praying Samaritan to add substantial bonuses for heroes fighting the battle.
         """
         async with self.get_lock(ctx.author):
             c = await self.get_character_from_json(ctx.author)
@@ -3284,15 +3284,15 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             await self.config.user(ctx.author).set(await c.to_json(self.config))
             await smart_embed(
                 ctx,
-                _("{bless} **{c}** is starting an inspiring sermon. {bless}").format(
-                    c=self.escape(ctx.author.display_name), bless=self.emojis.skills.bless
+                _("{report} **{c}** is sorting evidence out to report the teamers... {report}").format(
+                    c=self.escape(ctx.author.display_name), report=self.emojis.skills.report
                 ),
                 success=True
             )
 
     @can_use_ability()
-    @commands.command()
-    async def rage(self, ctx: Context):
+    @commands.command(name='super')
+    async def super_(self, ctx: Context):
         """[Berserker Class Only]
 
         This allows a Berserker to add substantial attack bonuses for one battle.
@@ -3304,7 +3304,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             await self.config.user(ctx.author).set(await c.to_json(self.config))
             await smart_embed(
                 ctx,
-                _("{skill} **{c}** is starting to froth at the mouth... {skill}").format(
+                _("{skill} {c} has a rotating yellow circle beneath their feet...  {skill}").format(
                     c=self.escape(ctx.author.display_name), skill=self.emojis.skills.berserker,
                 ),
                 success=True
@@ -3312,10 +3312,10 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
     @can_use_ability()
     @commands.command()
-    async def focus(self, ctx: Context):
-        """[Wizard Class Only]
+    async def gadget(self, ctx: Context):
+        """[Autoaimer Class Only]
 
-        This allows a Wizard to add substantial magic bonuses for one battle.
+        This allows a Autoaimer to add substantial magic bonuses for one battle.
         """
         async with self.get_lock(ctx.author):
             c = await self.get_character_from_json(ctx.author)
@@ -3324,18 +3324,18 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             await self.config.user(ctx.author).set(await c.to_json(self.config))
             await smart_embed(
                 ctx,
-                _("{skill} **{c}** is focusing all of their energy... {skill}").format(
-                    c=self.escape(ctx.author.display_name), skill=self.emojis.skills.wizzard,
+                _("{skill} **{c}** is reaching out for their green button... {skill}").format(
+                    c=self.escape(ctx.author.display_name), skill=self.emojis.skills.autoaimer,
                 ),
                 success=True
             )
 
     @can_use_ability()
     @commands.command()
-    async def music(self, ctx: Context):
-        """[Bard Class Only]
+    async def emote(self, ctx: Context):
+        """[Tilter Class Only]
 
-        This allows a Bard to add substantial diplomacy bonuses for one battle.
+        This allows a Tilter to add substantial diplomacy bonuses for one battle.
         """
         async with self.get_lock(ctx.author):
             c = await self.get_character_from_json(ctx.author)
@@ -3344,8 +3344,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             await self.config.user(ctx.author).set(await c.to_json(self.config))
             await smart_embed(
                 ctx,
-                _("{skill} **{c}** is whipping up a performance... {skill}").format(
-                    c=self.escape(ctx.author.display_name), skill=self.emojis.skills.bard
+                _("{skill} **{c}** is ready with a barrage of emotes... {skill}").format(
+                    c=self.escape(ctx.author.display_name), skill=self.emojis.skills.tilter
                 ),
                 success=True
             )
@@ -3832,11 +3832,11 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         session = self._sessions[ctx.channel.id]
                         if c.heroclass["name"] == "Berserker" and user in session.fight:
                             cooldown_time = max(240, (1140 - ((c.luck + c.total_att) * 2)))
-                        elif c.heroclass["name"] == "Bard" and user in session.talk:
+                        elif c.heroclass["name"] == "Tilter" and user in session.talk:
                             cooldown_time = max(240, (1140 - ((c.luck + c.total_cha) * 2)))
-                        elif c.heroclass["name"] == "Wizard" and user in session.magic:
+                        elif c.heroclass["name"] == "Autoaimer" and user in session.magic:
                             cooldown_time = max(240, (1140 - ((c.luck + c.total_int) * 2)))
-                        elif c.heroclass["name"] == "Cleric" and user in session.pray:
+                        elif c.heroclass["name"] == "Samaritan" and user in session.pray:
                             cooldown_time = 3 * max(240, (1140 - ((c.luck + c.total_int) * 2)))
 
                         if cooldown_time:
