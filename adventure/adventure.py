@@ -3444,9 +3444,9 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     ),
                 )
             else:
-                att = ["attack", "att", "atk"]
-                cha = ["diplomacy", "charisma", "cha", "dipl"]
-                intel = ["intelligence", "intellect", "int", "magic"]
+                att = ["attack"]
+                cha = ["diplomacy", "charisma"]
+                intel = ["intelligence", "magic"]
                 if spend not in att + cha + intel:
                     raise AdventureCheckFailure(
                         _("Don't try to fool me! There is no such thing as {}.").format(spend)
