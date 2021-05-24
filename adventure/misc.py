@@ -656,11 +656,11 @@ class MiscMixin(commands.Cog):
             attr=session.fmt_attribute,
             chall=session.challenge,
             reactions="**"
-            + _("Fight")
+            + _("Rage")
             + "** - **"
-            + _("Spell")
+            + _("Autoaim")
             + "** - **"
-            + _("Talk")
+            + _("Rant")
             + "** - **"
             + _("Pray")
             + "**",
@@ -674,11 +674,11 @@ class MiscMixin(commands.Cog):
             attr=session.fmt_attribute,
             chall=session.challenge,
             reactions="**"
-            + _("Fight")
+            + _("Rage")
             + "** - **"
-            + _("Spell")
+            + _("Autoaim")
             + "** - **"
-            + _("Talk")
+            + _("Rant")
             + "** - **"
             + _("Pray")
             + "**",
@@ -695,11 +695,11 @@ class MiscMixin(commands.Cog):
             threat=random.choice(self.THREATEE),
             duration=3 if session.transcended else 2,
             reactions="**"
-            + _("Fight")
+            + _("Rage")
             + "** - **"
-            + _("Spell")
+            + _("Autoaim")
             + "** - **"
-            + _("Talk")
+            + _("Rant")
             + "** - **"
             + _("Pray")
             + "**",
@@ -799,7 +799,7 @@ class MiscMixin(commands.Cog):
         action = {v: k for k, v in self._adventure_controls.items()}[str(reaction.emoji)]
         session = self._sessions[channel.id]
         has_fund = await has_funds(user, 250)
-        for x in ["fight", "magic", "talk", "pray", "run"]:
+        for x in ["rage", "autoaim", "rant", "pray", "run"]:
             if not has_fund or user in getattr(session, x, []):
                 with contextlib.suppress(discord.HTTPException):
                     symbol = self._adventure_controls[x]
@@ -955,7 +955,7 @@ class MiscMixin(commands.Cog):
                     if not user.bot:
                         # only allow user to do one action, so remove from all
                         # others if found
-                        for x in ["fight", "magic", "talk", "pray", "run"]:
+                        for x in ["rage", "autoaim", "rant", "pray", "run"]:
                             if user in getattr(session, x, []):
                                 getattr(session, x).remove(user)
 
@@ -1444,9 +1444,9 @@ class MiscMixin(commands.Cog):
         session.participants = session.fight | session.talk | session.pray | session.run | session.magic | fumblelist
 
         participants = {
-            "fight": session.fight,
-            "spell": session.magic,
-            "talk": session.talk,
+            "rage": session.fight,
+            "autoaim": session.magic,
+            "rant": session.talk,
             "pray": session.pray,
             "run": session.run,
             "fumbles": fumblelist,
@@ -1551,7 +1551,7 @@ class MiscMixin(commands.Cog):
                         f"**{self.escape(user.display_name)}**: "
                         f"{self.emojis.dice}({roll}) + "
                         f"{self.emojis.berserk}{humanize_number(bonus)} + "
-                        f"{self.emojis.attack}{str(humanize_number(att_value))}\n"
+                        f"{self.emojis.rage}{str(humanize_number(att_value))}\n"
                     )
                 else:
                     msg += _("**{}** fumbled the attack.\n").format(self.escape(user.display_name))
@@ -1575,14 +1575,14 @@ class MiscMixin(commands.Cog):
                     f"**{self.escape(user.display_name)}**: "
                     f"{self.emojis.dice}({roll}) + "
                     f"{self.emojis.berserk}{bonus} + "
-                    f"{self.emojis.attack}{str(humanize_number(att_value))}\n"
+                    f"{self.emojis.rage}{str(humanize_number(att_value))}\n"
                 )
             else:
                 attack += max(int((roll + att_value) / pdef) + rebirths, 0)
                 report += (
                     f"**{self.escape(user.display_name)}**: "
                     f"{self.emojis.dice}({roll}) + "
-                    f"{self.emojis.attack}{str(humanize_number(att_value))}\n"
+                    f"{self.emojis.rage}{str(humanize_number(att_value))}\n"
                 )
         for user in session.magic:
             c = await self.get_character_from_json(user)
@@ -1623,7 +1623,7 @@ class MiscMixin(commands.Cog):
                         f"**{self.escape(user.display_name)}**: "
                         f"{self.emojis.dice}({roll}) + "
                         f"{self.emojis.magic_crit}{humanize_number(bonus)} + "
-                        f"{self.emojis.magic}{str(humanize_number(int_value))}\n"
+                        f"{self.emojis.autoaim}{str(humanize_number(int_value))}\n"
                     )
             elif roll == max_roll or (c.heroclass["name"] == "Autoaimer"):
                 crit_str = ""
@@ -1644,14 +1644,14 @@ class MiscMixin(commands.Cog):
                     f"**{self.escape(user.display_name)}**: "
                     f"{self.emojis.dice}({roll}) + "
                     f"{bonus} + "
-                    f"{self.emojis.magic}{humanize_number(int_value)}\n"
+                    f"{self.emojis.autoaim}{humanize_number(int_value)}\n"
                 )
             else:
                 magic += max(int((roll + int_value) / mdef) + c.rebirths // 5, 0)
                 report += (
                     f"**{self.escape(user.display_name)}**: "
                     f"{self.emojis.dice}({roll}) + "
-                    f"{self.emojis.magic}{humanize_number(int_value)}\n"
+                    f"{self.emojis.autoaim}{humanize_number(int_value)}\n"
                 )
         if fumble_count == len(attack_list):
             report += _("No one!")
@@ -1711,9 +1711,9 @@ class MiscMixin(commands.Cog):
                         user=self.escape(user.display_name),
                         god=god,
                         failed_emoji=failed_emoji,
-                        attack=self.emojis.attack,
-                        talk=self.emojis.talk,
-                        magic=self.emojis.magic,
+                        attack=self.emojis.rage,
+                        talk=self.emojis.rant,
+                        magic=self.emojis.autoaim,
                         len_f_list=humanize_number(pray_att_bonus),
                         len_t_list=humanize_number(pray_diplo_bonus),
                         len_m_list=humanize_number(pray_magic_bonus),
@@ -1755,9 +1755,9 @@ class MiscMixin(commands.Cog):
                     msg += roll_msg.format(
                         user=self.escape(user.display_name),
                         god=god,
-                        attack=self.emojis.attack,
-                        talk=self.emojis.talk,
-                        magic=self.emojis.magic,
+                        attack=self.emojis.rage,
+                        talk=self.emojis.rant,
+                        magic=self.emojis.autoaim,
                         len_f_list=humanize_number(pray_att_bonus),
                         len_t_list=humanize_number(pray_diplo_bonus),
                         len_m_list=humanize_number(pray_magic_bonus),
@@ -1791,9 +1791,9 @@ class MiscMixin(commands.Cog):
                     ).format(
                         user=self.escape(user.display_name),
                         god=god,
-                        attack=self.emojis.attack,
-                        talk=self.emojis.talk,
-                        magic=self.emojis.magic,
+                        attack=self.emojis.rage,
+                        talk=self.emojis.rant,
+                        magic=self.emojis.autoaim,
                         len_f_list=humanize_number(attack_buff),
                         len_t_list=humanize_number(talk_buff),
                         len_m_list=humanize_number(magic_buff),
@@ -1866,14 +1866,14 @@ class MiscMixin(commands.Cog):
                     f"**{self.escape(user.display_name)}** "
                     f"{self.emojis.dice}({roll}) + "
                     f"{bonus} + "
-                    f"{self.emojis.talk}{humanize_number(dipl_value)}\n"
+                    f"{self.emojis.rant}{humanize_number(dipl_value)}\n"
                 )
             else:
                 diplomacy += max(roll + dipl_value + c.rebirths // 5, 0)
                 report += (
                     f"**{self.escape(user.display_name)}** "
                     f"{self.emojis.dice}({roll}) + "
-                    f"{self.emojis.talk}{humanize_number(dipl_value)}\n"
+                    f"{self.emojis.rant}{humanize_number(dipl_value)}\n"
                 )
         if fumble_count == len(session.talk):
             report += _("No one!")

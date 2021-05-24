@@ -1182,9 +1182,9 @@ class Character(Item):
             adventures = {
                 "wins": 0,
                 "loses": 0,
-                "fight": 0,
-                "spell": 0,
-                "talk": 0,
+                "rage": 0,
+                "autoaim": 0,
+                "rant": 0,
                 "pray": 0,
                 "run": 0,
                 "fumbles": 0,
