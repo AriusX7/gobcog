@@ -1430,7 +1430,7 @@ class MiscMixin(commands.Cog):
                             temp_repair.append(user)
                 repair_text = "" if not loss_list else _("{} to repair their gear.").format(humanize_list(loss_list))
                 options = [
-                    _("No amount of diplomacy or valiant fighting could save you.\n{}").format(repair_text),
+                    _("No amount of ranting or valiant raging could save you.\n{}").format(repair_text),
                     _("This challenge was too much for the group.\n{}").format(repair_text),
                     _("You tried your best, but couldn't succeed.\n{}").format(repair_text),
                 ]
