@@ -3831,11 +3831,11 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
                         cooldown_time = 0
                         session = self._sessions[ctx.channel.id]
-                        if c.heroclass["name"] == "Berserker" and user in session.fight:
+                        if c.heroclass["name"] == "Berserker" and user in session.rage:
                             cooldown_time = max(240, (1140 - ((c.luck + c.total_att) * 2)))
-                        elif c.heroclass["name"] == "Tilter" and user in session.talk:
+                        elif c.heroclass["name"] == "Tilter" and user in session.rant:
                             cooldown_time = max(240, (1140 - ((c.luck + c.total_cha) * 2)))
-                        elif c.heroclass["name"] == "Autoaimer" and user in session.magic:
+                        elif c.heroclass["name"] == "Autoaimer" and user in session.autoaim:
                             cooldown_time = max(240, (1140 - ((c.luck + c.total_int) * 2)))
                         elif c.heroclass["name"] == "Samaritan" and user in session.pray:
                             cooldown_time = 3 * max(240, (1140 - ((c.luck + c.total_int) * 2)))

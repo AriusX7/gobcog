@@ -812,9 +812,9 @@ class MiscMixin(commands.Cog):
                     all_users = []
                     for (channel_id, channel_session) in self._sessions.items():
                         channel_users_in_game = (
-                            channel_session.fight
-                            | channel_session.magic
-                            | channel_session.talk
+                            channel_session.rage
+                            | channel_session.autoaim
+                            | channel_session.rant
                             | channel_session.pray
                             | channel_session.run
                         )
@@ -965,7 +965,7 @@ class MiscMixin(commands.Cog):
         with contextlib.suppress(discord.HTTPException):
             await message.clear_reactions()
 
-        people = len(session.fight | session.magic | session.talk | session.pray | session.run)
+        people = len(session.rage | session.autoaim | session.rant | session.pray | session.run)
 
         challenge = session.challenge
 
@@ -1020,11 +1020,11 @@ class MiscMixin(commands.Cog):
         talk_name_list = []
         pray_name_list = []
         repair_list = []
-        for user in session.fight:
+        for user in session.rage:
             fight_name_list.append(f"**{self.escape(user.display_name)}**")
-        for user in session.magic:
+        for user in session.autoaim:
             wizard_name_list.append(f"**{self.escape(user.display_name)}**")
-        for user in session.talk:
+        for user in session.rant:
             talk_name_list.append(f"**{self.escape(user.display_name)}**")
         for user in session.pray:
             pray_name_list.append(f"**{self.escape(user.display_name)}**")
@@ -1095,7 +1095,7 @@ class MiscMixin(commands.Cog):
             if treasure == [0, 0, 0, 0, 0, 0]:
                 treasure = False
         if session.miniboss and failed:
-            session.participants = session.fight | session.talk | session.pray | session.magic | fumblelist
+            session.participants = session.rage | session.rant | session.pray | session.autoaim | fumblelist
             currency_name = await bank.get_currency_name(ctx.guild,)
             for user in session.participants:
                 c = await self.get_character_from_json(user)
@@ -1141,7 +1141,7 @@ class MiscMixin(commands.Cog):
             return await smart_embed(ctx, result_msg)
         if session.miniboss and not slain and not persuaded:
             lost = True
-            session.participants = session.fight | session.talk | session.pray | session.magic | fumblelist
+            session.participants = session.rage | session.rant | session.pray | session.autoaim | fumblelist
             currency_name = await bank.get_currency_name(ctx.guild,)
             for user in session.participants:
                 c = await self.get_character_from_json(user)
@@ -1186,13 +1186,13 @@ class MiscMixin(commands.Cog):
         amount += int(amount * (0.25 * people))
         if people == 1:
             if slain:
-                group = fighters_final_string if len(session.fight) == 1 else wizards_final_string
+                group = fighters_final_string if len(session.rage) == 1 else wizards_final_string
                 text = _("{b_group} has slain the {chall} in an epic battle!").format(
                     b_group=group, chall=session.challenge
                 )
                 text += await self._reward(
                     ctx,
-                    [u for u in session.fight | session.magic | session.pray if u not in fumblelist],
+                    [u for u in session.rage | session.autoaim | session.pray if u not in fumblelist],
                     amount,
                     round(((attack if group == fighters_final_string else magic) / hp) * 0.25),
                     treasure,
@@ -1204,7 +1204,7 @@ class MiscMixin(commands.Cog):
                 )
                 text += await self._reward(
                     ctx,
-                    [u for u in session.talk | session.pray if u not in fumblelist],
+                    [u for u in session.rant | session.pray if u not in fumblelist],
                     amount,
                     round((diplomacy / dipl) * 0.25),
                     treasure,
@@ -1213,7 +1213,7 @@ class MiscMixin(commands.Cog):
             if not slain and not persuaded:
                 lost = True
                 currency_name = await bank.get_currency_name(ctx.guild,)
-                users = session.fight | session.talk | session.pray | session.magic | fumblelist
+                users = session.rage | session.rant | session.pray | session.autoaim | fumblelist
                 for user in users:
                     c = await self.get_character_from_json(user)
                     multiplier = 0.2
@@ -1257,7 +1257,7 @@ class MiscMixin(commands.Cog):
                     god = await self.config.god_name()
                     if await self.config.guild(ctx.guild).god_name():
                         god = await self.config.guild(ctx.guild).god_name()
-                    if len(session.magic) > 0 and len(session.fight) > 0:
+                    if len(session.autoaim) > 0 and len(session.rage) > 0:
                         text = _(
                             "{b_fighters} slayed the {chall} "
                             "in battle, while {b_talkers} distracted with flattery, "
@@ -1272,7 +1272,7 @@ class MiscMixin(commands.Cog):
                             god=god,
                         )
                     else:
-                        group = fighters_final_string if len(session.fight) > 0 else wizards_final_string
+                        group = fighters_final_string if len(session.rage) > 0 else wizards_final_string
                         text = _(
                             "{b_group} slayed the {chall} "
                             "in battle, while {b_talkers} distracted with flattery and "
@@ -1285,7 +1285,7 @@ class MiscMixin(commands.Cog):
                             god=god,
                         )
                 else:
-                    if len(session.magic) > 0 and len(session.fight) > 0:
+                    if len(session.autoaim) > 0 and len(session.rage) > 0:
                         text = _(
                             "{b_fighters} slayed the {chall} "
                             "in battle, while {b_talkers} distracted with insults and "
@@ -1297,13 +1297,13 @@ class MiscMixin(commands.Cog):
                             b_wizard=wizards_final_string,
                         )
                     else:
-                        group = fighters_final_string if len(session.fight) > 0 else wizards_final_string
+                        group = fighters_final_string if len(session.rage) > 0 else wizards_final_string
                         text = _(
                             "{b_group} slayed the {chall} in battle, while {b_talkers} distracted with insults."
                         ).format(b_group=group, chall=session.challenge, b_talkers=talkers_final_string)
                 text += await self._reward(
                     ctx,
-                    [u for u in session.fight | session.magic | session.pray | session.talk if u not in fumblelist],
+                    [u for u in session.rage | session.autoaim | session.pray | session.rant if u not in fumblelist],
                     amount,
                     round(((dmg_dealt / hp) + (diplomacy / dipl)) * 0.25),
                     treasure,
@@ -1320,7 +1320,7 @@ class MiscMixin(commands.Cog):
                     )
                 text += await self._reward(
                     ctx,
-                    [u for u in session.talk | session.pray if u not in fumblelist],
+                    [u for u in session.rant | session.pray if u not in fumblelist],
                     amount,
                     round((diplomacy / dipl) * 0.25),
                     treasure,
@@ -1328,7 +1328,7 @@ class MiscMixin(commands.Cog):
 
             if slain and not persuaded:
                 if len(session.pray) > 0:
-                    if len(session.magic) > 0 and len(session.fight) > 0:
+                    if len(session.autoaim) > 0 and len(session.rage) > 0:
                         text = _(
                             "{b_fighters} killed the {chall} "
                             "in a most heroic battle with a little help from {b_preachers} and "
@@ -1340,13 +1340,13 @@ class MiscMixin(commands.Cog):
                             b_wizard=wizards_final_string,
                         )
                     else:
-                        group = fighters_final_string if len(session.fight) > 0 else wizards_final_string
+                        group = fighters_final_string if len(session.rage) > 0 else wizards_final_string
                         text = _(
                             "{b_group} killed the {chall} "
                             "in a most heroic battle with a little help from {b_preachers}."
                         ).format(b_group=group, chall=session.challenge, b_preachers=preachermen_final_string,)
                 else:
-                    if len(session.magic) > 0 and len(session.fight) > 0:
+                    if len(session.autoaim) > 0 and len(session.rage) > 0:
                         text = _(
                             "{b_fighters} killed the {chall} "
                             "in a most heroic battle with {b_wizard} chanting magical incantations."
@@ -1354,13 +1354,13 @@ class MiscMixin(commands.Cog):
                             b_fighters=fighters_final_string, chall=session.challenge, b_wizard=wizards_final_string,
                         )
                     else:
-                        group = fighters_final_string if len(session.fight) > 0 else wizards_final_string
+                        group = fighters_final_string if len(session.rage) > 0 else wizards_final_string
                         text = _("{b_group} killed the {chall} in an epic fight.").format(
                             b_group=group, chall=session.challenge
                         )
                 text += await self._reward(
                     ctx,
-                    [u for u in session.fight | session.magic | session.pray if u not in fumblelist],
+                    [u for u in session.rage | session.autoaim | session.pray if u not in fumblelist],
                     amount,
                     round((dmg_dealt / hp) * 0.25),
                     treasure,
@@ -1369,7 +1369,7 @@ class MiscMixin(commands.Cog):
             if not slain and not persuaded:
                 lost = True
                 currency_name = await bank.get_currency_name(ctx.guild,)
-                users = session.fight | session.talk | session.pray | session.magic | fumblelist
+                users = session.rage | session.rant | session.pray | session.autoaim | fumblelist
                 for user in users:
                     c = await self.get_character_from_json(user)
                     multiplier = 0.2
@@ -1441,12 +1441,12 @@ class MiscMixin(commands.Cog):
         for i in output:
             await smart_embed(ctx, i, success=success)
         await self._data_check(ctx)
-        session.participants = session.fight | session.talk | session.pray | session.run | session.magic | fumblelist
+        session.participants = session.rage | session.rant | session.pray | session.run | session.autoaim | fumblelist
 
         participants = {
-            "rage": session.fight,
-            "autoaim": session.magic,
-            "rant": session.talk,
+            "rage": session.rage,
+            "autoaim": session.autoaim,
+            "rant": session.rant,
             "pray": session.pray,
             "run": session.run,
             "fumbles": fumblelist,
@@ -1478,7 +1478,7 @@ class MiscMixin(commands.Cog):
 
     async def handle_fight(self, channel_id, fumblelist, critlist, attack, magic, challenge):
         session = self._sessions[channel_id]
-        attack_list = session.fight | session.magic
+        attack_list = session.rage | session.autoaim
         pdef = max(session.monster_modified_stats["pdef"], 0.5)
         mdef = max(session.monster_modified_stats["mdef"], 0.5)
 
@@ -1487,7 +1487,7 @@ class MiscMixin(commands.Cog):
         failed_emoji = self.emojis.fumble
         if len(attack_list) >= 1:
             msg = ""
-            if len(session.fight) >= 1:
+            if len(session.rage) >= 1:
                 # TODO: Remove me when psychic gets added
                 if pdef >= 1.5:
                     msg += _("Swords bounce off this monster as it's skin is **almost impenetrable!**\n")
@@ -1499,7 +1499,7 @@ class MiscMixin(commands.Cog):
                     msg += _("This monster is **soft and easy** to slice!\n")
                 elif pdef > 0 and pdef != 1:
                     msg += _("Swords slice through this monster like a **hot knife through butter!**\n")
-            if len(session.magic) >= 1:
+            if len(session.autoaim) >= 1:
                 if mdef >= 1.5:
                     msg += _("Magic? Pfft, your puny magic is **no match** for this creature!\n")
                 elif mdef >= 1.25:
@@ -1515,7 +1515,7 @@ class MiscMixin(commands.Cog):
         else:
             return (fumblelist, critlist, attack, magic, "")
 
-        for user in session.fight:
+        for user in session.rage:
             c = await self.get_character_from_json(user)
             crit_mod = max(max(c.dex, c.luck) + (c.total_att // 20), 1)  # Thanks GoaFan77
             mod = 0
@@ -1584,7 +1584,7 @@ class MiscMixin(commands.Cog):
                     f"{self.emojis.dice}({roll}) + "
                     f"{self.emojis.rage}{str(humanize_number(att_value))}\n"
                 )
-        for user in session.magic:
+        for user in session.autoaim:
             c = await self.get_character_from_json(user)
             crit_mod = max(max(c.dex, c.luck) + (c.total_int // 20), 0)
             mod = 0
@@ -1657,10 +1657,10 @@ class MiscMixin(commands.Cog):
             report += _("No one!")
         msg += report + "\n"
         for user in fumblelist:
-            if user in session.fight:
-                session.fight.remove(user)
-            elif user in session.magic:
-                session.magic.remove(user)
+            if user in session.rage:
+                session.rage.remove(user)
+            elif user in session.autoaim:
+                session.autoaim.remove(user)
         return (fumblelist, critlist, attack, magic, msg)
 
     async def handle_pray(self, channel_id, fumblelist, attack, diplomacy, magic):
@@ -1686,7 +1686,7 @@ class MiscMixin(commands.Cog):
                 elif (mod + 1) > 45:
                     mod = 45
                 roll = max(random.randint((1 + mod), max_roll), 1)
-                if len(session.fight | session.talk | session.magic) == 0:
+                if len(session.rage | session.rant | session.autoaim) == 0:
                     msg += _("**{}** blessed like a madman but nobody was there to receive it.\n").format(
                         self.escape(user.display_name)
                     )
@@ -1694,12 +1694,12 @@ class MiscMixin(commands.Cog):
                     pray_att_bonus = 0
                     pray_diplo_bonus = 0
                     pray_magic_bonus = 0
-                    if session.fight:
-                        pray_att_bonus = max((5 * len(session.fight)) - ((5 * len(session.fight)) * max(rebirths * 0.01, 1.5)), 0)
-                    if session.talk:
-                        pray_diplo_bonus = max((5 * len(session.talk)) - ((5 * len(session.talk)) * max(rebirths * 0.01, 1.5)), 0)
-                    if session.magic:
-                        pray_magic_bonus = max((5 * len(session.magic)) - ((5 * len(session.magic)) * max(rebirths * 0.01, 1.5)), 0)
+                    if session.rage:
+                        pray_att_bonus = max((5 * len(session.rage)) - ((5 * len(session.rage)) * max(rebirths * 0.01, 1.5)), 0)
+                    if session.rant:
+                        pray_diplo_bonus = max((5 * len(session.rant)) - ((5 * len(session.rant)) * max(rebirths * 0.01, 1.5)), 0)
+                    if session.autoaim:
+                        pray_magic_bonus = max((5 * len(session.autoaim)) - ((5 * len(session.autoaim)) * max(rebirths * 0.01, 1.5)), 0)
                     attack -= pray_att_bonus
                     diplomacy -= pray_diplo_bonus
                     magic -= pray_magic_bonus
@@ -1727,17 +1727,17 @@ class MiscMixin(commands.Cog):
                     pray_diplo_bonus = 0
                     pray_magic_bonus = 0
 
-                    if session.fight:
+                    if session.rage:
                         pray_att_bonus = int(
-                            (mod * len(session.fight)) + ((mod * len(session.fight)) * max(rebirths * 0.1, 1.5))
+                            (mod * len(session.rage)) + ((mod * len(session.rage)) * max(rebirths * 0.1, 1.5))
                         )
-                    if session.talk:
+                    if session.rant:
                         pray_diplo_bonus = int(
-                            (mod * len(session.talk)) + ((mod * len(session.talk)) * max(rebirths * 0.1, 1.5))
+                            (mod * len(session.rant)) + ((mod * len(session.rant)) * max(rebirths * 0.1, 1.5))
                         )
-                    if session.magic:
+                    if session.autoaim:
                         pray_magic_bonus = int(
-                            (mod * len(session.magic)) + ((mod * len(session.magic)) * max(rebirths * 0.1, 1.5))
+                            (mod * len(session.autoaim)) + ((mod * len(session.autoaim)) * max(rebirths * 0.1, 1.5))
                         )
                     attack += max(pray_att_bonus, 0)
                     magic += max(pray_magic_bonus, 0)
@@ -1766,7 +1766,7 @@ class MiscMixin(commands.Cog):
                     )
             else:
                 roll = random.randint(1, 10)
-                if len(session.fight | session.talk | session.magic) == 0:
+                if len(session.rage | session.rant | session.autoaim) == 0:
                     msg += _("**{}** prayed like a madman but nobody else helped them.\n").format(
                         self.escape(user.display_name)
                     )
@@ -1775,12 +1775,12 @@ class MiscMixin(commands.Cog):
                     attack_buff = 0
                     talk_buff = 0
                     magic_buff = 0
-                    if session.fight:
-                        attack_buff = 10 * (len(session.fight) + rebirths // 15)
-                    if session.talk:
-                        talk_buff = 10 * (len(session.talk) + rebirths // 15)
-                    if session.magic:
-                        magic_buff = 10 * (len(session.magic) + rebirths // 15)
+                    if session.rage:
+                        attack_buff = 10 * (len(session.rage) + rebirths // 15)
+                    if session.rant:
+                        talk_buff = 10 * (len(session.rant) + rebirths // 15)
+                    if session.autoaim:
+                        magic_buff = 10 * (len(session.autoaim) + rebirths // 15)
 
                     attack += max(attack_buff, 0)
                     magic += max(magic_buff, 0)
@@ -1812,14 +1812,14 @@ class MiscMixin(commands.Cog):
 
     async def handle_talk(self, channel_id, fumblelist, critlist, diplomacy):
         session = self._sessions[channel_id]
-        if len(session.talk) >= 1:
+        if len(session.rant) >= 1:
             report = _("Talking Party: \n\n")
             msg = ""
             fumble_count = 0
         else:
             return (fumblelist, critlist, diplomacy, "")
         failed_emoji = self.emojis.fumble
-        for user in session.talk:
+        for user in session.rant:
             c = await self.get_character_from_json(user)
             crit_mod = max(max(c.dex, c.luck) + (c.total_int // 50) + (c.total_cha // 20), 1)
             mod = 0
@@ -1875,17 +1875,17 @@ class MiscMixin(commands.Cog):
                     f"{self.emojis.dice}({roll}) + "
                     f"{self.emojis.rant}{humanize_number(dipl_value)}\n"
                 )
-        if fumble_count == len(session.talk):
+        if fumble_count == len(session.rant):
             report += _("No one!")
         msg = msg + report + "\n"
         for user in fumblelist:
-            if user in session.talk:
-                session.talk.remove(user)
+            if user in session.rant:
+                session.rant.remove(user)
         return (fumblelist, critlist, diplomacy, msg)
 
     async def handle_basilisk(self, ctx: Context, failed):
         session = self._sessions[ctx.channel.id]
-        participants = session.fight | session.talk | session.pray | session.magic
+        participants = session.rage | session.rant | session.pray | session.autoaim
         if session.miniboss:
             failed = True
             req_item, slot = session.miniboss["requirements"]
