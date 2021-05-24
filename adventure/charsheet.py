@@ -405,9 +405,9 @@ class GameSession:
     reacted: bool = False
     participants: Set[discord.Member] = set()
     monster_modified_stats: MutableMapping = {}
-    fight: Set[discord.Member] = []
-    magic: Set[discord.Member] = []
-    talk: Set[discord.Member] = []
+    rage: Set[discord.Member] = []
+    autoaim: Set[discord.Member] = []
+    rant: Set[discord.Member] = []
     pray: Set[discord.Member] = []
     run: Set[discord.Member] = []
     message: discord.Message = None
@@ -434,9 +434,9 @@ class GameSession:
         self.reacted = False
         self.reactors: Set[discord.Member] = set()
         self.participants: Set[discord.Member] = set()
-        self.fight: Set[discord.Member] = set()
-        self.magic: Set[discord.Member] = set()
-        self.talk: Set[discord.Member] = set()
+        self.rage: Set[discord.Member] = set()
+        self.autoaim: Set[discord.Member] = set()
+        self.rant: Set[discord.Member] = set()
         self.pray: Set[discord.Member] = set()
         self.run: Set[discord.Member] = set()
         self.transcended: bool = kwargs.pop("transcended", False)
@@ -446,9 +446,9 @@ class GameSession:
         state = self.__dict__.copy()
         state['channel'] = state['channel'].id
         state['guild'] = state['guild'].id
-        state['fight'] = {i.id for i in state['fight']}
-        state['magic'] = {i.id for i in state['magic']}
-        state['talk'] = {i.id for i in state['talk']}
+        state['rage'] = {i.id for i in state['rage']}
+        state['autoaim'] = {i.id for i in state['autoaim']}
+        state['rant'] = {i.id for i in state['rant']}
         state['pray'] = {i.id for i in state['pray']}
         state['reactors'] = {i.id for i in state['reactors']}
         state['participants'] = {i.id for i in state['participants']}
@@ -460,9 +460,9 @@ class GameSession:
     async def load_from_pickle(self, bot):
         self.channel = bot.get_channel(self.channel)
         self.guild = self.channel.guild
-        self.fight = {self.guild.get_member(i) for i in self.fight}
-        self.magic = {self.guild.get_member(i) for i in self.magic}
-        self.talk = {self.guild.get_member(i) for i in self.talk}
+        self.rage = {self.guild.get_member(i) for i in self.rage}
+        self.autoaim = {self.guild.get_member(i) for i in self.autoaim}
+        self.rant = {self.guild.get_member(i) for i in self.rant}
         self.pray = {self.guild.get_member(i) for i in self.pray}
         self.reactors = {self.guild.get_member(i) for i in self.reactors}
         self.participants = {self.guild.get_member(i) for i in self.participants}
