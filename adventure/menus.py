@@ -153,10 +153,10 @@ class ScoreboardSource(WeeklyScoreboardSource):
                 "React with the following to go to the specified filter:\n"
                 "\N{FACE WITH PARTY HORN AND PARTY HAT}: Win scoreboard\n"
                 "\N{FIRE}: Loss scoreboard\n"
-                "\N{DAGGER KNIFE}: Physical attack scoreboard\n"
-                "\N{SPARKLES}: Magic attack scoreboard\n"
-                "\N{LEFT SPEECH BUBBLE}: Diplomacy scoreboard\n"
-                "\N{PERSON WITH FOLDED HANDS}: Pray scoreboard\n"
+                "<:rage:844771847580155934>: Rage scoreboard\n"
+                "<:autoaim:844771847304380426>: Autoaim scoreboard\n"
+                "<:rant:844771848344436756>: Rant scoreboard\n"
+                "<:pray:844771847685799937>: Pray scoreboard\n"
                 "\N{RUNNER}: Run scoreboard\n"
                 "\N{EXCLAMATION QUESTION MARK}: Fumble scoreboard\n"
             )
@@ -470,9 +470,9 @@ class ScoreBoardMenu(BaseMenu, inherit_buttons=False):
     @menus.button("\N{DAGGER KNIFE}")
     async def physical(self, payload: discord.RawReactionActionEvent) -> None:
         """stops the pagination session."""
-        if self._current == "fight":
+        if self._current == "rage":
             return
-        self._current = "fight"
+        self._current = "rage"
         rebirth_sorted = await self.cog.get_global_scoreboard(
             guild=self.ctx.guild if not self.show_global else None, keyword=self._current
         )
@@ -480,9 +480,9 @@ class ScoreBoardMenu(BaseMenu, inherit_buttons=False):
 
     @menus.button("\N{SPARKLES}")
     async def magic(self, payload: discord.RawReactionActionEvent) -> None:
-        if self._current == "spell":
+        if self._current == "autoaim":
             return
-        self._current = "spell"
+        self._current = "autoaim"
         rebirth_sorted = await self.cog.get_global_scoreboard(
             guild=self.ctx.guild if not self.show_global else None, keyword=self._current
         )
@@ -490,9 +490,9 @@ class ScoreBoardMenu(BaseMenu, inherit_buttons=False):
 
     @menus.button("\N{LEFT SPEECH BUBBLE}")
     async def diplomacy(self, payload: discord.RawReactionActionEvent) -> None:
-        if self._current == "talk":
+        if self._current == "rant":
             return
-        self._current = "talk"
+        self._current = "rant"
         rebirth_sorted = await self.cog.get_global_scoreboard(
             guild=self.ctx.guild if not self.show_global else None, keyword=self._current
         )

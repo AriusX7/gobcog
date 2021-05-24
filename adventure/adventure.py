@@ -102,10 +102,10 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         self.emojis.fumble = "\N{EXCLAMATION QUESTION MARK}"
         self.emojis.level_up = "\N{BLACK UP-POINTING DOUBLE TRIANGLE}"
         self.emojis.rebirth = "\N{BABY SYMBOL}"
-        self.emojis.attack = "\N{DAGGER KNIFE}"
-        self.emojis.magic = "\N{SPARKLES}"
-        self.emojis.talk = "\N{LEFT SPEECH BUBBLE}"
-        self.emojis.pray = "\N{PERSON WITH FOLDED HANDS}"
+        self.emojis.rage = "<:rage:844771847580155934>"
+        self.emojis.autoaim = "<:autoaim:844771847304380426>"
+        self.emojis.rant = "<:rant:844771848344436756>"
+        self.emojis.pray = "<:pray:844771847685799937>"
         self.emojis.run = "\N{RUNNER}"
         self.emojis.crit = "\N{COLLISION SYMBOL}"
         self.emojis.magic_crit = "\N{HIGH VOLTAGE SIGN}"
@@ -115,24 +115,25 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         self.emojis.no = "\N{NEGATIVE SQUARED CROSS MARK}"
         self.emojis.sell = "\N{MONEY BAG}"
         self.emojis.skills = SimpleNamespace()
-        self.emojis.skills.report = "\N{SCROLL}"
+        self.emojis.skills.report = "<:bsexclamationmark:844771847258374174>"
         # self.emojis.skills.psychic = "\N{SIX POINTED STAR WITH MIDDLE DOT}"
         self.emojis.skills.berserker = self.emojis.berserk
-        self.emojis.skills.autoaimer = self.emojis.magic_crit
-        self.emojis.skills.tilter = "\N{EIGHTH NOTE}\N{BEAMED EIGHTH NOTES}\N{BEAMED SIXTEENTH NOTES}"
+        self.emojis.skills.autoaimer = "<:blueplussign:844771847286292510>"
+        self.emojis.skills.tilter1 = "<:bsthumbsup:844771847065305089>"
+        self.emojis.skills.tilter2 = "<:bsthumbsdown:844771847357726730>"
         self.emojis.hp = "\N{HEAVY BLACK HEART}\N{VARIATION SELECTOR-16}"
-        self.emojis.dipl = self.emojis.talk
+        self.emojis.dipl = self.emojis.rant
 
         self._adventure_actions = [
-            self.emojis.attack,
-            self.emojis.magic,
-            self.emojis.talk,
+            self.emojis.rage,
+            self.emojis.autoaim,
+            self.emojis.rant,
             self.emojis.pray,
         ]
         self._adventure_controls = {
-            "fight": self.emojis.attack,
-            "magic": self.emojis.magic,
-            "talk": self.emojis.talk,
+            "rage": self.emojis.rage,
+            "autoaim": self.emojis.autoaim,
+            "rant": self.emojis.rant,
             "pray": self.emojis.pray,
             "run": self.emojis.run,
         }
@@ -2666,7 +2667,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     def check_running_adventure(ctx):
         for (channel_id, session) in ctx.bot.get_cog("Adventure")._sessions.items():
             user_ids: list = []
-            options = ["fight", "magic", "talk", "pray", "run"]
+            options = ["rage", "autoaim", "rant", "pray", "run"]
             for i in options:
                 user_ids += [u.id for u in getattr(session, i)]
             if ctx.author.id in user_ids:
@@ -3344,8 +3345,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             await self.config.user(ctx.author).set(await c.to_json(self.config))
             await smart_embed(
                 ctx,
-                _("{skill} **{c}** is ready with a barrage of emotes... {skill}").format(
-                    c=self.escape(ctx.author.display_name), skill=self.emojis.skills.tilter
+                _("{skill1} **{c}** is ready with a barrage of emotes... {skill2}").format(
+                    c=self.escape(ctx.author.display_name), skill1=self.emojis.skills.tilter1, skill2=self.emojis.skills.tilter2
                 ),
                 success=True
             )
