@@ -467,7 +467,7 @@ class ScoreBoardMenu(BaseMenu, inherit_buttons=False):
         )
         await self.change_source(source=ScoreboardSource(entries=rebirth_sorted, stat=self._current))
 
-    @menus.button("\N{DAGGER KNIFE}")
+    @menus.button("<:bullrage:844771847580155934>")
     async def physical(self, payload: discord.RawReactionActionEvent) -> None:
         """stops the pagination session."""
         if self._current == "rage":
@@ -478,7 +478,7 @@ class ScoreBoardMenu(BaseMenu, inherit_buttons=False):
         )
         await self.change_source(source=ScoreboardSource(entries=rebirth_sorted, stat=self._current))
 
-    @menus.button("\N{SPARKLES}")
+    @menus.button("<:pipersipautoaim:844771847304380426>")
     async def magic(self, payload: discord.RawReactionActionEvent) -> None:
         if self._current == "autoaim":
             return
@@ -488,7 +488,7 @@ class ScoreBoardMenu(BaseMenu, inherit_buttons=False):
         )
         await self.change_source(source=ScoreboardSource(entries=rebirth_sorted, stat=self._current))
 
-    @menus.button("\N{LEFT SPEECH BUBBLE}")
+    @menus.button("<:mrprant:844771848344436756>")
     async def diplomacy(self, payload: discord.RawReactionActionEvent) -> None:
         if self._current == "rant":
             return
@@ -498,7 +498,7 @@ class ScoreBoardMenu(BaseMenu, inherit_buttons=False):
         )
         await self.change_source(source=ScoreboardSource(entries=rebirth_sorted, stat=self._current))
 
-    @menus.button("\N{PERSON WITH FOLDED HANDS}")
+    @menus.button("<:pocopray:844771847685799937>")
     async def praying(self, payload: discord.RawReactionActionEvent) -> None:
         if self._current == "pray":
             return
