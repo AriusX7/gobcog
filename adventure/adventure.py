@@ -66,6 +66,7 @@ from .role import RoleMixin
 from .utils import (
     AdventureResults,
     DynamicInt,
+    Emojis,
     FilterInt,
     FilterStr,
     Member,
@@ -102,10 +103,10 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         self.emojis.fumble = "\N{EXCLAMATION QUESTION MARK}"
         self.emojis.level_up = "\N{BLACK UP-POINTING DOUBLE TRIANGLE}"
         self.emojis.rebirth = "\N{BABY SYMBOL}"
-        self.emojis.rage = "<:bullrage:844771847580155934>"
-        self.emojis.autoaim = "<:pipersipautoaim:844771847304380426>"
-        self.emojis.rant = "<:mrprant:844771848344436756>"
-        self.emojis.pray = "<:pocopray:844771847685799937>"
+        self.emojis.rage = Emojis.rage
+        self.emojis.autoaim = Emojis.autoaim
+        self.emojis.rant = Emojis.rant
+        self.emojis.pray = Emojis.pray
         self.emojis.run = "\N{RUNNER}"
         self.emojis.crit = "\N{COLLISION SYMBOL}"
         self.emojis.magic_crit = "\N{HIGH VOLTAGE SIGN}"
@@ -115,12 +116,12 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         self.emojis.no = "\N{NEGATIVE SQUARED CROSS MARK}"
         self.emojis.sell = "\N{MONEY BAG}"
         self.emojis.skills = SimpleNamespace()
-        self.emojis.skills.report = "<:bsexclamationmark:844771847258374174>"
+        self.emojis.skills.report = Emojis.report,
         # self.emojis.skills.psychic = "\N{SIX POINTED STAR WITH MIDDLE DOT}"
         self.emojis.skills.berserker = self.emojis.berserk
-        self.emojis.skills.autoaimer = "<:blueplussign:844771847286292510>"
-        self.emojis.skills.tilter1 = "<:bsthumbsup:844771847065305089>"
-        self.emojis.skills.tilter2 = "<:bsthumbsdown:844771847357726730>"
+        self.emojis.skills.autoaimer = Emojis.autoaimer
+        self.emojis.skills.tilter1 = Emojis.tilter1
+        self.emojis.skills.tilter2 = Emojis.tilter2
         self.emojis.hp = "\N{HEAVY BLACK HEART}\N{VARIATION SELECTOR-16}"
         self.emojis.dipl = self.emojis.rant
 
@@ -3762,7 +3763,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 _(
                     f"There's already another adventure going on in this channel.\n"
                     f"Currently fighting: [{adventure_obj.challenge}]({link})"
-                )
+                ),
+                reply=adventure_obj.countdown_message
             )
 
         if not await has_funds(ctx.author, 250):
