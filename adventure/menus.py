@@ -10,6 +10,7 @@ from redbot.core.utils.chat_formatting import escape, humanize_number
 from redbot.vendored.discord.ext import menus
 
 from . import bank
+from .utils import Emojis
 
 _ = Translator("Adventure", __file__)
 log = logging.getLogger("red.cogs.adventure.menus")
@@ -153,10 +154,10 @@ class ScoreboardSource(WeeklyScoreboardSource):
                 "React with the following to go to the specified filter:\n"
                 "\N{FACE WITH PARTY HORN AND PARTY HAT}: Win scoreboard\n"
                 "\N{FIRE}: Loss scoreboard\n"
-                "<:rage:844771847580155934>: Rage scoreboard\n"
-                "<:autoaim:844771847304380426>: Autoaim scoreboard\n"
-                "<:rant:844771848344436756>: Rant scoreboard\n"
-                "<:pray:844771847685799937>: Pray scoreboard\n"
+                f"{Emojis.rage}: Rage scoreboard\n"
+                f"{Emojis.autoaim}: Autoaim scoreboard\n"
+                f"{Emojis.rant}: Rant scoreboard\n"
+                f"{Emojis.pray}: Pray scoreboard\n"
                 "\N{RUNNER}: Run scoreboard\n"
                 "\N{EXCLAMATION QUESTION MARK}: Fumble scoreboard\n"
             )
@@ -467,7 +468,7 @@ class ScoreBoardMenu(BaseMenu, inherit_buttons=False):
         )
         await self.change_source(source=ScoreboardSource(entries=rebirth_sorted, stat=self._current))
 
-    @menus.button("<:bullrage:844771847580155934>")
+    @menus.button(Emojis.rage)
     async def physical(self, payload: discord.RawReactionActionEvent) -> None:
         """stops the pagination session."""
         if self._current == "rage":
@@ -478,7 +479,7 @@ class ScoreBoardMenu(BaseMenu, inherit_buttons=False):
         )
         await self.change_source(source=ScoreboardSource(entries=rebirth_sorted, stat=self._current))
 
-    @menus.button("<:pipersipautoaim:844771847304380426>")
+    @menus.button(Emojis.autoaim)
     async def magic(self, payload: discord.RawReactionActionEvent) -> None:
         if self._current == "autoaim":
             return
@@ -488,7 +489,7 @@ class ScoreBoardMenu(BaseMenu, inherit_buttons=False):
         )
         await self.change_source(source=ScoreboardSource(entries=rebirth_sorted, stat=self._current))
 
-    @menus.button("<:mrprant:844771848344436756>")
+    @menus.button(Emojis.rant)
     async def diplomacy(self, payload: discord.RawReactionActionEvent) -> None:
         if self._current == "rant":
             return
@@ -498,7 +499,7 @@ class ScoreBoardMenu(BaseMenu, inherit_buttons=False):
         )
         await self.change_source(source=ScoreboardSource(entries=rebirth_sorted, stat=self._current))
 
-    @menus.button("<:pocopray:844771847685799937>")
+    @menus.button(Emojis.pray)
     async def praying(self, payload: discord.RawReactionActionEvent) -> None:
         if self._current == "pray":
             return

@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 import logging
+import platform
 import time
 from typing import List, MutableMapping
 
@@ -295,8 +296,12 @@ class AdventureResults:
         del state["num_raids"]
         self._last_raids: MutableMapping[int, List] = state
 
+
 class AdventureCheckFailure(commands.CheckFailure):
-    pass
+    def __init__(self, message, reply=None, *args):
+        self.reply = reply
+        super().__init__(message=message, *args)
+
 
 class AdventureOnCooldown(AdventureCheckFailure):
     def __init__(self, retry_after, *, message=None):
@@ -417,3 +422,25 @@ MENU_CONTROLS = {
 
 def order_slots_dict(d: dict) -> dict:
     return {k: d[k] for k in sorted(d.keys(), key=lambda item: SLOT_ORDER[item])}
+
+
+if platform.system() == 'Linux':
+    class Emojis:
+        rage = "<:bullrage:844771847580155934>"
+        autoaim = "<:pipersipautoaim:844771847304380426>"
+        rant = "<:mrprant:844771848344436756>"
+        pray = "<:pocopray:844771847685799937>"
+        report = "<:bsexclamationmark:844771847258374174>"
+        autoaimer = "<:blueplussign:844771847286292510>"
+        tilter1 = "<:bsthumbsup:844771847065305089>"
+        tilter2 = "<:bsthumbsdown:844771847357726730>"
+else:
+    class Emojis:
+        rage = "\N{DAGGER KNIFE}"
+        autoaim = "\N{SPARKLES}"
+        rant = "\N{LEFT SPEECH BUBBLE}"
+        pray = "\N{PERSON WITH FOLDED HANDS}"
+        report = "\N{SCROLL}"
+        autoaimer = "\N{HIGH VOLTAGE SIGN}"
+        tilter1 = "\N{EIGHTH NOTE}\N{BEAMED EIGHTH NOTES}\N{BEAMED SIXTEENTH NOTES}"
+        tilter2 = "\N{EIGHTH NOTE}\N{BEAMED EIGHTH NOTES}\N{BEAMED SIXTEENTH NOTES}"

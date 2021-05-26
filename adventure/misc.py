@@ -3146,7 +3146,7 @@ class MiscMixin(commands.Cog):
 
         elif isinstance(error, AdventureCheckFailure):
             ctx.command.reset_cooldown(ctx)
-            await smart_embed(ctx, str(error), success=False, delete_after=15)
+            await smart_embed(ctx, str(error), reference=error.reply, success=False, delete_after=15)
             await asyncio.sleep(15)
             with contextlib.suppress(discord.HTTPException):
                 await ctx.message.delete()
