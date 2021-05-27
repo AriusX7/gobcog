@@ -479,7 +479,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Botanic's Plant": {
+    "Botanist's Plant": {
         "hp": 161.6,
         "pdef": 1,
         "mdef": 1,
@@ -539,7 +539,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Canny Bunny Mortar": {
+    "Bunny Mortar": {
         "hp": 260.8,
         "pdef": 1,
         "mdef": 1.1,
@@ -674,7 +674,7 @@
         "pdef": 2.5,
         "mdef": 2.7,
         "dipl": 1462.7,
-        "image": "https://i.imgur.com/N1Hilvv.jpg",
+        "image": "https://i.ibb.co/ncJhR4s/tenor-2.gif",
         "boss": true,
         "miniboss": {},
         "color": ""
