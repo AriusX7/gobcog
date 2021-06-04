@@ -2480,7 +2480,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 "name": _("Tilter"),
                 "ability": False,
                 "desc": _(
-                    "Tilters can perform to aid their comrades in diplomacy.\n"
+                    "Tilters can aid their comrades by distracting their enemies.\n"
                     "Use the emote command when being diplomatic in an adventure."
                 ),
                 "cooldown": time.time(),
