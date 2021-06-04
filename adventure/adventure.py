@@ -2460,7 +2460,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 "name": _("Samaritan"),
                 "ability": False,
                 "desc": _(
-                    "Clerics can report the opponent group when playing.\n"
+                    "Samaritans can report the opponent group when playing.\n"
                     "Use the report command when fighting in an adventure."
                 ),
                 "cooldown": time.time(),
