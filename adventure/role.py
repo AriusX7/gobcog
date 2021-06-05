@@ -417,13 +417,16 @@ class RoleMixin(commands.Cog):
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         member = payload.member
 
-        if member.bot:
+        # `member` is `None` in DMs.
+        if not member or member.bot:
             return
 
         guild = member.guild
 
         # `emoji` is a `PartialEmoji`.
         emoji = payload.emoji
+
+        self.remove_reaction(guild, payload.channel_id, payload.message_id, emoji, member)
 
         react_role = await self.config.guild(guild).react_role()
 
@@ -447,11 +450,19 @@ class RoleMixin(commands.Cog):
             if role and role not in member.roles:
                 await member.add_roles(role)
 
-        channel = guild.get_channel(payload.channel_id)
+    @staticmethod
+    async def remove_reaction(
+        guild: discord.Guild,
+        channel_id: int,
+        message_id: int,
+        emoji: discord.PartialEmoji,
+        member: discord.Member
+    ):
+        channel = guild.get_channel(channel_id)
         if not channel:
             return
         try:
-            message = await channel.fetch_message(payload.message_id)
+            message = await channel.fetch_message(message_id)
         except Exception:
             return
 
