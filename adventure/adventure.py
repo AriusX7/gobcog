@@ -1129,6 +1129,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 await self.config.user(ctx.author).set(await c.rebirth())
                 if c.rebirths == 5:
                     await self.add_rebirths_role(ctx.guild, ctx.author)
+                    await self.remove_adv_role(ctx.guild, ctx.author)
 
     @commands.command()
     @commands.bot_has_permissions(add_reactions=True)
