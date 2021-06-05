@@ -66,6 +66,34 @@ class RoleMixin(commands.Cog):
                 success=True
             )
 
+    @_roleset.command(name="adventure")
+    @commands.guild_only()
+    @commands.admin_or_permissions(manage_guild=True)
+    async def _roleset_adventure(self, ctx: Context, *, role: discord.Role):
+        """Set role for adventure."""
+
+        await self.config.guild(ctx.guild).adventure_role.set(getattr(role, "id", None))
+
+        await smart_embed(
+            ctx,
+            _("Set {role} as adventure role.").format(role=role.mention),
+            success=True
+        )
+
+    @_roleset.command(name="noadventure")
+    @commands.guild_only()
+    @commands.admin_or_permissions(manage_guild=True)
+    async def _roleset_noadventure(self, ctx: Context, *, role: discord.Role):
+        """Set role for no adventure."""
+
+        await self.config.guild(ctx.guild).noadventure_role.set(getattr(role, "id", None))
+
+        await smart_embed(
+            ctx,
+            _("Set {role} as noadventure role.").format(role=role.mention),
+            success=True
+        )
+
     @staticmethod
     async def make_mentionable(role: Role) -> bool:
         if role.mentionable:
@@ -306,3 +334,13 @@ class RoleMixin(commands.Cog):
 
                             remove_boss.append(str_id)
                     for k in remove_boss: del timed_roles["boss"][k]
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before, after):
+        adv_role = await self.get_role(after.guild, "adventure_role")
+        noadv_role = await self.get_role(after.guild, "noadventure_role")
+        if adv_role and noadv_role:
+            if before.roles != after.roles:
+                if all(x in after.roles for x in (adv_role, noadv_role)):
+                    # remove adv_role
+                    await after.remove_roles(adv_role, reason='NoAdv and Adv role cannot be applied at the same time. Remove NoAdv role to disable this behaviour.')
