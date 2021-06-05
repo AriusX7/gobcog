@@ -30,7 +30,7 @@ class RoleMixin(commands.Cog):
     @commands.guild_only()
     @commands.admin_or_permissions(manage_guild=True)
     async def _roleset(self, ctx: Context):
-        """Set roles for adventure pings."""
+        """Set adventure related roles."""
 
     @_roleset.command(name="general")
     @commands.guild_only()
@@ -93,6 +93,22 @@ class RoleMixin(commands.Cog):
             _("Set {role} as noadventure role.").format(role=role.mention),
             success=True
         )
+    @_roleset.command(name="rebirth")
+    @commands.guild_only()
+    @commands.admin_or_permissions(manage_guild=True)
+    async def _roleset_rebirth(self, ctx: Context, *, role: discord.Role = None):
+        """Set role for people at and above rebirth 5."""
+
+        await self.config.guild(ctx.guild).rebirth_role.set(getattr(role, "id", None))
+
+        if not role:
+            await smart_embed(ctx, _("Unset rebirth 5 role."), success=True)
+        else:
+            await smart_embed(
+                ctx,
+                _("Set {role} as rebirth 5 role.").format(role=role.mention),
+                success=True
+            )
 
     @staticmethod
     async def make_mentionable(role: Role) -> bool:
@@ -300,6 +316,11 @@ class RoleMixin(commands.Cog):
                 del timed_roles["boss"][str_id]
 
         await ctx.tick()
+
+    async def add_rebirths_role(self, guild: discord.Guild, user: discord.Member):
+        role = await self.get_role(guild, "rebirth_role")
+        if role:
+            await user.add_roles(role)
 
     @tasks.loop(seconds=20)
     async def timed_roles_task(self):
