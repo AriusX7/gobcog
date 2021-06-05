@@ -224,6 +224,18 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 "boss": {}
             },
             "rebirth_role": None,
+            "react_role_emote": {
+                "name": None,
+                "id": None,
+            },
+            "react_role": {
+                "emoji": {
+                    "name": None,
+                    "id": None,
+                },
+                "channel": None,
+                "message": None,
+            },
         }
 
         default_channel = {
