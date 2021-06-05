@@ -3941,7 +3941,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         else:
             raise AdventureCheckFailure(_("No stats to show for this week."))
 
-    @commands.command(name="apayday", cooldown_after_parsing=True)
+    @commands.command(name="apayday", aliases=['apd'], cooldown_after_parsing=True)
     @has_separated_economy()
     @commands.cooldown(rate=1, per=600, type=commands.BucketType.user)
     async def commands_apayday(self, ctx: commands.Context):
