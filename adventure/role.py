@@ -433,8 +433,6 @@ class RoleMixin(commands.Cog):
         # `emoji` is a `PartialEmoji`.
         emoji = payload.emoji
 
-        await self.remove_reaction(guild, payload.channel_id, payload.message_id, emoji, member)
-
         react_role = await self.config.guild(guild).react_role()
 
         if (
@@ -444,6 +442,8 @@ class RoleMixin(commands.Cog):
             or react_role["emoji"]["id"] != emoji.id
         ):
             return
+
+        await self.remove_reaction(guild, payload.channel_id, payload.message_id, emoji, member)
 
         try:
             rebirths = await self.config.user(member).get_raw("rebirths")
