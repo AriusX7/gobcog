@@ -93,6 +93,7 @@ class RoleMixin(commands.Cog):
             _("Set {role} as noadventure role.").format(role=role.mention),
             success=True
         )
+
     @_roleset.command(name="rebirth")
     @commands.guild_only()
     @commands.admin_or_permissions(manage_guild=True)
@@ -407,12 +408,17 @@ class RoleMixin(commands.Cog):
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
         adv_role = await self.get_role(after.guild, "adventure_role")
+        rebirth_role = await self.get_role(after.guild, "rebirth_role")
         noadv_role = await self.get_role(after.guild, "noadventure_role")
         if adv_role and noadv_role:
             if before.roles != after.roles:
                 if all(x in after.roles for x in (adv_role, noadv_role)):
                     # remove adv_role
                     await after.remove_roles(adv_role, reason='NoAdv and Adv role cannot be applied at the same time. Remove NoAdv role to disable this behaviour.')
+
+                if all(x in after.roles for x in (rebirth_role, noadv_role)):
+                    # remove rebirth_role
+                    await after.remove_roles(rebirth_role, reason='NoAdv and Rebirth role cannot be applied at the same time. Remove NoAdv role to disable this behaviour.')
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
