@@ -327,6 +327,48 @@ class RoleMixin(commands.Cog):
         if role and role in user.roles:
             await user.remove_roles(role)
 
+    @commands.group(name="reactrole")
+    @commands.guild_only()
+    async def _reactrole(self, ctx: Context):
+        """Settings related to the adventure reaction role."""
+
+    @_reactrole.command(name="emoji")
+    async def _reactrole_emoji(self, ctx: Context, emoji: discord.Emoji):
+        """Set the react role emoji. You must set the react role message first."""
+
+        async with self.config.guild(ctx.guild).react_role() as react_role:
+            channel_id = react_role["channel"]
+            message_id = react_role["message"]
+            if not channel_id or not message_id:
+                raise AdventureCheckFailure(_("Reaction roles channel and message not set."))
+
+            channel = ctx.guild.get_channel(channel_id)
+            if not channel:
+                raise AdventureCheckFailure(_("Reaction roles channel cannot be found."))
+            try:
+                message: discord.Message = await channel.fetch_message(message_id)
+            except Exception:
+                raise AdventureCheckFailure(_("Reaction roles message cannot be found."))
+
+            try:
+                await message.add_reaction(emoji)
+            except Exception:
+                raise AdventureCheckFailure(_("Cannot react to the reaction roles message."))
+
+            react_role["emoji"]["name"] = emoji.name
+            react_role["emoji"]["id"] = emoji.id
+
+        await ctx.tick()
+
+    @_reactrole.command(name="message")
+    async def _reactrole_message(self, ctx: Context, message_id: int, *, channel: discord.TextChannel):
+        """Set the react role message."""
+
+        async with self.config.guild(ctx.guild).react_role() as react_role:
+            react_role["message"] = message_id
+            react_role["channel"] = channel.id
+        await ctx.tick()
+
     @tasks.loop(seconds=20)
     async def timed_roles_task(self):
         for guild in self.bot.guilds:
@@ -370,3 +412,50 @@ class RoleMixin(commands.Cog):
                 if all(x in after.roles for x in (adv_role, noadv_role)):
                     # remove adv_role
                     await after.remove_roles(adv_role, reason='NoAdv and Adv role cannot be applied at the same time. Remove NoAdv role to disable this behaviour.')
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
+        member = payload.member
+
+        if member.bot:
+            return
+
+        guild = member.guild
+
+        # `emoji` is a `PartialEmoji`.
+        emoji = payload.emoji
+
+        react_role = await self.config.guild(guild).react_role()
+
+        if (
+            react_role["message"] != payload.message_id
+            or react_role["channel"] != payload.channel_id
+            or react_role["emoji"]["name"] != emoji.name
+            or react_role["emoji"]["id"] != emoji.id
+        ):
+            return
+
+        try:
+            rebirths = await self.config.user(member).get_raw("rebirths")
+        except KeyError:
+            rebirths = 1
+
+        if rebirths >= 5:
+            await self.add_rebirths_role(guild, member)
+        else:
+            role = await self.get_role(guild, "adventure_role")
+            if role and role not in member.roles:
+                await member.add_roles(role)
+
+        channel = guild.get_channel(payload.channel_id)
+        if not channel:
+            return
+        try:
+            message = await channel.fetch_message(payload.message_id)
+        except Exception:
+            return
+
+        try:
+            await message.remove_reaction(emoji, member)
+        except Exception:
+            pass
