@@ -329,6 +329,7 @@ class RoleMixin(commands.Cog):
 
     @commands.group(name="reactrole")
     @commands.guild_only()
+    @commands.admin_or_permissions(manage_roles=True)
     async def _reactrole(self, ctx: Context):
         """Settings related to the adventure reaction role."""
 
