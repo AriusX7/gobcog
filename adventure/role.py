@@ -426,7 +426,7 @@ class RoleMixin(commands.Cog):
         # `emoji` is a `PartialEmoji`.
         emoji = payload.emoji
 
-        self.remove_reaction(guild, payload.channel_id, payload.message_id, emoji, member)
+        await self.remove_reaction(guild, payload.channel_id, payload.message_id, emoji, member)
 
         react_role = await self.config.guild(guild).react_role()
 
