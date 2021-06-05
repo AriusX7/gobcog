@@ -2462,7 +2462,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 "name": _("Samaritan"),
                 "ability": False,
                 "desc": _(
-                    "Clerics can report the opponent group when playing.\n"
+                    "Samaritans can report the opponent group when playing.\n"
                     "Use the report command when fighting in an adventure."
                 ),
                 "cooldown": time.time(),
@@ -2482,7 +2482,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 "name": _("Tilter"),
                 "ability": False,
                 "desc": _(
-                    "Tilters can perform to aid their comrades in diplomacy.\n"
+                    "Tilters can aid their comrades by distracting their enemies.\n"
                     "Use the emote command when being diplomatic in an adventure."
                 ),
                 "cooldown": time.time(),
@@ -3812,21 +3812,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             while ctx.channel.id in self._sessions:
                 del self._sessions[ctx.channel.id]
             return
-        reward_copy = reward.copy()
-        send_message = ""
-        for (userid, rewards) in reward_copy.items():
-            if rewards:
-                user = ctx.guild.get_member(userid)  # bot.get_user breaks sometimes :ablobsweats:
-                if user is None:
-                    # sorry no rewards if you leave the server
-                    continue
-                msg = await self._add_rewards(ctx, user, rewards["xp"], rewards["cp"], rewards["special"])
-                if msg:
-                    send_message += f"{msg}\n"
-                self._rewards[userid] = {}
-        if send_message:
-            for page in pagify(send_message):
-                await smart_embed(ctx, page, success=True)
+
         if participants:
             for user in participants:  # reset activated abilities
                 async with self.get_lock(user):
@@ -3852,6 +3838,22 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         c.last_known_currency = await bank.get_balance(user)
                         c.last_currency_check = time.time()
                     await self.config.user(user).set(await c.to_json(self.config))
+
+        reward_copy = reward.copy()
+        send_message = ""
+        for (userid, rewards) in reward_copy.items():
+            if rewards:
+                user = ctx.guild.get_member(userid)  # bot.get_user breaks sometimes :ablobsweats:
+                if user is None:
+                    # sorry no rewards if you leave the server
+                    continue
+                msg = await self._add_rewards(ctx, user, rewards["xp"], rewards["cp"], rewards["special"])
+                if msg:
+                    send_message += f"{msg}\n"
+                self._rewards[userid] = {}
+        if send_message:
+            for page in pagify(send_message):
+                await smart_embed(ctx, page, success=True)
 
         while ctx.channel.id in self._sessions:
             del self._sessions[ctx.channel.id]
