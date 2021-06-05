@@ -319,8 +319,13 @@ class RoleMixin(commands.Cog):
 
     async def add_rebirths_role(self, guild: discord.Guild, user: discord.Member):
         role = await self.get_role(guild, "rebirth_role")
-        if role:
+        if role and role not in user.roles:
             await user.add_roles(role)
+
+    async def remove_adv_role(self, guild: discord.Guild, user: discord.Member):
+        role = await self.get_role(guild, "adventure_role")
+        if role and role in user.roles:
+            await user.remove_roles(role)
 
     @tasks.loop(seconds=20)
     async def timed_roles_task(self):
