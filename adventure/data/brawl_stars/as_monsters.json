@@ -1202,7 +1202,7 @@
     "Ascended Clone of Zrib": {
         "hp": 1025,
         "pdef": 1500,
-        "mdef": 1.2,
+        "mdef": 1500,
         "dipl": 1,
         "image": "https://i.imgur.com/vwj8PB4.jpg",
         "boss": true,
