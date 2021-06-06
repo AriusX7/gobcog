@@ -2154,6 +2154,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
     @commands.command()
     @commands.bot_has_permissions(add_reactions=True)
+    @is_dm()
     async def forge(self, ctx):
         """[Tinkerer Class Only]
 
