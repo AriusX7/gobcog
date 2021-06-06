@@ -100,8 +100,13 @@ def can_use_ability():
         async with ctx.cog.get_lock(ctx.author):
             c = await ctx.cog.get_character_from_json(ctx.author)
             if c.heroclass["name"] != heroclass[ctx.command.name]:
+                clz = heroclass[ctx.command.name]
+                article = "an" if clz[0] in ["A", "E", "I", "O", "U"] else "a"
                 raise AdventureCheckFailure(
-                    _("**{name}**, you need to be a {heroclass} to do this.").format(name=ctx.cog.escape(ctx.author.display_name), heroclass=heroclass[ctx.command.name])
+                    _("**{name}**, you need to be {art} {heroclass} to do this.").format(
+                        name=ctx.cog.escape(ctx.author.display_name),
+                        heroclass=clz, art=article
+                    )
                 )
             else:
                 if c.heroclass["ability"]:
