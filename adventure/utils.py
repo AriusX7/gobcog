@@ -360,6 +360,26 @@ class FilterStr:
         return (self.sign == '+' and val in x) or (self.sign == '-' and val not in x)
 
 
+class UserCtx:
+    def __init__(self, ctx: Context, user: discord.User):
+        self.user = user
+        self.ctx = ctx
+        self.bot = ctx.bot
+        self.author = self.user
+        self.me = ctx.me
+
+    async def send(self, content=None, *, tts=False, embed=None, file=None,
+                                          files=None, delete_after=None, nonce=None,
+                                          allowed_mentions=None):
+        return await self.user.send(
+            content=content, tts=tts, embed=embed, file=file, files=files,
+            delete_after=delete_after, nonce=nonce, allowed_mentions=allowed_mentions
+        )
+
+    async def tick(self) -> bool:
+        return await self.ctx.tick()
+
+
 def start_adding_reactions(
     message: discord.Message, emojis
 ) -> asyncio.Task:

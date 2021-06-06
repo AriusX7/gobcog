@@ -70,6 +70,7 @@ from .utils import (
     FilterInt,
     FilterStr,
     Member,
+    UserCtx,
     check_global_setting_admin,
     can_use_ability,
     has_separated_economy, order_slots_dict,
@@ -3611,7 +3612,6 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
     @commands.command()
     @commands.bot_has_permissions(add_reactions=True)
-    @is_dm()
     async def stats(self, ctx: Context, *, user: Member = None):
         """This draws up a character sheet of you or an optionally specified member."""
 
@@ -3625,9 +3625,13 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         equipped_gear_msg = _("{user}'s Character Sheet\n\nItems Equipped:\n{legend}{equip}").format(
             legend=legend, equip=c.get_equipment(), user=c.user.display_name
         )
-        await menu(
-            ctx, pages=[box(c, lang="css"), box(equipped_gear_msg, lang="css")], controls=MENU_CONTROLS,
-        )
+        await ctx.send(_("{}, sending you the stats in DMs.").format(ctx.author.display_name))
+        try:
+            await menu(
+                UserCtx(ctx, ctx.author), pages=[box(c, lang="css"), box(equipped_gear_msg, lang="css")], controls=MENU_CONTROLS,
+            )
+        except discord.Forbidden:
+            await ctx.send(_("{}, I cannot DM you.").format(ctx.author.mention))
 
     async def _build_loadout_display(self, userdata, loadout=True):
         form_string = _("( RAGE  |  RANT  |  ACC  |  DEX  |  LUCK)")
