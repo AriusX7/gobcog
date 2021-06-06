@@ -3473,15 +3473,15 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 elif spend in att:
                     c.skill["pool"] -= amount
                     c.skill["att"] += amount
-                    spend = "attack"
+                    spend = "rage"
                 elif spend in cha:
                     c.skill["pool"] -= amount
                     c.skill["cha"] += amount
-                    spend = "charisma"
+                    spend = "rant"
                 elif spend in intel:
                     c.skill["pool"] -= amount
                     c.skill["int"] += amount
-                    spend = "intelligence"
+                    spend = "autoaim"
                 await self.config.user(ctx.author).set(await c.to_json(self.config))
                 await smart_embed(
                     ctx,
