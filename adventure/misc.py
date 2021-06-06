@@ -2505,7 +2505,7 @@ class MiscMixin(commands.Cog):
                     old_stats += (
                         f" (RAGE: {str(att)}, "
                         f"RANT: {str(cha)}, "
-                        f"AAIM: {str(intel)}, "
+                        f"ACC: {str(intel)}, "
                         f"DEX: {str(dex)}, "
                         f"LUCK: {str(luck)})"
                     )
@@ -2539,7 +2539,7 @@ class MiscMixin(commands.Cog):
                 )
                 + f" (RAGE: {str(att)}, "
                 f"RANT: {str(cha)}, "
-                f"AAIM: {str(intel)}, "
+                f"ACC: {str(intel)}, "
                 f"DEX: {str(dex)}, "
                 f"LUCK: {str(luck)})"
             )
@@ -2563,7 +2563,7 @@ class MiscMixin(commands.Cog):
                 )
                 + f" (RAGE: {str(att)}, "
                 f"RANT: {str(cha)}, "
-                f"AAIM: {str(intel)}, "
+                f"ACC: {str(intel)}, "
                 f"DEX: {str(dex)}, "
                 f"LUCK: {str(luck)}) "
             )

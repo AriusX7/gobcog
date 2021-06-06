@@ -687,7 +687,7 @@ class Character(Item):
             "A level {lvl} {class_desc} \n\n- "
             "RAGE: {att} [+{att_skill}] - "
             "RANT: {cha} [+{cha_skill}] - "
-            "AUTOAIM: {int} [+{int_skill}]\n\n - "
+            "ACCURACY: {int} [+{int_skill}]\n\n - "
             "DEXTERITY: {dex} - "
             "LUCK: {luck} \n\n "
             "Currency: {bal} \n- "
@@ -936,7 +936,7 @@ class Character(Item):
             consumed = []
         bkpk = await self.get_sorted_backpack(self.backpack, slot=slot, rarity=rarity, sort_order=sort_order)
         form_string = _(
-            "Items in Backpack: \n( RAGE | RANT | AAIM | DEX | LUCK ) | LEVEL REQ | [DEGRADE#] | OWNED | SET (SET PIECES)"
+            "Items in Backpack: \n( RAGE | RANT | ACC | DEX | LUCK ) | LEVEL REQ | [DEGRADE#] | OWNED | SET (SET PIECES)"
         )
         consumed_list = [i for i in consumed]
         rjust = max([len(str(i[1])) + 4 for slot_group in bkpk for i in slot_group] or [1, 4])
@@ -1731,7 +1731,7 @@ class SkillConverter(Converter):
             skill = argument.lower()
             att = ["rage"]
             cha = ["rant"]
-            intel = ["autoaim"]
+            intel = ["accuracy"]
             luck = ["luck"]
             dex = ["dexterity"]
             if skill in att:

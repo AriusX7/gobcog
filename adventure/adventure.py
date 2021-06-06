@@ -964,7 +964,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     "{author} wants to sell {item}. "
                     "(RAGE: {att_item} | "
                     "RANT: {cha_item} | "
-                    "AAIM: {int_item} | "
+                    "ACC: {int_item} | "
                     "DEX: {dex_item} | "
                     "LUCK: {luck_item}) "
                     "[{hand}])\n{buyer}, "
@@ -2799,7 +2799,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
                         msg = _(
                             "{}, you've opened the following items:\n"
-                            "( RAGE | RANT | AAIM | DEX | LUCK ) | LEVEL REQ | LOOTED | SET (SET PIECES)"
+                            "( RAGE | RANT | ACC | DEX | LUCK ) | LEVEL REQ | LOOTED | SET (SET PIECES)"
                         ).format(self.escape(ctx.author.display_name))
 
                         for type_ in box_types:
@@ -2981,7 +2981,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     items = await character.looted(how_many=max(int(10 - roll) // 2, 1))
                     if items:
                         item_string = "\n".join(
-                            ["( RAGE | RANT | AAIM | DEX | LUCK ) | LEVEL REQ | SET (SET PIECES)"] + [f"{i} - {character.get_looted_message(v)}" for v, i in items]
+                            ["( RAGE | RANT | ACC | DEX | LUCK ) | LEVEL REQ | SET (SET PIECES)"] + [f"{i} - {character.get_looted_message(v)}" for v, i in items]
                         )
                         looted = box(f"{item_string}", lang="css")
                         await self.config.user(ctx.author).set(await character.to_json(self.config))
@@ -3069,7 +3069,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     items = await character.looted(how_many=max(int(10 - roll) // 2, 1))
                     if items:
                         item_string = "\n".join(
-                            ["( RAGE | RANT | AAIM | DEX | LUCK ) | LEVEL REQ | SET (SET PIECES)"] + [f"{i} - {character.get_looted_message(v)}" for v, i in items]
+                            ["( RAGE | RANT | ACC | DEX | LUCK ) | LEVEL REQ | SET (SET PIECES)"] + [f"{i} - {character.get_looted_message(v)}" for v, i in items]
                         )
                         looted = box(f"{item_string}", lang="css")
                         await self.config.user(ctx.author).set(await character.to_json(self.config))
@@ -3455,7 +3455,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         "If you want to put them towards a permanent attack, "
                         "charisma or intelligence bonus, use "
                         "`{prefix}skill rage`, `{prefix}skill rant` or "
-                        "`{prefix}skill autoaim`"
+                        "`{prefix}skill accuracy`"
                     ).format(
                         author=self.escape(ctx.author.display_name),
                         skillpoints=str(c.skill["pool"]),
@@ -3465,7 +3465,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             else:
                 att = ["rage"]
                 cha = ["rant"]
-                intel = ["autoaim"]
+                intel = ["accuracy"]
                 if spend not in att + cha + intel:
                     raise AdventureCheckFailure(
                         _("Don't try to fool me! There is no such thing as {}.").format(spend)
@@ -3481,7 +3481,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 elif spend in intel:
                     c.skill["pool"] -= amount
                     c.skill["int"] += amount
-                    spend = "autoaim"
+                    spend = "accuracy"
                 await self.config.user(ctx.author).set(await c.to_json(self.config))
                 await smart_embed(
                     ctx,
@@ -3617,7 +3617,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             return
         c = await self.get_character_from_json(user)
 
-        legend = _("( RAGE | RANT | AAIM | DEX | LUCK ) | LEVEL REQ | [DEGRADE#] | SET (SET PIECES)")
+        legend = _("( RAGE | RANT | ACC | DEX | LUCK ) | LEVEL REQ | [DEGRADE#] | SET (SET PIECES)")
         equipped_gear_msg = _("{user}'s Character Sheet\n\nItems Equipped:\n{legend}{equip}").format(
             legend=legend, equip=c.get_equipment(), user=c.user.display_name
         )
@@ -3626,7 +3626,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         )
 
     async def _build_loadout_display(self, userdata, loadout=True):
-        form_string = _("( RAGE  |  RANT  |  AAIM  |  DEX  |  LUCK)")
+        form_string = _("( RAGE  |  RANT  |  ACC  |  DEX  |  LUCK)")
         form_string += _("\n\nItems Equipped:") if loadout else ""
         last_slot = ""
         att = 0
