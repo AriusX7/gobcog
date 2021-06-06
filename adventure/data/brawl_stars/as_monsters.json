@@ -1405,7 +1405,7 @@
         "mdef": 1.5,
         "dipl": 999,
         "image": "https://i.imgur.com/SwDWQrS.png",
-        "boss": false,
+        "boss": true,
         "miniboss": {},
         "color": ""
     },
