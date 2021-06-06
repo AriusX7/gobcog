@@ -235,6 +235,10 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 },
                 "channel": None,
                 "message": None,
+                "rmemoji": {
+                    "name": None,
+                    "id": None,
+                },
             },
         }
 
