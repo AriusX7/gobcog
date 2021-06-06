@@ -962,9 +962,9 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             trade_talk = box(
                 _(
                     "{author} wants to sell {item}. "
-                    "(ATT: {att_item} | "
-                    "CHA: {cha_item} | "
-                    "INT: {int_item} | "
+                    "(RAGE: {att_item} | "
+                    "RANT: {cha_item} | "
+                    "AAIM: {int_item} | "
                     "DEX: {dex_item} | "
                     "LUCK: {luck_item}) "
                     "[{hand}])\n{buyer}, "
@@ -2799,7 +2799,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
                         msg = _(
                             "{}, you've opened the following items:\n"
-                            "( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | LOOTED | SET (SET PIECES)"
+                            "( RAGE | RANT | AAIM | DEX | LUCK ) | LEVEL REQ | LOOTED | SET (SET PIECES)"
                         ).format(self.escape(ctx.author.display_name))
 
                         for type_ in box_types:
@@ -2981,7 +2981,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     items = await character.looted(how_many=max(int(10 - roll) // 2, 1))
                     if items:
                         item_string = "\n".join(
-                            ["( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | SET (SET PIECES)"] + [f"{i} - {character.get_looted_message(v)}" for v, i in items]
+                            ["( RAGE | RANT | AAIM | DEX | LUCK ) | LEVEL REQ | SET (SET PIECES)"] + [f"{i} - {character.get_looted_message(v)}" for v, i in items]
                         )
                         looted = box(f"{item_string}", lang="css")
                         await self.config.user(ctx.author).set(await character.to_json(self.config))
@@ -3069,7 +3069,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     items = await character.looted(how_many=max(int(10 - roll) // 2, 1))
                     if items:
                         item_string = "\n".join(
-                            ["( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | SET (SET PIECES)"] + [f"{i} - {character.get_looted_message(v)}" for v, i in items]
+                            ["( RAGE | RANT | AAIM | DEX | LUCK ) | LEVEL REQ | SET (SET PIECES)"] + [f"{i} - {character.get_looted_message(v)}" for v, i in items]
                         )
                         looted = box(f"{item_string}", lang="css")
                         await self.config.user(ctx.author).set(await character.to_json(self.config))
@@ -3626,7 +3626,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         )
 
     async def _build_loadout_display(self, userdata, loadout=True):
-        form_string = _("( ATT  |  CHA  |  INT  |  DEX  |  LUCK)")
+        form_string = _("( RAGE  |  RANT  |  AAIM  |  DEX  |  LUCK)")
         form_string += _("\n\nItems Equipped:") if loadout else ""
         last_slot = ""
         att = 0

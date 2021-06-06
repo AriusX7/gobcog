@@ -936,7 +936,7 @@ class Character(Item):
             consumed = []
         bkpk = await self.get_sorted_backpack(self.backpack, slot=slot, rarity=rarity, sort_order=sort_order)
         form_string = _(
-            "Items in Backpack: \n( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | [DEGRADE#] | OWNED | SET (SET PIECES)"
+            "Items in Backpack: \n( RAGE | RANT | AAIM | DEX | LUCK ) | LEVEL REQ | [DEGRADE#] | OWNED | SET (SET PIECES)"
         )
         consumed_list = [i for i in consumed]
         rjust = max([len(str(i[1])) + 4 for slot_group in bkpk for i in slot_group] or [1, 4])
