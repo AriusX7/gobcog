@@ -2503,9 +2503,9 @@ class MiscMixin(commands.Cog):
                         )
 
                     old_stats += (
-                        f" (ATT: {str(att)}, "
-                        f"CHA: {str(cha)}, "
-                        f"INT: {str(intel)}, "
+                        f" (RAGE: {str(att)}, "
+                        f"RANT: {str(cha)}, "
+                        f"AAIM: {str(intel)}, "
                         f"DEX: {str(dex)}, "
                         f"LUCK: {str(luck)})"
                     )
@@ -2537,9 +2537,9 @@ class MiscMixin(commands.Cog):
                 _("{user} found {item} [{slot}] | Lvl req {lv}.").format(
                     user=self.escape(user.display_name), item=str(item), slot=slot, lv=lv_str,
                 )
-                + f" (ATT: {str(att)}, "
-                f"CHA: {str(cha)}, "
-                f"INT: {str(intel)}, "
+                + f" (RAGE: {str(att)}, "
+                f"RANT: {str(cha)}, "
+                f"AAIM: {str(intel)}, "
                 f"DEX: {str(dex)}, "
                 f"LUCK: {str(luck)})"
             )
@@ -2561,9 +2561,9 @@ class MiscMixin(commands.Cog):
                 _("The {user} found {item} [{slot}] | Lvl req {lv}.").format(
                     user=user, item=str(item), slot=slot, lv=lv_str
                 )
-                + f" (ATT: {str(att)}, "
-                f"CHA: {str(cha)}, "
-                f"INT: {str(intel)}, "
+                + f" (RAGE: {str(att)}, "
+                f"RANT: {str(cha)}, "
+                f"AAIM: {str(intel)}, "
                 f"DEX: {str(dex)}, "
                 f"LUCK: {str(luck)}) "
             )
