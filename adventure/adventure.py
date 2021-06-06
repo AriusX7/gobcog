@@ -3375,7 +3375,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     async def skill(self, ctx: Context, spend: str = None, amount: DynamicInt = 1):
         """This allows you to spend skillpoints.
 
-        `[p]skill attack/charisma/intelligence`
+        `[p]skill rage/rant/autoaim`
         `[p]skill reset` Will allow you to reset your skill points for a cost.
         """
         if self.in_adventure(ctx):
@@ -3454,8 +3454,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         "**{author}**, you currently have **{skillpoints}** unspent skillpoints.\n"
                         "If you want to put them towards a permanent attack, "
                         "charisma or intelligence bonus, use "
-                        "`{prefix}skill attack`, `{prefix}skill charisma` or "
-                        "`{prefix}skill intelligence`"
+                        "`{prefix}skill rage`, `{prefix}skill rant` or "
+                        "`{prefix}skill autoaim`"
                     ).format(
                         author=self.escape(ctx.author.display_name),
                         skillpoints=str(c.skill["pool"]),
