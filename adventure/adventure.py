@@ -3625,13 +3625,21 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         equipped_gear_msg = _("{user}'s Character Sheet\n\nItems Equipped:\n{legend}{equip}").format(
             legend=legend, equip=c.get_equipment(), user=c.user.display_name
         )
-        await ctx.send(_("{}, sending you the stats in DMs.").format(ctx.author.display_name))
-        try:
+        if ctx.guild:
+            await ctx.send(_("{}, sending you the stats in DMs.").format(ctx.author.display_name))
+            try:
+                await menu(
+                    UserCtx(ctx, ctx.author),
+                    pages=[box(c, lang="css"),
+                    box(equipped_gear_msg, lang="css")],
+                    controls=MENU_CONTROLS,
+                )
+            except discord.Forbidden:
+                await ctx.send(_("{}, I cannot DM you.").format(ctx.author.mention))
+        else:
             await menu(
-                UserCtx(ctx, ctx.author), pages=[box(c, lang="css"), box(equipped_gear_msg, lang="css")], controls=MENU_CONTROLS,
+                ctx, pages=[box(c, lang="css"), box(equipped_gear_msg, lang="css")], controls=MENU_CONTROLS,
             )
-        except discord.Forbidden:
-            await ctx.send(_("{}, I cannot DM you.").format(ctx.author.mention))
 
     async def _build_loadout_display(self, userdata, loadout=True):
         form_string = _("( RAGE  |  RANT  |  ACC  |  DEX  |  LUCK)")
