@@ -3463,9 +3463,9 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     ),
                 )
             else:
-                att = ["attack"]
-                cha = ["diplomacy", "charisma"]
-                intel = ["intelligence", "magic"]
+                att = ["rage"]
+                cha = ["rant"]
+                intel = ["autoaim"]
                 if spend not in att + cha + intel:
                     raise AdventureCheckFailure(
                         _("Don't try to fool me! There is no such thing as {}.").format(spend)
@@ -3617,7 +3617,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             return
         c = await self.get_character_from_json(user)
 
-        legend = _("( ATT | CHA | INT | DEX | LUCK ) | LEVEL REQ | [DEGRADE#] | SET (SET PIECES)")
+        legend = _("( RAGE | RANT | AAIM | DEX | LUCK ) | LEVEL REQ | [DEGRADE#] | SET (SET PIECES)")
         equipped_gear_msg = _("{user}'s Character Sheet\n\nItems Equipped:\n{legend}{equip}").format(
             legend=legend, equip=c.get_equipment(), user=c.user.display_name
         )

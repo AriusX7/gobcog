@@ -1729,9 +1729,9 @@ class SkillConverter(Converter):
     async def convert(self, ctx, argument) -> Optional[str]:
         if argument:
             skill = argument.lower()
-            att = ["attack"]
-            cha = ["diplomacy", "charisma"]
-            intel = ["intelligence", "magic"]
+            att = ["rage"]
+            cha = ["rant"]
+            intel = ["autoaim"]
             luck = ["luck"]
             dex = ["dexterity"]
             if skill in att:
