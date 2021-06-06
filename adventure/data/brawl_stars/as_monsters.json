@@ -1300,10 +1300,10 @@
         "color": ""
     },
     "Ascended Llama Bandit": {
-        "hp": 1600,
+        "hp": 2600,
         "pdef": 1.1,
         "mdef": 1.2,
-        "dipl": 2250,
+        "dipl": 2950,
         "image": "https://i.imgur.com/92VMlTn.jpg",
         "boss": true,
         "miniboss": {},
