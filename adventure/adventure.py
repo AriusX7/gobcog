@@ -2584,8 +2584,12 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     if not await bank.can_spend(ctx.author, spend):
                         return await class_msg.edit(content=broke)
                     c = await self.get_character_from_json(ctx.author)
-                    now_class_msg = _("Congratulations, {author}.\nYou are now a {clz}.").format(
-                        author=self.escape(ctx.author.display_name), clz=classes[clz]["name"]
+
+                    clz = classes[clz]["name"]
+                    article = "an" if clz[0] in ["A", "E", "I", "O", "U"] else "a"
+
+                    now_class_msg = _("Congratulations, {author}.\nYou are now {article} {clz}.").format(
+                        author=self.escape(ctx.author.display_name), clz=clz, article=article
                     )
                     if c.lvl >= 10:
                         if c.heroclass["name"] == "Tinkerer" or c.heroclass["name"] == "Ranger":
