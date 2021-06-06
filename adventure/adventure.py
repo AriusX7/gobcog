@@ -1625,7 +1625,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         """
         time_delta = parse_timedelta(time)
         if time_delta is None:
-            raise AdventureCheckFailure(_("You must supply a amount and time unit like `120 seconds`."))
+            raise AdventureCheckFailure(_("You must supply an amount and time unit like `120 seconds`."))
         if time_delta.total_seconds() < 600:
             cartname = await self.config.guild(ctx.guild).cart_name()
             if not cartname:
@@ -3342,7 +3342,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     async def gadget(self, ctx: Context):
         """[Autoaimer Class Only]
 
-        This allows a Autoaimer to add substantial magic bonuses for one battle.
+        This allows an Autoaimer to add substantial magic bonuses for one battle.
         """
         async with self.get_lock(ctx.author):
             c = await self.get_character_from_json(ctx.author)
