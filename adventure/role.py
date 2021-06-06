@@ -94,6 +94,20 @@ class RoleMixin(commands.Cog):
             success=True
         )
 
+    @_roleset.command(name="muted")
+    @commands.guild_only()
+    @commands.admin_or_permissions(manage_guild=True)
+    async def _roleset_muted(self, ctx: Context, *, role: discord.Role):
+        """Set the Muted role."""
+
+        await self.config.guild(ctx.guild).muted_role.set(getattr(role, "id", None))
+
+        await smart_embed(
+            ctx,
+            _("Set {role} as Muted role.").format(role=role.mention),
+            success=True
+        )
+
     @_roleset.command(name="rebirth")
     @commands.guild_only()
     @commands.admin_or_permissions(manage_guild=True)
@@ -440,15 +454,16 @@ class RoleMixin(commands.Cog):
         adv_role = await self.get_role(after.guild, "adventure_role")
         rebirth_role = await self.get_role(after.guild, "rebirth_role")
         noadv_role = await self.get_role(after.guild, "noadventure_role")
+        muted_role = await self.get_role(after.guild, "muted_role")
         if adv_role and noadv_role:
             if before.roles != after.roles:
-                if all(x in after.roles for x in (adv_role, noadv_role)):
+                if adv_role in after.roles and any(x in after.roles for x in (muted_role, noadv_role)):
                     # remove adv_role
-                    await after.remove_roles(adv_role, reason='NoAdv and Adv role cannot be applied at the same time. Remove NoAdv role to disable this behaviour.')
+                    await after.remove_roles(adv_role, reason='NoAdv/Muted and Adv role cannot be applied at the same time. Remove NoAdv/Muted role to disable this behaviour.')
 
-                if all(x in after.roles for x in (rebirth_role, noadv_role)):
+                if rebirth_role in after.roles and any(x in after.roles for x in (muted_role, noadv_role)):
                     # remove rebirth_role
-                    await after.remove_roles(rebirth_role, reason='NoAdv and Rebirth role cannot be applied at the same time. Remove NoAdv role to disable this behaviour.')
+                    await after.remove_roles(rebirth_role, reason='NoAdv/Muted and Rebirth role cannot be applied at the same time. Remove NoAdv/Muted role to disable this behaviour.')
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):

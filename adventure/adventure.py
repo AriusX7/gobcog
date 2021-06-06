@@ -219,6 +219,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             "boss_ping_role": None,
             "adventure_role": None,
             "noadventure_role": None,
+            "muted_role": None,
             "timed_roles": {
                 # The dictionaries are of the type `"user_id": timestamp`
                 "general": {},
