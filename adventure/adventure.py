@@ -120,7 +120,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         self.emojis.skills.report = Emojis.report,
         # self.emojis.skills.psychic = "\N{SIX POINTED STAR WITH MIDDLE DOT}"
         self.emojis.skills.berserker = Emojis.berserker
-        self.emojis.skills.autoaimer = Emojis.autoaimer
+        self.emojis.skills.autoaimer1 = Emojis.autoaimer1
+        self.emojis.skills.autoaimer2 = Emojis.autoaimer2
         self.emojis.skills.tilter1 = Emojis.tilter1
         self.emojis.skills.tilter2 = Emojis.tilter2
         self.emojis.hp = "\N{HEAVY BLACK HEART}\N{VARIATION SELECTOR-16}"
@@ -3421,8 +3422,9 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             await self.config.user(ctx.author).set(await c.to_json(self.config))
             await smart_embed(
                 ctx,
-                _("{skill} **{c}** is reaching out for their green button... {skill}").format(
-                    c=self.escape(ctx.author.display_name), skill=self.emojis.skills.autoaimer,
+                _("{skill1} **{c}** is reaching out for their green button... {skill2}").format(
+                    c=self.escape(ctx.author.display_name), skill1=self.emojis.skills.autoaimer1,
+                    skill2=self.emojis.skills.autoaimer2,
                 ),
                 success=True
             )
