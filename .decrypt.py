@@ -25,6 +25,10 @@ for i in iglob('adventure/data/*/*.enc'):
     with open(i, 'rb') as f:
         decrypted_data = key.decrypt(f.read())
 
+    # Create decrypted folder if doesn't exist.
+    if not os.path.isdir('decrypted'):
+        os.mkdir('decrypted')
+
     # create theme folder if doesnt exist
     if not os.path.isdir(f'decrypted/{theme}'):
         os.mkdir(f'decrypted/{theme}')
