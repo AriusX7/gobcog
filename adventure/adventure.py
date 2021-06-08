@@ -1689,25 +1689,25 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         if theme not in os.listdir(bundled_data_path(self)):
             raise AdventureCheckFailure(_("That theme pack does not exist!"))
         good_files = [
-            "as_monsters.json",
-            "attribs.json",
-            "locations.json",
-            "monsters.json",
-            "pets.json",
-            "raisins.json",
-            "threatee.json",
-            "tr_set.json",
-            "prefixes.json",
-            "materials.json",
-            "equipment.json",
-            "suffixes.json",
-            "set_bonuses.json",
+            "as_monsters",
+            "attribs",
+            "locations",
+            "monsters",
+            "pets",
+            "raisins",
+            "threatee",
+            "tr_set",
+            "prefixes",
+            "materials",
+            "equipment",
+            "suffixes",
+            "set_bonuses",
         ]
-        missing_files = set(good_files).difference(os.listdir(bundled_data_path(self) / theme))
+        missing_files = set(good_files).difference('.'.join(i.split('.')[:-1]) for i in os.listdir(bundled_data_path(self) / theme))
 
         if missing_files:
             await smart_embed(
-                ctx, _("That theme pack is missing the following files: {}.").format(humanize_list(missing_files)),
+                ctx, _("That theme pack is missing the following files: {}.").format(humanize_list(list(missing_files))),
                 success=False
             )
             return

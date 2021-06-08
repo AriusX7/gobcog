@@ -13,6 +13,7 @@ from datetime import date, datetime, timedelta
 from typing import List, MutableMapping, Union
 
 import discord
+from cryptography.fernet import Fernet
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.commands import Context
@@ -44,12 +45,25 @@ log = logging.getLogger("red.cogs.adventure")
 class MiscMixin(commands.Cog):
     def __init__(self, bot: Red) -> None:
         self.bot = bot
+        self._key = None
 
         self.config: Config
 
     @staticmethod
     def is_dev(user: Union[discord.User, discord.Member]):
         return user.id in DEV_LIST
+
+    def parse_file(self, fp):
+        if str(fp).endswith('.enc'):
+            with open(fp, 'rb') as f:
+                data = f.read()
+                if self._key is not None:
+                    data = self._key.decrypt(data)
+                return json.loads(data)
+        else:
+            with open(fp, encoding='utf8') as f:
+                return json.load(f)
+                
 
     async def initialize(self):
         """This will load all the bundled data into respective variables."""
@@ -60,19 +74,24 @@ class MiscMixin(commands.Cog):
             theme = await self.config.theme()
             self._separate_economy = await self.config.separate_economy()
 
-            as_monster_fp = bundled_data_path(self) / f"{theme}" / "as_monsters.json"
-            attribs_fp = bundled_data_path(self) / f"{theme}" / "attribs.json"
-            locations_fp = bundled_data_path(self) / f"{theme}" / "locations.json"
-            monster_fp = bundled_data_path(self) / f"{theme}" / "monsters.json"
-            pets_fp = bundled_data_path(self) / f"{theme}" / "pets.json"
-            raisins_fp = bundled_data_path(self) / f"{theme}" / "raisins.json"
-            threatee_fp = bundled_data_path(self) / f"{theme}" / "threatee.json"
-            tr_set_fp = bundled_data_path(self) / f"{theme}" / "tr_set.json"
-            prefixes_fp = bundled_data_path(self) / f"{theme}" / "prefixes.json"
-            materials_fp = bundled_data_path(self) / f"{theme}" / "materials.json"
-            equipment_fp = bundled_data_path(self) / f"{theme}" / "equipment.json"
-            suffixes_fp = bundled_data_path(self) / f"{theme}" / "suffixes.json"
-            set_bonuses = bundled_data_path(self) / f"{theme}" / "set_bonuses.json"
+            key_fp = bundled_data_path(self) / theme / "key.key"
+            if key_fp.exists():
+                with open(key_fp, 'rb') as f:
+                    self._key = Fernet(f.read())
+
+            as_monster_fp = bundled_data_path(self) / theme / "as_monsters.json"
+            attribs_fp = bundled_data_path(self) / theme / "attribs.json"
+            locations_fp = bundled_data_path(self) / theme / "locations.json"
+            monster_fp = bundled_data_path(self) / theme / "monsters.json"
+            pets_fp = bundled_data_path(self) / theme / "pets.json"
+            raisins_fp = bundled_data_path(self) / theme / "raisins.json"
+            threatee_fp = bundled_data_path(self) / theme / "threatee.json"
+            tr_set_fp = bundled_data_path(self) / theme / "tr_set.json"
+            prefixes_fp = bundled_data_path(self) / theme / "prefixes.json"
+            materials_fp = bundled_data_path(self) / theme / "materials.json"
+            equipment_fp = bundled_data_path(self) / theme / "equipment.json"
+            suffixes_fp = bundled_data_path(self) / theme / "suffixes.json"
+            set_bonuses = bundled_data_path(self) / theme / "set_bonuses.json"
             files = {
                 "pets": pets_fp,
                 "attr": attribs_fp,
@@ -90,35 +109,26 @@ class MiscMixin(commands.Cog):
             }
             for (name, file) in files.items():
                 if not file.exists():
-                    files[name] = bundled_data_path(self) / "default" / f"{file.name}"
+                    # check if its encrypted instead
+                    if self._key:
+                        files[name] = bundled_data_path(self) / theme / f"{file.name[:-5]}.enc"
+                if not files[name].exists():
+                    files[name] = bundled_data_path(self) / "default" / file.name
 
-            with files["pets"].open("r") as f:
-                self.PETS = json.load(f)
-            with files["attr"].open("r") as f:
-                self.ATTRIBS = json.load(f)
-            with files["monster"].open("r") as f:
-                self.MONSTERS = json.load(f)
-            with files["as_monsters"].open("r") as f:
-                self.AS_MONSTERS = json.load(f)
-            with files["location"].open("r") as f:
-                self.LOCATIONS = json.load(f)
-            with files["raisins"].open("r") as f:
-                self.RAISINS = json.load(f)
-            with files["threatee"].open("r") as f:
-                self.THREATEE = json.load(f)
-            with files["set"].open("r") as f:
-                self.TR_GEAR_SET = json.load(f)
-            with files["prefixes"].open("r") as f:
-                self.PREFIXES = json.load(f)
-            with files["materials"].open("r") as f:
-                self.MATERIALS = json.load(f)
-            with files["equipment"].open("r") as f:
-                self.EQUIPMENT = json.load(f)
-            with files["suffixes"].open("r") as f:
-                self.SUFFIXES = json.load(f)
-            with files["set_bonuses"].open("r") as f:
-                self.SET_BONUSES = json.load(f)
-            
+            self.PETS = self.parse_file(files["pets"])
+            self.ATTRIBS = self.parse_file(files["attr"])
+            self.MONSTERS = self.parse_file(files["monster"])
+            self.AS_MONSTERS = self.parse_file(files["as_monsters"])
+            self.LOCATIONS = self.parse_file(files["location"])
+            self.RAISINS = self.parse_file(files["raisins"])
+            self.THREATEE = self.parse_file(files["threatee"])
+            self.TR_GEAR_SET = self.parse_file(files["set"])
+            self.PREFIXES = self.parse_file(files["prefixes"])
+            self.MATERIALS = self.parse_file(files["materials"])
+            self.EQUIPMENT = self.parse_file(files["equipment"])
+            self.SUFFIXES = self.parse_file(files["suffixes"])
+            self.SET_BONUSES = self.parse_file(files["set_bonuses"])
+
             try:
                 with open(cog_data_path(self) / "perms.json") as f:
                     self.PERMS = json.load(f)
