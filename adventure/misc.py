@@ -593,6 +593,8 @@ class MiscMixin(commands.Cog):
 
         if attribute and attribute.lower() in self.ATTRIBS:
             attribute = attribute.lower()
+        elif "Clone of Zrib" in challenge:
+            attribute = "god-wise"
         else:
             attribute = random.choice(list(self.ATTRIBS.keys()))
 
