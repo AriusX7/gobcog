@@ -1334,7 +1334,7 @@ class MiscMixin(commands.Cog):
                         text = _(
                             "{b_fighters} killed the {chall} "
                             "in a most heroic battle with a little help from {b_preachers} and "
-                            "{b_wizard} chanting magical incantations."
+                            "{b_wizard} providing backup autoaimed shots."
                         ).format(
                             b_fighters=fighters_final_string,
                             chall=session.challenge,
@@ -1351,7 +1351,7 @@ class MiscMixin(commands.Cog):
                     if len(session.autoaim) > 0 and len(session.rage) > 0:
                         text = _(
                             "{b_fighters} killed the {chall} "
-                            "in a most heroic battle with {b_wizard} chanting magical incantations."
+                            "in a most heroic battle with {b_wizard} providing backup autoaimed shots."
                         ).format(
                             b_fighters=fighters_final_string, chall=session.challenge, b_wizard=wizards_final_string,
                         )
@@ -1490,7 +1490,6 @@ class MiscMixin(commands.Cog):
         if len(attack_list) >= 1:
             msg = ""
             if len(session.rage) >= 1:
-                # TODO: Remove me when psychic gets added
                 if pdef >= 1.5:
                     msg += _("Swords bounce off this monster as it's skin is **almost impenetrable!**\n")
                 elif pdef >= 1.25:
@@ -1503,15 +1502,15 @@ class MiscMixin(commands.Cog):
                     msg += _("Swords slice through this monster like a **hot knife through butter!**\n")
             if len(session.autoaim) >= 1:
                 if mdef >= 1.5:
-                    msg += _("Magic? Pfft, your puny magic is **no match** for this creature!\n")
+                    msg += _("Bullets? Pfft, your puny bullets is **no match** for this creature!\n")
                 elif mdef >= 1.25:
-                    msg += _("This monster has **substantial magic resistance!**\n")
+                    msg += _("This monster has **substantial bullet resistance!**\n")
                 elif mdef > 1:
-                    msg += _("This monster has increased **magic resistance!**\n")
+                    msg += _("This monster has increased **bullet resistance!**\n")
                 elif 0.75 <= mdef < 1:
-                    msg += _("This monster's hide **melts to magic!**\n")
+                    msg += _("This monster's hide **melts to bullets!**\n")
                 elif mdef > 0 and mdef != 1:
-                    msg += _("Magic spells are **hugely effective** against this monster!\n")
+                    msg += _("Bullets are **hugely effective** against this monster!\n")
 
             report = _("Attack Party: \n\n")
         else:
