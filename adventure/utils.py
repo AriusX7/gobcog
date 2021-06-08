@@ -103,7 +103,7 @@ def can_use_ability():
                 clz = heroclass[ctx.command.name]
                 article = "an" if clz[0] in ["A", "E", "I", "O", "U"] else "a"
                 raise AdventureCheckFailure(
-                    _("**{name}**, you need to be {art} {heroclass} to do this.").format(
+                    _("**{name}**, you need to be {art} **{heroclass}** to do this.").format(
                         name=ctx.cog.escape(ctx.author.display_name),
                         heroclass=clz, art=article
                     )
