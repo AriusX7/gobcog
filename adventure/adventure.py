@@ -119,7 +119,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         self.emojis.skills = SimpleNamespace()
         self.emojis.skills.report = Emojis.report,
         # self.emojis.skills.psychic = "\N{SIX POINTED STAR WITH MIDDLE DOT}"
-        self.emojis.skills.berserker = self.emojis.berserk
+        self.emojis.skills.berserker = Emojis.berserker
         self.emojis.skills.autoaimer = Emojis.autoaimer
         self.emojis.skills.tilter1 = Emojis.tilter1
         self.emojis.skills.tilter2 = Emojis.tilter2
