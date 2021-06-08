@@ -2441,7 +2441,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 )
             )
 
-    @commands.command(cooldown_after_parsing=True)
+    @commands.group(cooldown_after_parsing=True, invoke_without_command=True)
     @commands.bot_has_permissions(add_reactions=True)
     @commands.cooldown(rate=1, per=7200, type=commands.BucketType.user)
     async def heroclass(self, ctx: Context, clz: str = None, action: str = None):
@@ -2526,10 +2526,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
         else:
             clz = clz.title()
-            if clz in classes and action == "info":
-                ctx.command.reset_cooldown(ctx)
-                return await smart_embed(ctx, f"{classes[clz]['desc']}")
-            elif clz not in classes:
+            if clz not in classes:
                 raise AdventureCheckFailure(_("{} may be a class somewhere, but not on my watch.").format(clz))
             elif clz in classes and action is None:
                 async with self.get_lock(ctx.author):
@@ -2703,6 +2700,75 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             if ctx.author.id in user_ids:
                 return False
         return True
+
+    @heroclass.command()
+    async def info(self, ctx: Context, clz: str):
+        classes = {
+            "Autoaimer": {
+                "name": _("Autoaimer"),
+                "ability": False,
+                "desc": _(
+                    "Autoaimers have the option to use their gadget and add large bonuses to their magic, "
+                    "but their gadget can sometimes go astray...\n"
+                    "Use the gadget command when attacking in an adventure."
+                ),
+                "cooldown": time.time(),
+            },
+            "Tinkerer": {
+                "name": _("Tinkerer"),
+                "ability": False,
+                "desc": _(
+                    "Tinkerers can forge two different items into a device "
+                    "bound to their very soul.\nUse the forge command."
+                ),
+                "cooldown": time.time(),
+            },
+            "Berserker": {
+                "name": _("Berserker"),
+                "ability": False,
+                "desc": _(
+                    "Berserkers have the option to use their super and add big bonuses to attacks, "
+                    "but fumbles hurt.\nUse the super command when attacking in an adventure."
+                ),
+                "cooldown": time.time(),
+            },
+            "Samaritan": {
+                "name": _("Samaritan"),
+                "ability": False,
+                "desc": _(
+                    "Samaritans can report the opponent group when playing.\n"
+                    "Use the report command when fighting in an adventure."
+                ),
+                "cooldown": time.time(),
+            },
+            "Ranger": {
+                "name": _("Ranger"),
+                "ability": False,
+                "desc": _(
+                    "Rangers can gain a special pet, which can find items and give "
+                    "reward bonuses.\nUse the pet command to see pet options."
+                ),
+                "pet": {},
+                "cooldown": time.time(),
+                "catch_cooldown": time.time(),
+            },
+            "Tilter": {
+                "name": _("Tilter"),
+                "ability": False,
+                "desc": _(
+                    "Tilters can aid their comrades by distracting their enemies.\n"
+                    "Use the emote command when being diplomatic in an adventure."
+                ),
+                "cooldown": time.time(),
+            },
+        }
+
+        clz = clz.title()
+        if clz in classes:
+            ctx.command.reset_cooldown(ctx)
+            return await smart_embed(ctx, f"{classes[clz]['desc']}")
+        else:
+            raise AdventureCheckFailure(_("{} may be a class somewhere, but not on my watch.").format(clz))
 
     @commands.command(cooldown_after_parsing=True)
     @commands.bot_has_permissions(add_reactions=True)
