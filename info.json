@@ -5,6 +5,7 @@
     "short" : "A fork of locastan's Goblins Adventure cog.",
     "description" : "Play a RPG character and get loot by killing monsters.",
     "min_python_version": [3, 6, 0],
+    "requirements": ["cryptography"],
 	"tags": [
 		"rpg",
 		"adventure"
