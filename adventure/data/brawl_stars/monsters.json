@@ -69,7 +69,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Rouge Defense Turret": {
+    "Rogue Defense Turret": {
         "hp": 155.8,
         "pdef": 0.9,
         "mdef": 1.3,
@@ -79,7 +79,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Rouge Defense Overpowered Machine": {
+    "Rogue Defense Overpowered Machine": {
         "hp": 225.4,
         "pdef": 1.3,
         "mdef": 1.2,
@@ -449,7 +449,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Angry Rouge Defense Robot": {
+    "Angry Rogue Defense Robot": {
         "hp": 149.9,
         "pdef": 1.3,
         "mdef": 1,
@@ -459,7 +459,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Furious Rouge Defense Robot": {
+    "Furious Rogue Defense Robot": {
         "hp": 174.2,
         "pdef": 0.9,
         "mdef": 1.1,
@@ -469,7 +469,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Engraged Rouge Defense Robot": {
+    "Engraged Rogue Defense Robot": {
         "hp": 109.8,
         "pdef": 1.1,
         "mdef": 1.3,
