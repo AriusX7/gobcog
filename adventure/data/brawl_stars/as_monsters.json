@@ -1420,7 +1420,7 @@
         "color": ""
     },
     "Ascended Gifted Zrib": {
-        "hp: 1890
+        "hp": 1890,
         "pdef": 2,
         "mdef": 2,
         "dipl": 10000,
