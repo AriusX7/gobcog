@@ -459,7 +459,7 @@ if platform.system() == 'Linux':
         autoaimer = "<:gadget:851608538735706152>"
         tilter1 = "<:bsthumbsup:844771847065305089>"
         tilter2 = "<:bsthumbsdown:844771847357726730>"
-        berkserker = "<:super:851789585032806470>"
+        berserker = "<:super:851789585032806470>"
 else:
     class Emojis:
         rage = "\N{DAGGER KNIFE}"
