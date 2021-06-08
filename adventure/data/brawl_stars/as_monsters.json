@@ -1049,7 +1049,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended King Canny": {
+    "Ascended King Lou": {
         "hp": 847.8,
         "pdef": 2.6,
         "mdef": 1.3,
@@ -1059,7 +1059,7 @@
         "miniboss": {},
         "color": ""
     },
-    "Ascended Smooth Canny": {
+    "Ascended Smooth Lou": {
         "hp": 727.6,
         "pdef": 1.5,
         "mdef": 2.7,
@@ -1084,7 +1084,7 @@
         "pdef": 2.6,
         "mdef": 2.2,
         "dipl": 1160,
-        "image": "https://imgur.com/a/XBUoAkt",
+        "image": "https://i.imgur.com/rmzB92g.png",
         "boss": false,
         "miniboss": {},
         "color": ""
@@ -1094,7 +1094,7 @@
         "pdef": 2.8,
         "mdef": 1.7,
         "dipl": 519.7,
-        "image": "https://imgur.com/a/5oy1VlS",
+        "image": "https://i.imgur.com/ag7ir12.jpeg",
         "boss": false,
         "miniboss": {},
         "color": ""
@@ -1202,7 +1202,7 @@
     "Ascended Clone of Zrib": {
         "hp": 1025,
         "pdef": 1500,
-        "mdef": 1.2,
+        "mdef": 1500,
         "dipl": 1,
         "image": "https://i.imgur.com/vwj8PB4.jpg",
         "boss": true,
@@ -1300,10 +1300,10 @@
         "color": ""
     },
     "Ascended Llama Bandit": {
-        "hp": 1600,
+        "hp": 2600,
         "pdef": 1.1,
         "mdef": 1.2,
-        "dipl": 2250,
+        "dipl": 2950,
         "image": "https://i.imgur.com/92VMlTn.jpg",
         "boss": true,
         "miniboss": {},
@@ -1405,7 +1405,7 @@
         "mdef": 1.5,
         "dipl": 999,
         "image": "https://i.imgur.com/SwDWQrS.png",
-        "boss": false,
+        "boss": true,
         "miniboss": {},
         "color": ""
     },

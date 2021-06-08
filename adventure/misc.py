@@ -3261,3 +3261,126 @@ class MiscMixin(commands.Cog):
         )
 
         return msg
+
+    async def _to_forge(self, ctx: commands.Context, consumed, character):
+        item1 = consumed[0]
+        item2 = consumed[1]
+
+        roll = random.randint(1, 20)
+        modifier = (roll / 20) + 0.3
+        base_cha = max(character._cha, 1)
+        base_int = character._int
+        base_luck = character._luck
+        base_att = max(character._att, 1)
+        modifier_bonus_luck = 0.01 * base_luck // 10
+        modifier_bonus_int = 0.01 * base_int // 20
+        modifier_penalty_str = -0.01 * base_att // 20
+        modifier_penalty_cha = -0.01 * base_cha // 10
+        modifier = sum([modifier_bonus_int, modifier_bonus_luck, modifier_penalty_cha, modifier_penalty_str, modifier])
+        modifier = max(0.001, modifier)
+
+        base_int = int(item1.int) + int(item2.int)
+        base_cha = int(item1.cha) + int(item2.cha)
+        base_att = int(item1.att) + int(item2.att)
+        base_dex = int(item1.dex) + int(item2.dex)
+        base_luck = int(item1.luck) + int(item2.luck)
+        newatt = int((base_att * modifier) + base_att)
+        newdip = int((base_cha * modifier) + base_cha)
+        newint = int((base_int * modifier) + base_int)
+        newdex = int((base_dex * modifier) + base_dex)
+        newluck = int((base_luck * modifier) + base_luck)
+        newslot = random.choice(ORDER)
+        if newslot == "two handed":
+            newslot = ["right", "left"]
+        else:
+            newslot = [newslot]
+        if len(newslot) == 2:  # two handed weapons add their bonuses twice
+            hand = "two handed"
+        else:
+            if newslot[0] == "right" or newslot[0] == "left":
+                hand = newslot[0] + " handed"
+            else:
+                hand = newslot[0] + " slot"
+        if len(newslot) == 2:
+            two_handed_msg = box(
+                _(
+                    "{author}, your forging roll was {dice}({roll}).\n"
+                    "The device you tinkered will have "
+                    "(ATT {new_att} | "
+                    "CHA {new_cha} | "
+                    "INT {new_int} | "
+                    "DEX {new_dex} | "
+                    "LUCK {new_luck})"
+                    " and be {hand}."
+                ).format(
+                    author=self.escape(ctx.author.display_name),
+                    roll=roll,
+                    dice=self.emojis.dice,
+                    new_att=(newatt * 2),
+                    new_cha=(newdip * 2),
+                    new_int=(newint * 2),
+                    new_dex=(newdex * 2),
+                    new_luck=(newluck * 2),
+                    hand=hand,
+                ),
+                lang="css",
+            )
+            await ctx.send(two_handed_msg)
+        else:
+            reg_item = box(
+                _(
+                    "{author}, your forging roll was {dice}({roll}).\n"
+                    "The device you tinkered will have "
+                    "(ATT {new_att} | "
+                    "CHA {new_dip} | "
+                    "INT {new_int} | "
+                    "DEX {new_dex} | "
+                    "LUCK {new_luck})"
+                    " and be {hand}."
+                ).format(
+                    author=self.escape(ctx.author.display_name),
+                    roll=roll,
+                    dice=self.emojis.dice,
+                    new_att=newatt,
+                    new_dip=newdip,
+                    new_int=newint,
+                    new_dex=newdex,
+                    new_luck=newluck,
+                    hand=hand,
+                ),
+                lang="css",
+            )
+            await ctx.send(reg_item)
+        get_name = _(
+            "**{}**, please respond with "
+            "a name for your creation within 30s.\n"
+            "(You will not be able to change it afterwards. 40 characters maximum.)"
+        ).format(self.escape(ctx.author.display_name))
+        await smart_embed(ctx, get_name)
+        reply = None
+        name = _("Unnamed Artifact")
+        try:
+            reply = await ctx.bot.wait_for("message", check=MessagePredicate.same_context(user=ctx.author), timeout=30)
+        except asyncio.TimeoutError:
+            name = _("Unnamed Artifact")
+        if reply is None:
+            name = _("Unnamed Artifact")
+        else:
+            if hasattr(reply, "content"):
+                if len(reply.content) > 40:
+                    name = _("Long-winded Artifact")
+                else:
+                    name = reply.content.lower()
+        item = {
+            name: {
+                "slot": newslot,
+                "att": newatt,
+                "cha": newdip,
+                "int": newint,
+                "dex": newdex,
+                "luck": newluck,
+                "rarity": "forged",
+            }
+        }
+        item = Item.from_json(item)
+        return item
