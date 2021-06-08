@@ -1689,7 +1689,7 @@ class MiscMixin(commands.Cog):
                     mod = 45
                 roll = max(random.randint((1 + mod), max_roll), 1)
                 if len(session.rage | session.rant | session.autoaim) == 0:
-                    msg += _("**{}** blessed like a madman but nobody was there to receive it.\n").format(
+                    msg += _("**{}** reported like a madman but nobody was there to receive it.\n").format(
                         self.escape(user.display_name)
                     )
                 if roll == 1:
@@ -1769,7 +1769,7 @@ class MiscMixin(commands.Cog):
             else:
                 roll = random.randint(1, 10)
                 if len(session.rage | session.rant | session.autoaim) == 0:
-                    msg += _("**{}** prayed like a madman but nobody else helped them.\n").format(
+                    msg += _("**{}** reported like a madman but nobody else helped them.\n").format(
                         self.escape(user.display_name)
                     )
 
@@ -1788,7 +1788,7 @@ class MiscMixin(commands.Cog):
                     magic += max(magic_buff, 0)
                     diplomacy += max(talk_buff, 0)
                     msg += _(
-                        "**{user}'s** prayer called upon the mighty {god} to help you. "
+                        "**{user}'s** report called upon the mighty {god} to help you. "
                         "(+{len_f_list}{attack}/+{len_m_list}{magic}/+{len_t_list}{talk}) {roll_emoji}({roll})\n"
                     ).format(
                         user=self.escape(user.display_name),
@@ -1804,7 +1804,7 @@ class MiscMixin(commands.Cog):
                     )
                 else:
                     fumblelist.add(user)
-                    msg += _("{}**{}'s** prayers went unanswered.\n").format(
+                    msg += _("{}**{}'s** reports went unanswered.\n").format(
                         failed_emoji, self.escape(user.display_name)
                     )
         for user in fumblelist:
