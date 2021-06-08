@@ -100,8 +100,13 @@ def can_use_ability():
         async with ctx.cog.get_lock(ctx.author):
             c = await ctx.cog.get_character_from_json(ctx.author)
             if c.heroclass["name"] != heroclass[ctx.command.name]:
+                clz = heroclass[ctx.command.name]
+                article = "an" if clz[0] in ["A", "E", "I", "O", "U"] else "a"
                 raise AdventureCheckFailure(
-                    _("**{name}**, you need to be a {heroclass} to do this.").format(name=ctx.cog.escape(ctx.author.display_name), heroclass=heroclass[ctx.command.name])
+                    _("**{name}**, you need to be {art} {heroclass} to do this.").format(
+                        name=ctx.cog.escape(ctx.author.display_name),
+                        heroclass=clz, art=article
+                    )
                 )
             else:
                 if c.heroclass["ability"]:
@@ -358,6 +363,26 @@ class FilterStr:
         x = x.lower()
         val = self.val.lower()
         return (self.sign == '+' and val in x) or (self.sign == '-' and val not in x)
+
+
+class UserCtx:
+    def __init__(self, ctx: Context, user: discord.User):
+        self.user = user
+        self.ctx = ctx
+        self.bot = ctx.bot
+        self.author = self.user
+        self.me = ctx.me
+
+    async def send(self, content=None, *, tts=False, embed=None, file=None,
+                                          files=None, delete_after=None, nonce=None,
+                                          allowed_mentions=None):
+        return await self.user.send(
+            content=content, tts=tts, embed=embed, file=file, files=files,
+            delete_after=delete_after, nonce=nonce, allowed_mentions=allowed_mentions
+        )
+
+    async def tick(self) -> bool:
+        return await self.ctx.tick()
 
 
 def start_adding_reactions(

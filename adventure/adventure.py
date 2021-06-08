@@ -70,6 +70,7 @@ from .utils import (
     FilterInt,
     FilterStr,
     Member,
+    UserCtx,
     check_global_setting_admin,
     can_use_ability,
     has_separated_economy, order_slots_dict,
@@ -218,6 +219,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             "boss_ping_role": None,
             "adventure_role": None,
             "noadventure_role": None,
+            "muted_role": None,
             "timed_roles": {
                 # The dictionaries are of the type `"user_id": timestamp`
                 "general": {},
@@ -235,6 +237,10 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 },
                 "channel": None,
                 "message": None,
+                "rmemoji": {
+                    "name": None,
+                    "id": None,
+                },
             },
         }
 
@@ -1619,7 +1625,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         """
         time_delta = parse_timedelta(time)
         if time_delta is None:
-            raise AdventureCheckFailure(_("You must supply a amount and time unit like `120 seconds`."))
+            raise AdventureCheckFailure(_("You must supply an amount and time unit like `120 seconds`."))
         if time_delta.total_seconds() < 600:
             cartname = await self.config.guild(ctx.guild).cart_name()
             if not cartname:
@@ -2148,6 +2154,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
     @commands.command()
     @commands.bot_has_permissions(add_reactions=True)
+    @is_dm()
     async def forge(self, ctx):
         """[Tinkerer Class Only]
 
@@ -2577,8 +2584,12 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     if not await bank.can_spend(ctx.author, spend):
                         return await class_msg.edit(content=broke)
                     c = await self.get_character_from_json(ctx.author)
-                    now_class_msg = _("Congratulations, {author}.\nYou are now a {clz}.").format(
-                        author=self.escape(ctx.author.display_name), clz=classes[clz]["name"]
+
+                    clz = classes[clz]["name"]
+                    article = "an" if clz[0] in ["A", "E", "I", "O", "U"] else "a"
+
+                    now_class_msg = _("Congratulations, {author}.\nYou are now {article} {clz}.").format(
+                        author=self.escape(ctx.author.display_name), clz=clz, article=article
                     )
                     if c.lvl >= 10:
                         if c.heroclass["name"] == "Tinkerer" or c.heroclass["name"] == "Ranger":
@@ -3335,7 +3346,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     async def gadget(self, ctx: Context):
         """[Autoaimer Class Only]
 
-        This allows a Autoaimer to add substantial magic bonuses for one battle.
+        This allows an Autoaimer to add substantial magic bonuses for one battle.
         """
         async with self.get_lock(ctx.author):
             c = await self.get_character_from_json(ctx.author)
@@ -3607,7 +3618,6 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
     @commands.command()
     @commands.bot_has_permissions(add_reactions=True)
-    @is_dm()
     async def stats(self, ctx: Context, *, user: Member = None):
         """This draws up a character sheet of you or an optionally specified member."""
 
@@ -3621,9 +3631,21 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         equipped_gear_msg = _("{user}'s Character Sheet\n\nItems Equipped:\n{legend}{equip}").format(
             legend=legend, equip=c.get_equipment(), user=c.user.display_name
         )
-        await menu(
-            ctx, pages=[box(c, lang="css"), box(equipped_gear_msg, lang="css")], controls=MENU_CONTROLS,
-        )
+        if ctx.guild:
+            await ctx.send(_("{}, sending you the stats in DMs.").format(ctx.author.display_name))
+            try:
+                await menu(
+                    UserCtx(ctx, ctx.author),
+                    pages=[box(c, lang="css"),
+                    box(equipped_gear_msg, lang="css")],
+                    controls=MENU_CONTROLS,
+                )
+            except discord.Forbidden:
+                await ctx.send(_("{}, I cannot DM you.").format(ctx.author.mention))
+        else:
+            await menu(
+                ctx, pages=[box(c, lang="css"), box(equipped_gear_msg, lang="css")], controls=MENU_CONTROLS,
+            )
 
     async def _build_loadout_display(self, userdata, loadout=True):
         form_string = _("( RAGE  |  RANT  |  ACC  |  DEX  |  LUCK)")

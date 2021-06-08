@@ -94,6 +94,20 @@ class RoleMixin(commands.Cog):
             success=True
         )
 
+    @_roleset.command(name="muted")
+    @commands.guild_only()
+    @commands.admin_or_permissions(manage_guild=True)
+    async def _roleset_muted(self, ctx: Context, *, role: discord.Role):
+        """Set the Muted role."""
+
+        await self.config.guild(ctx.guild).muted_role.set(getattr(role, "id", None))
+
+        await smart_embed(
+            ctx,
+            _("Set {role} as Muted role.").format(role=role.mention),
+            success=True
+        )
+
     @_roleset.command(name="rebirth")
     @commands.guild_only()
     @commands.admin_or_permissions(manage_guild=True)
@@ -320,13 +334,11 @@ class RoleMixin(commands.Cog):
 
     async def add_rebirths_role(self, guild: discord.Guild, user: discord.Member):
         role = await self.get_role(guild, "rebirth_role")
-        if role and role not in user.roles:
-            await user.add_roles(role)
+        await self.add_role(role, user)
 
     async def remove_adv_role(self, guild: discord.Guild, user: discord.Member):
         role = await self.get_role(guild, "adventure_role")
-        if role and role in user.roles:
-            await user.remove_roles(role)
+        await self.remove_role(role, user)
 
     @commands.group(name="reactrole")
     @commands.guild_only()
@@ -359,6 +371,38 @@ class RoleMixin(commands.Cog):
 
             react_role["emoji"]["name"] = emoji.name
             react_role["emoji"]["id"] = emoji.id
+
+        await ctx.tick()
+
+
+    @_reactrole.command(name="rmemoji")
+    async def _reactrole_rm_emoji(self, ctx: Context, emoji: discord.Emoji):
+        """Set the react role emoji to remove role.
+
+        You must set the react role message first.
+        """
+
+        async with self.config.guild(ctx.guild).react_role() as react_role:
+            channel_id = react_role["channel"]
+            message_id = react_role["message"]
+            if not channel_id or not message_id:
+                raise AdventureCheckFailure(_("Reaction roles channel and message not set."))
+
+            channel = ctx.guild.get_channel(channel_id)
+            if not channel:
+                raise AdventureCheckFailure(_("Reaction roles channel cannot be found."))
+            try:
+                message: discord.Message = await channel.fetch_message(message_id)
+            except Exception:
+                raise AdventureCheckFailure(_("Reaction roles message cannot be found."))
+
+            try:
+                await message.add_reaction(emoji)
+            except Exception:
+                raise AdventureCheckFailure(_("Cannot react to the reaction roles message."))
+
+            react_role["rmemoji"]["name"] = emoji.name
+            react_role["rmemoji"]["id"] = emoji.id
 
         await ctx.tick()
 
@@ -410,15 +454,16 @@ class RoleMixin(commands.Cog):
         adv_role = await self.get_role(after.guild, "adventure_role")
         rebirth_role = await self.get_role(after.guild, "rebirth_role")
         noadv_role = await self.get_role(after.guild, "noadventure_role")
+        muted_role = await self.get_role(after.guild, "muted_role")
         if adv_role and noadv_role:
             if before.roles != after.roles:
-                if all(x in after.roles for x in (adv_role, noadv_role)):
+                if adv_role in after.roles and any(x in after.roles for x in (muted_role, noadv_role)):
                     # remove adv_role
-                    await after.remove_roles(adv_role, reason='NoAdv and Adv role cannot be applied at the same time. Remove NoAdv role to disable this behaviour.')
+                    await after.remove_roles(adv_role, reason='NoAdv/Muted and Adv role cannot be applied at the same time. Remove NoAdv/Muted role to disable this behaviour.')
 
-                if all(x in after.roles for x in (rebirth_role, noadv_role)):
+                if rebirth_role in after.roles and any(x in after.roles for x in (muted_role, noadv_role)):
                     # remove rebirth_role
-                    await after.remove_roles(rebirth_role, reason='NoAdv and Rebirth role cannot be applied at the same time. Remove NoAdv role to disable this behaviour.')
+                    await after.remove_roles(rebirth_role, reason='NoAdv/Muted and Rebirth role cannot be applied at the same time. Remove NoAdv/Muted role to disable this behaviour.')
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
@@ -438,24 +483,35 @@ class RoleMixin(commands.Cog):
         if (
             react_role["message"] != payload.message_id
             or react_role["channel"] != payload.channel_id
-            or react_role["emoji"]["name"] != emoji.name
-            or react_role["emoji"]["id"] != emoji.id
+            or (
+                react_role["emoji"]["name"] != emoji.name
+                and react_role["rmemoji"]["name"] != emoji.name
+            )
+            or (
+                react_role["emoji"]["id"] != emoji.id
+                and react_role["rmemoji"]["id"] != emoji.id
+            )
         ):
             return
 
         await self.remove_reaction(guild, payload.channel_id, payload.message_id, emoji, member)
 
-        try:
-            rebirths = await self.config.user(member).get_raw("rebirths")
-        except KeyError:
-            rebirths = 1
+        adv_role = await self.get_role(guild, "adventure_role")
+        rebirth_role = await self.get_role(guild, "rebirth_role")
 
-        if rebirths >= 5:
-            await self.add_rebirths_role(guild, member)
-        else:
-            role = await self.get_role(guild, "adventure_role")
-            if role and role not in member.roles:
-                await member.add_roles(role)
+        if emoji.id == react_role["emoji"]["id"] and emoji.name == react_role["emoji"]["name"]:
+            try:
+                rebirths = await self.config.user(member).get_raw("rebirths")
+            except KeyError:
+                rebirths = 1
+
+            if rebirths >= 5:
+                await self.add_role(rebirth_role, member)
+            else:
+                await self.add_role(adv_role, member)
+        elif emoji.id == react_role["rmemoji"]["id"] and emoji.name == react_role["rmemoji"]["name"]:
+            await self.remove_role(rebirth_role, member)
+            await self.remove_role(adv_role, member)
 
     @staticmethod
     async def remove_reaction(
@@ -477,3 +533,13 @@ class RoleMixin(commands.Cog):
             await message.remove_reaction(emoji, member)
         except Exception:
             pass
+
+    @staticmethod
+    async def add_role(role: discord.Role, member: discord.Member):
+        if role and role not in member.roles:
+            await member.add_roles(role)
+
+    @staticmethod
+    async def remove_role(role: discord.Role, member: discord.Member):
+        if role and role in member.roles:
+            await member.remove_roles(role)
