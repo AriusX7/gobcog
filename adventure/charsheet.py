@@ -686,8 +686,8 @@ class Character(Item):
             "{rebirth_text}"
             "A level {lvl} {class_desc} \n\n- "
             "RAGE: {att} [+{att_skill}] - "
-            "RANT: {cha} [+{cha_skill}] - "
             "ACCURACY: {int} [+{int_skill}]\n\n - "
+            "RANT: {cha} [+{cha_skill}] - "
             "DEXTERITY: {dex} - "
             "LUCK: {luck} \n\n "
             "Currency: {bal} \n- "
@@ -718,8 +718,8 @@ class Character(Item):
             skill_points=0 if self.skill["pool"] < 0 else self.skill["pool"],
             set_bonus=(
                 f"( {self.gear_set_bonus.get('att'):<2} | "
-                f"{self.gear_set_bonus.get('cha'):<2} | "
                 f"{self.gear_set_bonus.get('int'):<2} | "
+                f"{self.gear_set_bonus.get('cha'):<2} | "
                 f"{self.gear_set_bonus.get('dex'):<2} | "
                 f"{self.gear_set_bonus.get('luck'):<2} ) "
                 f"Stats: {round(statmult * 100)}% | "
@@ -765,8 +765,8 @@ class Character(Item):
                 ((item.luck * 2 if slot_name == "two handed" else item.luck) * self.gear_set_bonus.get("statmult", 1))
             )
             att_space = " " if len(str(att)) >= 1 else ""
-            cha_space = " " if len(str(cha)) >= 1 else ""
             int_space = " " if len(str(inter)) >= 1 else ""
+            cha_space = " " if len(str(cha)) >= 1 else ""
             dex_space = " " if len(str(dex)) >= 1 else ""
             luck_space = " " if len(str(luck)) >= 1 else ""
 
@@ -778,8 +778,8 @@ class Character(Item):
             form_string += (
                 f"\n{str(item):<{rjust}} - "
                 f"({att_space}{att:<3} |"
-                f"{cha_space}{cha:<3} |"
                 f"{int_space}{inter:<3} |"
+                f"{cha_space}{cha:<3} |"
                 f"{dex_space}{dex:<3} |"
                 f"{luck_space}{luck:<3} )"
                 f" | Lvl { equip_level(self, item):<5}"
