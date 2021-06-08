@@ -896,7 +896,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
         await menu(ctx, messages, back_pack_sell_controls, timeout=60)
 
-    @_backpack.command(name="trade")
+    @_backpack.command(name="trade", enabled=False)
     async def backpack_trade(
         self, ctx: Context, buyer: Member, asking: Optional[int] = 1000, *, item: ItemConverter,
     ):
