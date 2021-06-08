@@ -456,7 +456,7 @@ if platform.system() == 'Linux':
         rant = "<:mrprant:844771848344436756>"
         pray = "<:pocopray:844771847685799937>"
         report = "<:bsexclamationmark:844771847258374174>"
-        autoaimer = "<:blueplussign:844771847286292510>"
+        autoaimer = "<:gadget:851608538735706152>"
         tilter1 = "<:bsthumbsup:844771847065305089>"
         tilter2 = "<:bsthumbsdown:844771847357726730>"
 else:
