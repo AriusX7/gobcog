@@ -7,8 +7,6 @@ from typing import List, MutableMapping
 
 import discord
 from discord.ext import commands
-from discord.ext.commands.errors import UserInputError
-from discord.utils import get
 from redbot.core.utils.chat_formatting import humanize_timedelta
 from discord.ext.commands import BadArgument, CheckFailure, Converter
 from redbot.core.commands import Context, check

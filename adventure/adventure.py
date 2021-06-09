@@ -2458,7 +2458,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 "name": _("Autoaimer"),
                 "ability": False,
                 "desc": _(
-                    "Autoaimers have the option to use their gadget and add large bonuses to their magic, "
+                    "Autoaimers have the option to use their gadget and add large bonuses to their accuracy, "
                     "but their gadget can sometimes go astray...\n"
                     "Use the gadget command when attacking in an adventure."
                 ),
@@ -2709,7 +2709,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 "name": _("Autoaimer"),
                 "ability": False,
                 "desc": _(
-                    "Autoaimers have the option to use their gadget and add large bonuses to their magic, "
+                    "Autoaimers have the option to use their gadget and add large bonuses to their accuracy, "
                     "but their gadget can sometimes go astray...\n"
                     "Use the gadget command when attacking in an adventure."
                 ),

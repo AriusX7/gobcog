@@ -17,12 +17,11 @@ from cryptography.fernet import Fernet
 from redbot.core import Config, commands
 from redbot.core.bot import Red
 from redbot.core.commands import Context
-from redbot.core.commands.requires import PrivilegeLevel
 from redbot.core.data_manager import bundled_data_path, cog_data_path
 from redbot.core.errors import BalanceTooHigh
 from redbot.core.i18n import Translator
 from redbot.core.utils import AsyncIter
-from redbot.core.utils.chat_formatting import box, escape, humanize_list, humanize_number, humanize_timedelta, pagify
+from redbot.core.utils.chat_formatting import box, escape, humanize_list, humanize_number, pagify
 from redbot.core.utils.common_filters import filter_various_mentions
 from redbot.core.utils.menus import menu
 from redbot.core.utils.predicates import MessagePredicate, ReactionPredicate

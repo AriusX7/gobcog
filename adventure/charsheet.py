@@ -5,7 +5,7 @@ import logging
 import random
 import re
 import typing
-from copy import copy, deepcopy
+from copy import copy
 from collections import OrderedDict
 from datetime import date, datetime, timedelta
 from string import ascii_letters, digits
