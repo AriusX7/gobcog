@@ -3402,7 +3402,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             await self.config.user(ctx.author).set(await c.to_json(self.config))
             await smart_embed(
                 ctx,
-                _("{skill} {c} has a rotating yellow circle beneath their feet...  {skill}").format(
+                _("{skill} **{c}** has a rotating yellow circle beneath their feet...  {skill}").format(
                     c=self.escape(ctx.author.display_name), skill=self.emojis.skills.berserker,
                 ),
                 success=True
