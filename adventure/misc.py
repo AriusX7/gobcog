@@ -1512,7 +1512,7 @@ class MiscMixin(commands.Cog):
                     msg += _("Swords slice through this monster like a **hot knife through butter!**\n")
             if len(session.autoaim) >= 1:
                 if mdef >= 1.5:
-                    msg += _("Bullets? Pfft, your puny bullets is **no match** for this creature!\n")
+                    msg += _("Bullets? Pfft, your puny bullets are **no match** for this creature!\n")
                 elif mdef >= 1.25:
                     msg += _("This monster has **substantial bullet resistance!**\n")
                 elif mdef > 1:
