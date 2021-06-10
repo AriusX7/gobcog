@@ -3530,8 +3530,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     ctx,
                     _(
                         "**{author}**, you currently have **{skillpoints}** unspent skillpoints.\n"
-                        "If you want to put them towards a permanent attack, "
-                        "charisma or intelligence bonus, use "
+                        "If you want to put them towards a permanent rage, "
+                        "rant or accuracy bonus, use "
                         "`{prefix}skill rage`, `{prefix}skill rant` or "
                         "`{prefix}skill accuracy`"
                     ).format(
@@ -3541,9 +3541,9 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     ),
                 )
             else:
-                att = ["rage"]
-                cha = ["rant"]
-                intel = ["accuracy"]
+                att = ["rage", "rg", "rag"]
+                cha = ["rant", "ran", "rt"]
+                intel = ["accuracy", "acc", "acr"]
                 if spend not in att + cha + intel:
                     raise AdventureCheckFailure(
                         _("Don't try to fool me! There is no such thing as {}.").format(spend)
