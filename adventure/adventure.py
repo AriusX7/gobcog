@@ -495,7 +495,6 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         Give it a rarity and/or slot to filter what backpack items to show.
 
         Selling:     `[p]backpack sell item_name`
-        Trading:     `[p]backpack trade @user price item_name`
         Equip:       `[p]backpack equip item_name`
         Sell All:    `[p]backpack sellall rarity slot`
         Disassemble: `[p]backpack disassemble item_name`
