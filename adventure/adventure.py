@@ -3593,15 +3593,15 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         msg_list = []
         for bonus in bonus_list:
             parts = bonus.get("parts", 0)
-            attack = bonus.get("att", 0)
-            charisma = bonus.get("cha", 0)
-            intelligence = bonus.get("int", 0)
+            rage = bonus.get("att", 0)
+            rant = bonus.get("cha", 0)
+            accuracy = bonus.get("int", 0)
             dexterity = bonus.get("dex", 0)
             luck = bonus.get("luck", 0)
 
-            attack = f"+{attack}" if attack > 0 else f"{attack}"
-            charisma = f"+{charisma}" if charisma > 0 else f"{charisma}"
-            intelligence = f"+{intelligence}" if intelligence > 0 else f"{intelligence}"
+            rage = f"+{rage}" if rage > 0 else f"{rage}"
+            rant = f"+{rant}" if rant > 0 else f"{rant}"
+            accuracy = f"+{accuracy}" if accuracy > 0 else f"{accuracy}"
             dexterity = f"+{dexterity}" if dexterity > 0 else f"{dexterity}"
             luck = f"+{luck}" if luck > 0 else f"{luck}"
 
@@ -3614,18 +3614,18 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             cpmult = f"+{cpmult}%" if cpmult > 0 else f"{cpmult}%"
 
             breakdown = _(
-                "Attack:                [{attack}]\n"
-                "Charisma:              [{charisma}]\n"
-                "Intelligence:          [{intelligence}]\n"
+                "Rage:                  [{rage}]\n"
+                "Rant:                  [{rant}]\n"
+                "Accuracy:              [{accuracy}]\n"
                 "Dexterity:             [{dexterity}]\n"
                 "Luck:                  [{luck}]\n"
                 "Stat Mulitplier:       [{statmult}]\n"
                 "XP Multiplier:         [{xpmult}]\n"
                 "Currency Multiplier:   [{cpmult}]\n\n"
             ).format(
-                attack=attack,
-                charisma=charisma,
-                intelligence=intelligence,
+                rage=rage,
+                rant=rant,
+                accuracy=accuracy,
                 dexterity=dexterity,
                 luck=luck,
                 statmult=statmult,
