@@ -2869,9 +2869,9 @@ class MiscMixin(commands.Cog):
             item = stock[index]
             if len(item["item"].slot) == 2:  # two handed weapons add their bonuses twice
                 hand = "two handed"
-                att = item["item"].att * 2
-                cha = item["item"].cha * 2
-                intel = item["item"].int * 2
+                rage = item["item"].att * 2
+                rant = item["item"].cha * 2
+                acc = item["item"].int * 2
                 luck = item["item"].luck * 2
                 dex = item["item"].dex * 2
             else:
@@ -2879,17 +2879,17 @@ class MiscMixin(commands.Cog):
                     hand = item["item"].slot[0] + _(" handed")
                 else:
                     hand = item["item"].slot[0] + _(" slot")
-                att = item["item"].att
-                cha = item["item"].cha
-                intel = item["item"].int
+                rage = item["item"].att
+                rant = item["item"].cha
+                acc = item["item"].int
                 luck = item["item"].luck
                 dex = item["item"].dex
             text += box(
                 _(
                     "\n[{i}] Lvl req {lvl} | {item_name} ("
-                    "Attack: {str_att}, "
-                    "Charisma: {str_cha}, "
-                    "Intelligence: {str_int}, "
+                    "Rage: {str_rage}, "
+                    "Rant: {str_rant}, "
+                    "Accuracy: {str_acc}, "
                     "Dexterity: {str_dex}, "
                     "Luck: {str_luck} "
                     "[{hand}]) for {item_price} {currency_name}."
@@ -2897,9 +2897,9 @@ class MiscMixin(commands.Cog):
                     i=str(index + 1),
                     item_name=item["item"].formatted_name,
                     lvl=item["item"].lvl,
-                    str_att=str(att),
-                    str_int=str(intel),
-                    str_cha=str(cha),
+                    str_rage=str(rage),
+                    str_acc=str(acc),
+                    str_rant=str(rant),
                     str_luck=str(luck),
                     str_dex=str(dex),
                     hand=hand,
