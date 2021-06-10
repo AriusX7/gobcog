@@ -1500,7 +1500,7 @@ class MiscMixin(commands.Cog):
             msg = ""
             if len(session.rage) >= 1:
                 if pdef >= 1.5:
-                    msg += _("Swords bounce off this monster as it's skin is **almost impenetrable!**\n")
+                    msg += _("Swords bounce off this monster as its skin is **almost impenetrable!**\n")
                 elif pdef >= 1.25:
                     msg += _("This monster has **extremely tough** armour!\n")
                 elif pdef > 1:

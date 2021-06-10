@@ -1235,7 +1235,7 @@ msgstr ""
 
 #: adventure.py:3481
 msgid ""
-"Swords bounce off this monster as it's skin is **almost impenetrable!**\n"
+"Swords bounce off this monster as its skin is **almost impenetrable!**\n"
 msgstr ""
 
 #: adventure.py:3485
