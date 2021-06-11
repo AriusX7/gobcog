@@ -169,7 +169,7 @@ class Member(commands.converter.MemberConverter):
             return result
 
         # else fallback to original (with case insensitivty)
-        cache = guild._state._member_cache_flags.joined
+        cache = guild._state.member_cache_flags.joined
         if len(argument) > 5 and argument[-5] == '#':
             username, _, discriminator = argument.rpartition('#')
             members = await guild.query_members(username, limit=100, cache=cache)
