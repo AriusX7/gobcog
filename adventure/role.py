@@ -108,20 +108,37 @@ class RoleMixin(commands.Cog):
             success=True
         )
 
-    @_roleset.command(name="rebirth")
+    @_roleset.command(name="senior")
     @commands.guild_only()
     @commands.admin_or_permissions(manage_guild=True)
-    async def _roleset_rebirth(self, ctx: Context, *, role: discord.Role = None):
-        """Set role for people at and above rebirth 5."""
+    async def _roleset_senior(self, ctx: Context, *, role: discord.Role = None):
+        """Set role for adventurers between 15 and 34 (inclusive) rebirths."""
 
-        await self.config.guild(ctx.guild).rebirth_role.set(getattr(role, "id", None))
+        await self.config.guild(ctx.guild).senior_adv_role.set(getattr(role, "id", None))
 
         if not role:
-            await smart_embed(ctx, _("Unset rebirth 5 role."), success=True)
+            await smart_embed(ctx, _("Unset senior adventurer role."), success=True)
         else:
             await smart_embed(
                 ctx,
-                _("Set {role} as rebirth 5 role.").format(role=role.mention),
+                _("Set {role} as senior adventurer role.").format(role=role.mention),
+                success=True
+            )
+
+    @_roleset.command(name="veteran")
+    @commands.guild_only()
+    @commands.admin_or_permissions(manage_guild=True)
+    async def _roleset_veteran(self, ctx: Context, *, role: discord.Role = None):
+        """Set role for adventurers at and above 35 rebirths."""
+
+        await self.config.guild(ctx.guild).vet_adv_role.set(getattr(role, "id", None))
+
+        if not role:
+            await smart_embed(ctx, _("Unset veteran adventurer role."), success=True)
+        else:
+            await smart_embed(
+                ctx,
+                _("Set {role} as veteran adventurer role.").format(role=role.mention),
                 success=True
             )
 
@@ -334,12 +351,20 @@ class RoleMixin(commands.Cog):
 
         await ctx.tick()
 
-    async def add_rebirths_role(self, guild: discord.Guild, user: discord.Member):
-        role = await self.get_role(guild, "rebirth_role")
+    async def add_senior_adv_role(self, guild: discord.Guild, user: discord.Member):
+        role = await self.get_role(guild, "senior_adv_role")
+        await self.add_role(role, user)
+
+    async def add_vet_adv_role(self, guild: discord.Guild, user: discord.Member):
+        role = await self.get_role(guild, "vet_adv_role")
         await self.add_role(role, user)
 
     async def remove_adv_role(self, guild: discord.Guild, user: discord.Member):
         role = await self.get_role(guild, "adventure_role")
+        await self.remove_role(role, user)
+
+    async def remove_senior_adv_role(self, guild: discord.Guild, user: discord.Member):
+        role = await self.get_role(guild, "senior_adv_role")
         await self.remove_role(role, user)
 
     @commands.group(name="reactrole")
@@ -375,7 +400,6 @@ class RoleMixin(commands.Cog):
             react_role["emoji"]["id"] = emoji.id
 
         await ctx.tick()
-
 
     @_reactrole.command(name="rmemoji")
     async def _reactrole_rm_emoji(self, ctx: Context, emoji: discord.Emoji):
@@ -454,7 +478,8 @@ class RoleMixin(commands.Cog):
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
         adv_role = await self.get_role(after.guild, "adventure_role")
-        rebirth_role = await self.get_role(after.guild, "rebirth_role")
+        senior_adv_role = await self.get_role(after.guild, "senior_adv_role")
+        vet_adv_role = await self.get_role(after.guild, "vet_adv_role")
         noadv_role = await self.get_role(after.guild, "noadventure_role")
         muted_role = await self.get_role(after.guild, "muted_role")
         if adv_role and noadv_role:
@@ -463,9 +488,13 @@ class RoleMixin(commands.Cog):
                     # remove adv_role
                     await after.remove_roles(adv_role, reason='NoAdv/Muted and Adv role cannot be applied at the same time. Remove NoAdv/Muted role to disable this behaviour.')
 
-                if rebirth_role in after.roles and any(x in after.roles for x in (muted_role, noadv_role)):
-                    # remove rebirth_role
-                    await after.remove_roles(rebirth_role, reason='NoAdv/Muted and Rebirth role cannot be applied at the same time. Remove NoAdv/Muted role to disable this behaviour.')
+                if senior_adv_role in after.roles and any(x in after.roles for x in (muted_role, noadv_role)):
+                    # remove senior_adv_role
+                    await after.remove_roles(senior_adv_role, reason='NoAdv/Muted and Senior Adv role cannot be applied at the same time. Remove NoAdv/Muted role to disable this behaviour.')
+
+                if vet_adv_role in after.roles and any(x in after.roles for x in (muted_role, noadv_role)):
+                    # remove vet_adv_role
+                    await after.remove_roles(vet_adv_role, reason='NoAdv/Muted and Veteran Adv role cannot be applied at the same time. Remove NoAdv/Muted role to disable this behaviour.')
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
@@ -498,22 +527,22 @@ class RoleMixin(commands.Cog):
 
         await self.remove_reaction(guild, payload.channel_id, payload.message_id, emoji, member)
 
-        adv_role = await self.get_role(guild, "adventure_role")
-        rebirth_role = await self.get_role(guild, "rebirth_role")
-
         if emoji.id == react_role["emoji"]["id"] and emoji.name == react_role["emoji"]["name"]:
             try:
                 rebirths = await self.config.user(member).get_raw("rebirths")
             except KeyError:
                 rebirths = 1
 
-            if rebirths >= 5:
-                await self.add_role(rebirth_role, member)
+            if rebirths >= 15 and rebirths <= 34:
+                await self.add_role(await self.get_role(guild, "senior_adv_role"), member)
+            elif rebirths >= 35:
+                await self.add_role(await self.get_role(guild, "vet_adv_role"), member)
             else:
-                await self.add_role(adv_role, member)
+                await self.add_role(await self.get_role(guild, "adventure_role"), member)
         elif emoji.id == react_role["rmemoji"]["id"] and emoji.name == react_role["rmemoji"]["name"]:
-            await self.remove_role(rebirth_role, member)
-            await self.remove_role(adv_role, member)
+            await self.remove_role(await self.get_role(guild, "vet_adv_role"), member)
+            await self.remove_role(await self.get_role(guild, "senior_adv_role"), member)
+            await self.remove_role(await self.get_role(guild, "adventure_role"), member)
 
     @staticmethod
     async def remove_reaction(

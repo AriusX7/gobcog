@@ -226,7 +226,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 "general": {},
                 "boss": {}
             },
-            "rebirth_role": None,
+            "senior_adv_role": None,
+            "vet_adv_role": None,
             "react_role_emote": {
                 "name": None,
                 "id": None,
@@ -1145,9 +1146,12 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     )
                 )
                 await self.config.user(ctx.author).set(await c.rebirth())
-                if c.rebirths == 5:
-                    await self.add_rebirths_role(ctx.guild, ctx.author)
+                if c.rebirths == 15:
+                    await self.add_senior_adv_role(ctx.guild, ctx.author)
                     await self.remove_adv_role(ctx.guild, ctx.author)
+                elif c.rebirths == 35:
+                    await self.add_vet_adv_role(ctx.guild, ctx.author)
+                    await self.remove_senior_adv_role(ctx.guild, ctx.author)
 
     @commands.command()
     @commands.bot_has_permissions(add_reactions=True)
