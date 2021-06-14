@@ -117,7 +117,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         self.emojis.no = "\N{NEGATIVE SQUARED CROSS MARK}"
         self.emojis.sell = "\N{MONEY BAG}"
         self.emojis.skills = SimpleNamespace()
-        self.emojis.skills.report = Emojis.report,
+        self.emojis.skills.report = Emojis.report
         # self.emojis.skills.psychic = "\N{SIX POINTED STAR WITH MIDDLE DOT}"
         self.emojis.skills.berserker = Emojis.berserker
         self.emojis.skills.autoaimer1 = Emojis.autoaimer1
