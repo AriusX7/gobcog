@@ -1021,9 +1021,9 @@ class MiscMixin(commands.Cog):
                 int_dipl=humanize_number(dipl),
             )
         if dmg_dealt >= diplomacy:
-            self._adv_results.add_result(ctx, "attack", dmg_dealt, people, slain, session.boss)
+            self._adv_results.add_result(ctx, "attack", dmg_dealt, people, slain, session.boss or session.transcended)
         else:
-            self._adv_results.add_result(ctx, "talk", diplomacy, people, persuaded, session.boss)
+            self._adv_results.add_result(ctx, "talk", diplomacy, people, persuaded, session.boss or session.transcended)
         result_msg = result_msg + "\n" + damage_str + diplo_str
 
         fight_name_list = []
