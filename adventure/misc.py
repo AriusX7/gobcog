@@ -566,7 +566,7 @@ class MiscMixin(commands.Cog):
         choice["mdef"] = new_mdef
         return choice
 
-    async def update_monster_roster(self, user):
+    async def update_monster_roster(self, ctx: Context, user: discord.Member):
 
         try:
             c = await Character.from_json(self.config, user, self._daily_bonus)
@@ -581,7 +581,7 @@ class MiscMixin(commands.Cog):
         monster_stats = 1
         monsters = {**self.MONSTERS, **self.AS_MONSTERS, **extra_monsters}
         transcended = False
-        if transcended_chance == 5:
+        if transcended_chance == 5 and self._adv_results.can_spawn_boss(ctx):
             monster_stats = 2 + max((c.rebirths // 10) - 1, 0)
             transcended = True
         elif c.rebirths >= 10:
@@ -591,7 +591,7 @@ class MiscMixin(commands.Cog):
     async def _simple(self, ctx: Context, adventure_msg, challenge: str = None, attribute: str = None):
         self.bot.dispatch("adventure", ctx)
         text = ""
-        monster_roster, monster_stats, transcended = await self.update_monster_roster(ctx.author)
+        monster_roster, monster_stats, transcended = await self.update_monster_roster(ctx, ctx.author)
         if challenge and challenge not in monster_roster:
             for m in monster_roster:
                 if challenge.lower() == m.lower():
