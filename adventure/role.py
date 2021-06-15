@@ -533,7 +533,7 @@ class RoleMixin(commands.Cog):
             except KeyError:
                 rebirths = 1
 
-            if rebirths >= 15 and rebirths <= 34:
+            if rebirths >= 15 and rebirths <= 34 and await self.config.guild(guild).apply_senior():
                 await self.add_role(await self.get_role(guild, "senior_adv_role"), member)
             elif rebirths >= 35:
                 await self.add_role(await self.get_role(guild, "vet_adv_role"), member)

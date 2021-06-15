@@ -244,6 +244,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     "id": None,
                 },
             },
+            "apply_senior": False,
+            "senior_queue": [],
         }
 
         default_channel = {
@@ -1147,8 +1149,12 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 )
                 await self.config.user(ctx.author).set(await c.rebirth())
                 if c.rebirths == 15:
-                    await self.add_senior_adv_role(ctx.guild, ctx.author)
-                    await self.remove_adv_role(ctx.guild, ctx.author)
+                    if await self.config.guild(ctx.guild).apply_senior():
+                        await self.add_senior_adv_role(ctx.guild, ctx.author)
+                        await self.remove_adv_role(ctx.guild, ctx.author)
+                    else:
+                        async with self.config.guild(ctx.guild).senior_queue() as senior_queue:
+                            senior_queue.append(ctx.author.id)
                 elif c.rebirths == 35:
                     await self.add_vet_adv_role(ctx.guild, ctx.author)
                     await self.remove_senior_adv_role(ctx.guild, ctx.author)
@@ -4322,3 +4328,26 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             character = await character.equip_item(item, False, self.is_dev(ctx.author))
             await self.config.user(ctx.author).set(await character.to_json(self.config))
         await self._clear_react(msg)
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.is_owner()
+    async def applysenior(self, ctx: commands.Context):
+        """Applies the senior adventurer role to everyone in queue.
+
+        Also automatically applies senior role in the future.
+        """
+
+        adv_role = await self.get_role(ctx.guild, "adventure_role")
+        senior_adv_role = await self.get_role(ctx.guild, "senior_adv_role")
+
+        async with self.config.guild(ctx.guild).senior_queue() as senior_queue:
+            for user_id in senior_queue:
+                member = ctx.guild.get_member(user_id)
+                if member:
+                    await self.add_role(senior_adv_role, member)
+                    await self.remove_role(adv_role, member)
+
+            senior_queue.clear()
+
+        await self.config.guild(ctx.guild).apply_senior.set(True)
