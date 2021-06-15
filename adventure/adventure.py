@@ -3993,7 +3993,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         if rebirth_sorted:
             await LeaderboardMenu(
                 source=LeaderboardSource(entries=rebirth_sorted),
-                delete_message_after=True,
+                delete_message_after=False,
                 clear_reactions_after=True,
                 timeout=60,
                 cog=self,
@@ -4012,7 +4012,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         if rebirth_sorted:
             await ScoreBoardMenu(
                 source=ScoreboardSource(entries=rebirth_sorted, stat="wins"),
-                delete_message_after=True,
+                delete_message_after=False,
                 clear_reactions_after=True,
                 timeout=60,
                 cog=self,
@@ -4033,7 +4033,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         if adventures:
             await BaseMenu(
                 source=WeeklyScoreboardSource(entries=adventures, stat=stats.lower()),
-                delete_message_after=True,
+                delete_message_after=False,
                 clear_reactions_after=True,
                 timeout=60,
             ).start(ctx=ctx)

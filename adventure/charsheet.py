@@ -686,7 +686,7 @@ class Character(Item):
             "{rebirth_text}"
             "A level {lvl} {class_desc} \n\n- "
             "RAGE: {att} [+{att_skill}] - "
-            "ACCURACY: {int} [+{int_skill}]\n\n - "
+            "ACCURACY: {int} [+{int_skill}]\n\n- "
             "RANT: {cha} [+{cha_skill}] - "
             "DEXTERITY: {dex} - "
             "LUCK: {luck} \n\n "
