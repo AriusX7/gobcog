@@ -560,8 +560,8 @@ class MiscMixin(commands.Cog):
             new_diplo = max(monster_diplo_max, monster_diplo_min)
         new_pdef = choice["pdef"] + monster_pdef
         new_mdef = choice["mdef"] + monster_mdef
-        choice["hp"] = new_hp
-        choice["dipl"] = new_diplo
+        choice["hp"] = max(new_hp, 1)
+        choice["dipl"] = max(new_diplo, 1)
         choice["pdef"] = new_pdef
         choice["mdef"] = new_mdef
         return choice
