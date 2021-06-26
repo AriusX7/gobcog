@@ -560,8 +560,8 @@ class MiscMixin(commands.Cog):
             new_diplo = max(monster_diplo_max, monster_diplo_min)
         new_pdef = choice["pdef"] + monster_pdef
         new_mdef = choice["mdef"] + monster_mdef
-        choice["hp"] = new_hp
-        choice["dipl"] = new_diplo
+        choice["hp"] = max(new_hp, 1)
+        choice["dipl"] = max(new_diplo, 1)
         choice["pdef"] = new_pdef
         choice["mdef"] = new_mdef
         return choice
@@ -3316,9 +3316,9 @@ class MiscMixin(commands.Cog):
                 _(
                     "{author}, your forging roll was {dice}({roll}).\n"
                     "The device you tinkered will have "
-                    "(ATT {new_att} | "
-                    "CHA {new_cha} | "
-                    "INT {new_int} | "
+                    "(RAG {new_att} | "
+                    "RAN {new_cha} | "
+                    "ACC {new_int} | "
                     "DEX {new_dex} | "
                     "LUCK {new_luck})"
                     " and be {hand}."
@@ -3341,9 +3341,9 @@ class MiscMixin(commands.Cog):
                 _(
                     "{author}, your forging roll was {dice}({roll}).\n"
                     "The device you tinkered will have "
-                    "(ATT {new_att} | "
-                    "CHA {new_dip} | "
-                    "INT {new_int} | "
+                    "(RAG {new_att} | "
+                    "RAN {new_dip} | "
+                    "ACC {new_int} | "
                     "DEX {new_dex} | "
                     "LUCK {new_luck})"
                     " and be {hand}."
