@@ -4225,6 +4225,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         await smart_embed(ctx, _("Sent to your DM"), success=True)
 
     @commands.command()
+    @is_dm()
     async def compare(
         self,
         ctx: commands.Context,
