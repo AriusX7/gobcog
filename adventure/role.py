@@ -179,6 +179,11 @@ class RoleMixin(commands.Cog):
                 _("You must be fighting a boss or transcended monster to use this command. Use `{prefix}pingadv` instead!").format(prefix=ctx.prefix)
             )
 
+        if role_iden == 'general' and session.adv_ping:
+            raise AdventureCheckFailure(_("Adventure ping has already been used for this adventure!"))
+        if role_iden == 'boss' and session.boss_ping:
+            raise AdventureCheckFailure(_("Boss ping has already been used for this adventure!"))
+
         try:
             await self.make_mentionable(role)
         except discord.HTTPException:
@@ -212,6 +217,10 @@ class RoleMixin(commands.Cog):
                         guild=role.guild.name
                     )
                 )
+            if role_iden == 'general':
+                self._sessions[ctx.channel.id].adv_ping = True
+            elif role_iden == 'boss':
+                self._sessions[ctx.channel.id].boss_ping = True
 
     @commands.command()
     @commands.max_concurrency(number=1, per=BucketType.channel)

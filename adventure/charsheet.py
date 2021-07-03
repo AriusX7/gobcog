@@ -416,6 +416,8 @@ class GameSession:
     transcended: bool = False
     insight = (0, None)
     start_time: datetime = datetime.now()
+    adv_ping: bool = False
+    boss_ping: bool = False
 
     def __init__(self, **kwargs):
         self.challenge: str = kwargs.pop("challenge")
