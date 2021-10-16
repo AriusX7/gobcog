@@ -3033,6 +3033,7 @@ class MiscMixin(commands.Cog):
         return True
 
     @commands.group(name="errorch")
+    @commands.is_owner()
     @commands.guild_only()
     async def _errorch(self, ctx: Context):
         """Configure channel for logging all adventure errors."""
