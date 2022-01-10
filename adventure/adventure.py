@@ -1942,6 +1942,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
     @commands.guild_only()
     @commands.command()
+    @commands.admin_or_permissions(administrator=True)
     @commands.cooldown(rate=1, per=4, type=commands.BucketType.guild)
     async def adventuresettings(self, ctx: Context):
         """Display current settings."""
