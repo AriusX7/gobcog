@@ -2887,7 +2887,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
                         msg = _(
                             "{}, you've opened the following items:\n"
-                            "( RAGE | RANT | ACC | DEX | LUCK ) | LEVEL REQ | LOOTED | SET (SET PIECES)"
+                            "( RAGE | ACC | RANT | DEX | LUCK ) | LEVEL REQ | LOOTED | SET (SET PIECES)"
                         ).format(self.escape(ctx.author.display_name))
 
                         for type_ in box_types:
@@ -2919,8 +2919,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                                     msg += (
                                         f"\n{str(item):<{rjust}} - "
                                         f"({att_space}{item.att} |"
-                                        f"{cha_space}{item.cha} |"
                                         f"{int_space}{item.int} |"
+                                        f"{cha_space}{item.cha} |"
                                         f"{dex_space}{item.dex} |"
                                         f"{luck_space}{item.luck} )"
                                         f" | Lv {lv_str:<3}"
@@ -3069,7 +3069,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     items = await character.looted(how_many=max(int(10 - roll) // 2, 1))
                     if items:
                         item_string = "\n".join(
-                            ["( RAGE | RANT | ACC | DEX | LUCK ) | LEVEL REQ | SET (SET PIECES)"] + [f"{i} - {character.get_looted_message(v)}" for v, i in items]
+                            ["( RAGE | ACC | RANT | DEX | LUCK ) | LEVEL REQ | SET (SET PIECES)"] + [f"{i} - {character.get_looted_message(v)}" for v, i in items]
                         )
                         looted = box(f"{item_string}", lang="css")
                         await self.config.user(ctx.author).set(await character.to_json(self.config))
@@ -3157,7 +3157,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     items = await character.looted(how_many=max(int(10 - roll) // 2, 1))
                     if items:
                         item_string = "\n".join(
-                            ["( RAGE | RANT | ACC | DEX | LUCK ) | LEVEL REQ | SET (SET PIECES)"] + [f"{i} - {character.get_looted_message(v)}" for v, i in items]
+                            ["( RAGE | ACC | RANT | DEX | LUCK ) | LEVEL REQ | SET (SET PIECES)"] + [f"{i} - {character.get_looted_message(v)}" for v, i in items]
                         )
                         looted = box(f"{item_string}", lang="css")
                         await self.config.user(ctx.author).set(await character.to_json(self.config))
