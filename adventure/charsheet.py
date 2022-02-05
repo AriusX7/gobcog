@@ -1192,7 +1192,12 @@ class Character(Item):
                 "fumbles": 0,
             }
         current_week = date.today().isocalendar()[1]
-        if "weekly_score" in data and data["weekly_score"]["week"] >= current_week:
+        if (
+            "weekly_score" in data
+            and data["weekly_score"]["week"] >= current_week
+            # handle year change
+            and not (data["weekly_score"]["week"] >= 52 and current_week <= 1)
+        ):
             weekly = data["weekly_score"]
         else:
             weekly = {"adventures": 0, "rebirths": 0, "week": current_week}
