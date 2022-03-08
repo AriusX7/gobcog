@@ -1388,6 +1388,46 @@ class Character(Item):
             items_to_keep[slots] = item.to_json() if self.rebirths >= 30 and item and item.set else {}
         self.pieces_to_keep = items_to_keep
 
+    async def get_set_count(self):
+        """Source: https://github.com/aikaterna/gobcog/blob/ad33263e3c3e6cf9b2a4b98dc456dfb24969b270/adventure/charsheet.py#L566"""
+
+        set_names = {}
+        item_names = set()
+        last_slot = ""
+        for slots in ORDER:
+            if slots == "two handed":
+                continue
+            if last_slot == "two handed":
+                last_slot = slots
+                continue
+            item = getattr(self, slots)
+            if item is None or item.name in item_names:
+                continue
+            if item.set and item.set not in set_names:
+                item_names.add(item.name)
+                set_names.update({item.set: (item.parts, 1)})
+            elif item.set and item.set in set_names:
+                item_names.add(item.name)
+                parts, count = set_names[item.set]
+                set_names[item.set] = (parts, count + 1)
+        async for item in AsyncIter(self.backpack, steps=100):
+            item = self.backpack[item]
+            if item.rarity != "set":
+                continue
+            if item.name in item_names:
+                continue
+            if item.set and item.set not in set_names:
+                item_names.add(item.name)
+                set_names.update({item.set: (item.parts, 1)})
+            elif item.set and item.set in set_names:
+                item_names.add(item.name)
+                parts, count = set_names[item.set]
+                set_names[item.set] = (parts, count + 1)
+        for set_name in SET_BONUSES:
+            if set_name in set_names:
+                continue
+            set_names[set_name] = (max(bonus["parts"] for bonus in SET_BONUSES[set_name]), 0)
+        return set_names
 
 class ItemConverter(Converter):
     async def convert(self, ctx, argument) -> Item:

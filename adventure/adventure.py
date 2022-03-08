@@ -4353,3 +4353,42 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             senior_queue.clear()
 
         await self.config.guild(ctx.guild).apply_senior.set(True)
+
+    @commands.command()
+    async def mysets(self, ctx: commands.Context):
+        """Shows your sets."""
+
+        HEADERS = ["Name", "Unique Pieces", "Unique Owned"]
+        DEFAULT_TABLE_LEN = sum(len(s) for s in HEADERS)
+
+        c = await self.get_character_from_json(ctx.author)
+        tables = [[]]
+        table_len = DEFAULT_TABLE_LEN
+
+        sets = await c.get_set_count()
+
+        for k, v in sorted(sets.items()):
+            v0 = str(v[0])
+            v1 = f" {v[1]}" if v[1] == v[0] else f"[{v[1]}]"
+            if table_len > 1500:
+                tables.append([(k, v0, v1)])
+                table_len = DEFAULT_TABLE_LEN
+            tables[-1].append((k, v0, v1))
+            table_len += len(k) + len(v0) + len(v1)
+
+        pages = []
+        color = await ctx.embed_colour()
+        for pnum, table in enumerate(tables):
+            embed = discord.Embed(
+                title=f"Your Sets ({len(sets)})",
+                description=box(tabulate(table, headers=HEADERS), lang="css"),
+                color=color,
+            )
+            if len(tables) > 1:
+                embed.set_footer(text=f"Page {pnum + 1} / {len(tables)}")
+            pages.append(embed)
+
+        if len(pages) > 1:
+            await menu(ctx, pages, MENU_CONTROLS)
+        else:
+            await ctx.send(embed=pages[0])
