@@ -3025,10 +3025,13 @@ class MiscMixin(commands.Cog):
                 default = perms_data.get('default', True)
                 if not perms_data.get(str(ctx.channel.id), default):
                     channels = [ctx.bot.get_channel(int(x)).mention for x in perms_data if x.isdigit() and perms_data[x] and ctx.bot.get_channel(int(x))]
-                    raise AdventureCheckFailure(_("Try this in {channels}.").format(channels=', '.join(channels)))
+                    raise AdventureCheckFailure(
+                        _("Try this in {channels}.").format(channels=', '.join(channels)),
+                        reset_cooldown=False
+                    )
 
         if not await self.allow_in_dm(ctx):
-            raise AdventureCheckFailure(_("This command is not available in DM's on this bot."))
+            raise AdventureCheckFailure(_("This command is not available in DM's on this bot."), reset_cooldown=False)
 
         return True
 
@@ -3156,7 +3159,8 @@ class MiscMixin(commands.Cog):
             await ctx.tick()
 
         elif isinstance(error, AdventureCheckFailure):
-            ctx.command.reset_cooldown(ctx)
+            if error.reset_cooldown:
+                ctx.command.reset_cooldown(ctx)
             await smart_embed(ctx, str(error), reference=error.reply, success=False, delete_after=15)
             await asyncio.sleep(15)
             with contextlib.suppress(discord.HTTPException):

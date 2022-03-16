@@ -301,8 +301,9 @@ class AdventureResults:
 
 
 class AdventureCheckFailure(commands.CheckFailure):
-    def __init__(self, message, reply=None, *args):
+    def __init__(self, message, reply=None, reset_cooldown=True, *args):
         self.reply = reply
+        self.reset_cooldown = reset_cooldown
         super().__init__(message=message, *args)
 
 
