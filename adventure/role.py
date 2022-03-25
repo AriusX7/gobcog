@@ -142,6 +142,23 @@ class RoleMixin(commands.Cog):
                 success=True
             )
 
+    @_roleset.command(name="art")
+    @commands.guild_only()
+    @commands.admin_or_permissions(manage_guild=True)
+    async def _roleset_art(self, ctx: Context, *, role: discord.Role = None):
+        """Set the role for adventure art pings."""
+
+        await self.config.guild(ctx.guild).adv_art_settings.set_raw("role", value=getattr(role, "id", None))
+
+        if not role:
+            await smart_embed(ctx, _("Unset adventure art role."), success=True)
+        else:
+            await smart_embed(
+                ctx,
+                _("Set {role} as adventure art role.").format(role=role.mention),
+                success=True
+            )
+
     @staticmethod
     async def make_mentionable(role: Role) -> bool:
         if role.mentionable:
@@ -450,6 +467,52 @@ class RoleMixin(commands.Cog):
             react_role["channel"] = channel.id
         await ctx.tick()
 
+    @commands.group(name="artrole")
+    @commands.guild_only()
+    @commands.admin_or_permissions(manage_roles=True)
+    async def _artrole(self, ctx: Context):
+        """Settings related to the adventure art reaction role.
+        
+        Use the `roleset art` command to set the adventure art role.
+        """
+
+    @_artrole.command(name="emoji")
+    async def _artrole_emoji(self, ctx: Context, emoji: discord.Emoji):
+        """Set the adventure art role emoji. You must set the role and the message first."""
+
+        async with self.config.guild(ctx.guild).adv_art_settings() as adv_art_settings:
+            channel_id = adv_art_settings["channel"]
+            message_id = adv_art_settings["message"]
+            if not channel_id or not message_id:
+                raise AdventureCheckFailure(_("Adventure art reaction roles channel and message not set."))
+
+            channel = ctx.guild.get_channel(channel_id)
+            if not channel:
+                raise AdventureCheckFailure(_("Adventure art reaction roles channel cannot be found."))
+            try:
+                message: discord.Message = await channel.fetch_message(message_id)
+            except Exception:
+                raise AdventureCheckFailure(_("Adventure art reaction roles message cannot be found."))
+
+            try:
+                await message.add_reaction(emoji)
+            except Exception:
+                raise AdventureCheckFailure(_("Cannot react to the adventure art reaction roles message."))
+
+            adv_art_settings["emoji"]["name"] = emoji.name
+            adv_art_settings["emoji"]["id"] = emoji.id
+
+        await ctx.tick()
+
+    @_artrole.command(name="message")
+    async def _artrole_message(self, ctx: Context, message_id: int, *, channel: discord.TextChannel):
+        """Set the adventure art react role message."""
+
+        async with self.config.guild(ctx.guild).adv_art_settings() as adv_art_settings:
+            adv_art_settings["message"] = message_id
+            adv_art_settings["channel"] = channel.id
+        await ctx.tick()
+
     @tasks.loop(seconds=20)
     async def timed_roles_task(self):
         for guild in self.bot.guilds:
@@ -491,19 +554,22 @@ class RoleMixin(commands.Cog):
         vet_adv_role = await self.get_role(after.guild, "vet_adv_role")
         noadv_role = await self.get_role(after.guild, "noadventure_role")
         muted_role = await self.get_role(after.guild, "muted_role")
-        if adv_role and noadv_role:
-            if before.roles != after.roles:
-                if adv_role in after.roles and any(x in after.roles for x in (muted_role, noadv_role)):
-                    # remove adv_role
-                    await after.remove_roles(adv_role, reason='NoAdv/Muted and Adv role cannot be applied at the same time. Remove NoAdv/Muted role to disable this behaviour.')
 
-                if senior_adv_role in after.roles and any(x in after.roles for x in (muted_role, noadv_role)):
-                    # remove senior_adv_role
-                    await after.remove_roles(senior_adv_role, reason='NoAdv/Muted and Senior Adv role cannot be applied at the same time. Remove NoAdv/Muted role to disable this behaviour.')
+        if not (noadv_role and muted_role):
+            return
 
-                if vet_adv_role in after.roles and any(x in after.roles for x in (muted_role, noadv_role)):
-                    # remove vet_adv_role
-                    await after.remove_roles(vet_adv_role, reason='NoAdv/Muted and Veteran Adv role cannot be applied at the same time. Remove NoAdv/Muted role to disable this behaviour.')
+        if before.roles != after.roles:
+            if adv_role and adv_role in after.roles and any(x in after.roles for x in (muted_role, noadv_role)):
+                # remove adv_role
+                await after.remove_roles(adv_role, reason='NoAdv/Muted and Adv role cannot be applied at the same time. Remove NoAdv/Muted role to disable this behaviour.')
+
+            if senior_adv_role and senior_adv_role in after.roles and any(x in after.roles for x in (muted_role, noadv_role)):
+                # remove senior_adv_role
+                await after.remove_roles(senior_adv_role, reason='NoAdv/Muted and Senior Adv role cannot be applied at the same time. Remove NoAdv/Muted role to disable this behaviour.')
+
+            if vet_adv_role and vet_adv_role in after.roles and any(x in after.roles for x in (muted_role, noadv_role)):
+                # remove vet_adv_role
+                await after.remove_roles(vet_adv_role, reason='NoAdv/Muted and Veteran Adv role cannot be applied at the same time. Remove NoAdv/Muted role to disable this behaviour.')
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
@@ -521,18 +587,34 @@ class RoleMixin(commands.Cog):
         react_role = await self.config.guild(guild).react_role()
 
         if (
-            react_role["message"] != payload.message_id
-            or react_role["channel"] != payload.channel_id
-            or (
-                react_role["emoji"]["name"] != emoji.name
-                and react_role["rmemoji"]["name"] != emoji.name
+            react_role["message"] == payload.message_id
+            and react_role["channel"] == payload.channel_id
+            and (
+                react_role["emoji"]["name"] == emoji.name
+                or react_role["rmemoji"]["name"] == emoji.name
             )
-            or (
-                react_role["emoji"]["id"] != emoji.id
-                and react_role["rmemoji"]["id"] != emoji.id
+            and (
+                react_role["emoji"]["id"] == emoji.id
+                or react_role["rmemoji"]["id"] == emoji.id
             )
         ):
-            return
+            return await self.handle_adv_react_role(payload, react_role)
+
+        adv_art_settings = await self.config.guild(guild).adv_art_settings()
+
+        if (
+            adv_art_settings["message"] == payload.message_id
+            and adv_art_settings["channel"] == payload.channel_id
+            and adv_art_settings["emoji"]["name"] == emoji.name
+            and adv_art_settings["emoji"]["id"] == emoji.id
+        ):
+            return await self.handle_art_react_role(payload, adv_art_settings)
+
+    async def handle_adv_react_role(self, payload: discord.RawReactionActionEvent, react_role):
+        member = payload.member
+        guild = member.guild
+        # `emoji` is a `PartialEmoji`.
+        emoji = payload.emoji
 
         await self.remove_reaction(guild, payload.channel_id, payload.message_id, emoji, member)
 
@@ -552,6 +634,24 @@ class RoleMixin(commands.Cog):
             await self.remove_role(await self.get_role(guild, "vet_adv_role"), member)
             await self.remove_role(await self.get_role(guild, "senior_adv_role"), member)
             await self.remove_role(await self.get_role(guild, "adventure_role"), member)
+
+    async def handle_art_react_role(self, payload: discord.RawReactionActionEvent, adv_art_settings):
+        member: discord.Member = payload.member
+        guild: discord.Guild = member.guild
+        # `emoji` is a `PartialEmoji`.
+        emoji = payload.emoji
+
+        await self.remove_reaction(guild, payload.channel_id, payload.message_id, emoji, member)
+
+        art_role = guild.get_role(adv_art_settings["role"])
+
+        if not art_role:
+            return
+
+        if art_role in member.roles:
+            await member.remove_roles(art_role)
+        else:
+            await member.add_roles(art_role)
 
     @staticmethod
     async def remove_reaction(

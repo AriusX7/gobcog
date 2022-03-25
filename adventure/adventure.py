@@ -246,6 +246,15 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             },
             "apply_senior": False,
             "senior_queue": [],
+            "adv_art_settings": {
+                "role": None,
+                "emoji": {
+                    "name": None,
+                    "id": None,
+                },
+                "channel": None,
+                "message": None,
+            }
         }
 
         default_channel = {
