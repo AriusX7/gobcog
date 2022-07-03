@@ -2019,13 +2019,16 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
     @commands.command()
     @commands.cooldown(rate=1, per=4, type=commands.BucketType.guild)
-    async def convert(self, ctx: Context, box_rarity: str, amount: int = 1):
+    async def convert(self, ctx: Context, box_rarity: str, amount: DynamicInt = 1):
         """Convert normal, rare or epic chests.
 
         Trade 25 normal chests for 1 rare chest.
         Trade 25 rare chests for 1 epic chest.
         Trade 25 epic chests for 1 legendary chest.
         """
+
+        if isinstance(amount, str) and amount.endswith('%'):
+            raise AdventureCheckFailure(_("Enter a valid number or \"all\""))
 
         # Thanks to flare#0001 for the idea and writing the first instance of this
         if self.in_adventure(ctx):
@@ -2041,12 +2044,10 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         rebirth_normal = 2
         rebirth_rare = 8
         rebirth_epic = 10
-        if amount < 1:
-            raise AdventureCheckFailure(_("Nice try :smirk:"))
-        if amount > 1:
-            plural = "s"
-        else:
-            plural = ""
+        plural = "s"
+        if isinstance(amount, int):
+            if amount < 1:
+                raise AdventureCheckFailure(_("Nice try :smirk:"))
         async with self.get_lock(ctx.author):
             c = await self.get_character_from_json(ctx.author)
 
@@ -2063,7 +2064,10 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     c=self.escape(ctx.author.display_name),
                 ))
 
+            get_amt = lambda amt, total, cost: total // cost if amt == "all" else amt
+
             if box_rarity.lower() == "normal" and c.rebirths >= rebirth_normal:
+                amount = get_amt(amount, c.treasure[0], normalcost)
                 if c.treasure[0] >= (normalcost * amount):
                     c.treasure[0] -= normalcost * amount
                     c.treasure[1] += 1 * amount
@@ -2077,7 +2081,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                             ).format(
                                 converted=humanize_number(normalcost * amount),
                                 to=humanize_number(1 * amount),
-                                plur=plural,
+                                plur=plural if amount > 1 else "",
                                 author=self.escape(ctx.author.display_name),
                                 normal=c.treasure[0],
                                 rare=c.treasure[1],
@@ -2095,6 +2099,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         author=self.escape(ctx.author.display_name), amount=humanize_number(normalcost * amount),
                     ))
             elif box_rarity.lower() == "rare" and c.rebirths >= rebirth_rare:
+                amount = get_amt(amount, c.treasure[1], rarecost)
                 if c.treasure[1] >= (rarecost * amount):
                     c.treasure[1] -= rarecost * amount
                     c.treasure[2] += 1 * amount
@@ -2108,7 +2113,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                             ).format(
                                 converted=humanize_number(rarecost * amount),
                                 to=humanize_number(1 * amount),
-                                plur=plural,
+                                plur=plural if amount > 1 else "",
                                 author=self.escape(ctx.author.display_name),
                                 normal=c.treasure[0],
                                 rare=c.treasure[1],
@@ -2126,6 +2131,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         author=ctx.author.mention, amount=humanize_number(rarecost * amount)
                     ))
             elif box_rarity.lower() == "epic" and c.rebirths >= rebirth_epic:
+                amount = get_amt(amount, c.treasure[2], epiccost)
                 if c.treasure[2] >= (epiccost * amount):
                     c.treasure[2] -= epiccost * amount
                     c.treasure[3] += 1 * amount
@@ -2139,7 +2145,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                             ).format(
                                 converted=humanize_number(epiccost * amount),
                                 to=humanize_number(1 * amount),
-                                plur=plural,
+                                plur=plural if amount > 1 else "",
                                 author=self.escape(ctx.author.display_name),
                                 normal=c.treasure[0],
                                 rare=c.treasure[1],
