@@ -2692,7 +2692,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         if c.heroclass["name"] == "Autoaimer":
                             c.heroclass["cooldown"] = max(240, (1140 - ((c.luck + c.total_int) * 2))) + time.time()
                         elif c.heroclass["name"] == "Samaritan":
-                            c.heroclass["cooldown"] = 3 * max(240, (1140 - ((c.luck + c.total_int) * 2))) + time.time()
+                            c.heroclass["cooldown"] = int(1.5 * max(240, (1140 - ((c.luck + c.total_int) * 2)))) + time.time()
                         elif c.heroclass["name"] == "Ranger":
                             c.heroclass["cooldown"] = max(1800, (7200 - (c.luck * 2 + c.total_int * 2))) + time.time()
                             c.heroclass["catch_cooldown"] = (
@@ -3959,7 +3959,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                         elif c.heroclass["name"] == "Autoaimer" and user in session.autoaim:
                             cooldown_time = max(240, (1140 - ((c.luck + c.total_int) * 2)))
                         elif c.heroclass["name"] == "Samaritan" and user in session.pray:
-                            cooldown_time = 3 * max(240, (1140 - ((c.luck + c.total_int) * 2)))
+                            cooldown_time = int(1.5 * max(240, (1140 - ((c.luck + c.total_int) * 2))))
 
                         if cooldown_time:
                             c.heroclass["ability"] = False
