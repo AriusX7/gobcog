@@ -450,16 +450,16 @@ def order_slots_dict(d: dict) -> dict:
 
 if platform.system() == 'Linux':
     class Emojis:
-        rage = "<:bullrage:844771847580155934>"
-        autoaim = "<:pipersipautoaim:844771847304380426>"
-        rant = "<:mrprant:844771848344436756>"
-        pray = "<:pocopray:844771847685799937>"
-        report = "<:bsexclamationmark:844771847258374174>"
-        autoaimer1 = "<:gadget:851608538735706152>"
-        autoaimer2 = "<:gadgetflip:851879373787234407>"
-        tilter1 = "<:bsthumbsup:844771847065305089>"
-        tilter2 = "<:bsthumbsdown:844771847357726730>"
-        berserker = "<:super:851789585032806470>"
+        rage = discord.PartialEmoji(name="bullrage", id=844771847580155934)
+        autoaim = discord.PartialEmoji(name="pipersipautoaim", id=844771847304380426)
+        rant = discord.PartialEmoji(name="mrprant", id=844771848344436756)
+        pray = discord.PartialEmoji(name="pocopray", id=844771847685799937)
+        report = discord.PartialEmoji(name="bsexclamationmark", id=844771847258374174)
+        autoaimer1 = discord.PartialEmoji(name="gadget", id=851608538735706152)
+        autoaimer2 = discord.PartialEmoji(name="gadgetflip", id=851879373787234407)
+        tilter1 = discord.PartialEmoji(name="bsthumbsup", id=844771847065305089)
+        tilter2 = discord.PartialEmoji(name="bsthumbsdown", id=844771847357726730)
+        berserker = discord.PartialEmoji(name="super", id=851789585032806470)
 else:
     class Emojis:
         rage = "\N{DAGGER KNIFE}"
