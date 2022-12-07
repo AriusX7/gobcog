@@ -133,6 +133,9 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             self.emojis.rant,
             self.emojis.pray,
         ]
+
+        self._adventure_actions_emoji_names = [str(e) for e in self._adventure_actions]
+
         self._adventure_controls = {
             "rage": self.emojis.rage,
             "autoaim": self.emojis.autoaim,

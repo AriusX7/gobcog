@@ -807,7 +807,7 @@ class MiscMixin(commands.Cog):
 
     async def _handle_adventure(self, reaction, user):
         channel = reaction.message.channel
-        action = {v: k for k, v in self._adventure_controls.items()}[str(reaction.emoji)]
+        action = {str(v): k for k, v in self._adventure_controls.items()}[str(reaction.emoji)]
         session = self._sessions[channel.id]
         has_fund = await has_funds(user, 250)
         for x in ["rage", "autoaim", "rant", "pray", "run"]:
@@ -960,8 +960,8 @@ class MiscMixin(commands.Cog):
         message = await message.channel.fetch_message(message.id)
 
         for r in message.reactions:
-            if str(r.emoji) in self._adventure_actions:
-                action = {v: k for k, v in self._adventure_controls.items()}[str(r.emoji)]
+            if str(r.emoji) in self._adventure_actions_emoji_names:
+                action = {str(v): k for k, v in self._adventure_controls.items()}[str(r.emoji)]
                 async for user in r.users():
                     if not user.bot:
                         # only allow user to do one action, so remove from all
@@ -3082,7 +3082,7 @@ class MiscMixin(commands.Cog):
             guild = user.guild
         except AttributeError:
             return
-        emojis = ReactionPredicate.NUMBER_EMOJIS + self._adventure_actions
+        emojis = ReactionPredicate.NUMBER_EMOJIS + self._adventure_actions_emoji_names
         if str(reaction.emoji) not in emojis:
             return
         if not await self.has_perm(user):
@@ -3112,7 +3112,7 @@ class MiscMixin(commands.Cog):
             channel = reaction.message.channel
         except AttributeError:
             return
-        emojis = ReactionPredicate.NUMBER_EMOJIS + self._adventure_actions
+        emojis = ReactionPredicate.NUMBER_EMOJIS + self._adventure_actions_emoji_names
         if str(reaction.emoji) not in emojis:
             return
         if not await self.has_perm(user):
