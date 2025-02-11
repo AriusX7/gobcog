@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import asyncio
-import inspect
 import logging
 import random
 import re
