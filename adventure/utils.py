@@ -352,9 +352,11 @@ class FilterStr:
     async def convert(cls, __: commands.Context, argument: str):
         if isinstance(argument, str):
             if argument.endswith("+") or argument.endswith("-"):
-                return cls(argument[0:-1], argument[-1])
+                return cls(argument[:-1], argument[-1])
             elif argument.startswith("+") or argument.startswith("-"):
                 return cls(argument[1:], argument[0])
+            else:
+                return cls(argument, "+")
 
         raise BadArgument(_('{} is not a valid filter string.').format(argument))
 
