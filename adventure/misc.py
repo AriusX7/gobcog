@@ -3111,7 +3111,7 @@ class MiscMixin(commands.Cog):
             channel = reaction.message.channel
         except AttributeError:
             return
-        emojis = ReactionPredicate.NUMBER_EMOJIS + self._adventure_actions_emoji_names
+        emojis = list(ReactionPredicate.NUMBER_EMOJIS) + self._adventure_actions_emoji_names
         if str(reaction.emoji) not in emojis:
             return
         if not await self.has_perm(user):
