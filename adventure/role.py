@@ -523,7 +523,6 @@ class RoleMixin(commands.Cog):
                 continue
             now = datetime.utcnow().replace(tzinfo=timezone.utc).timestamp()
 
-            timed_roles = await self.config.guild(guild).timed_roles()
             async with self.config.guild(guild).timed_roles() as timed_roles:
                 if general_role:
                     remove_general = []
@@ -534,7 +533,8 @@ class RoleMixin(commands.Cog):
                                 await self.remove_ping_role(user, general_role)
 
                             remove_general.append(str_id)
-                    for k in remove_general: del timed_roles["general"][k]
+                    for k in remove_general:
+                        del timed_roles["general"][k]
 
                 if boss_role:
                     remove_boss = []
@@ -545,7 +545,8 @@ class RoleMixin(commands.Cog):
                                 await self.remove_ping_role(user, boss_role)
 
                             remove_boss.append(str_id)
-                    for k in remove_boss: del timed_roles["boss"][k]
+                    for k in remove_boss:
+                        del timed_roles["boss"][k]
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):

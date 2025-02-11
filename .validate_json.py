@@ -7,11 +7,9 @@ warnings = False
 errors = False
 
 def error(fn, k, msg):
-    errors = True
     print(f"ERROR! {fn}:{k} - {msg}")
 
 def warn(fn, k, msg):
-    warnings = True
     print(f"WARNING! {fn}:{k} - {msg}")
 
 def check(file, k, obj, validation):

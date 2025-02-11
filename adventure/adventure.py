@@ -32,7 +32,6 @@ from . import bank
 from .charsheet import (
     ORDER,
     RARITIES,
-    AllItemConverter,
     ArgumentConverter,
     Character,
     DayConverter,
@@ -364,7 +363,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 ('name', FilterStr)
             )),
             allow_multiple=['level', 'degrade', 'name']
-        )=None
+        )=None # type: ignore
     ):
         """This shows the contents of your backpack that can be equipped.
 
@@ -435,7 +434,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 ('name', FilterStr)
             )),
             allow_multiple=['level', 'degrade', 'name']
-        )=None
+        )=None # type: ignore
 
     ):
         """This shows the contents of your backpack that cannot be equipped.
@@ -503,7 +502,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 ('name', FilterStr)
             )),
             allow_multiple=['level', 'degrade', 'name']
-        )=None
+        )=None # type: ignore
     ):
         """This shows the contents of your backpack.
 
@@ -686,7 +685,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 ('name', FilterStr)
             )),
             allow_multiple=['level', 'degrade', 'name']
-        )=None
+        )=None # type: ignore
     ):
         """Sell all items in your backpack. Optionally specify name filter, degrade filter, level filter, rarity or slot.
 
@@ -740,7 +739,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     vals.append(_("above level {}").format(i.val))
                 elif i.sign == "-":
                     vals.append(_("below level {}").format(i.val))
-                elif i.sign == None:
+                elif i.sign is None:
                     vals.append(_("at level {}").format(i.val))
             level_str = " " + " and ".join(vals)
         else:
@@ -753,7 +752,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     vals.append(_("above degrade {}").format(i.val))
                 elif i.sign == "-":
                     vals.append(_("below degrade {}").format(i.val))
-                elif i.sign == None:
+                elif i.sign is None:
                     vals.append(_("at degrade {}").format(i.val))
             degrade_str = " " + " and ".join(vals)
         else:
@@ -1504,7 +1503,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
     @commands_adventureset_economy.command(name="tax", usage=" gold,tax gold,tax ...")
     @commands.is_owner()
-    async def commands_adventureset_economy_tax(self, ctx: Context, *, taxes: TaxesConverter):
+    async def commands_adventureset_economy_tax(self, ctx: Context, *, taxes: TaxesConverter): # type: ignore
         """[Owner] Set the tax thresholds.
 
         **gold** must be positive
@@ -2067,7 +2066,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                     c=self.escape(ctx.author.display_name),
                 ))
 
-            get_amt = lambda amt, total, cost: total // cost if amt == "all" else amt
+            def get_amt(amt, total, cost):
+                return total // cost if amt == "all" else amt
 
             if box_rarity.lower() == "normal" and c.rebirths >= rebirth_normal:
                 amount = get_amt(amount, c.treasure[0], normalcost)

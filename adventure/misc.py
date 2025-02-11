@@ -289,7 +289,6 @@ class MiscMixin(commands.Cog):
             await asyncio.sleep(300)
 
     async def _migrate_config(self, from_version: int, to_version: int) -> None:
-        database_entries = []
         log.debug(f"from_version: {from_version} to_version:{to_version}")
         if from_version == to_version:
             return
@@ -3069,7 +3068,7 @@ class MiscMixin(commands.Cog):
 
         await self.config.guild(ctx.guild).error_channel.clear()
 
-        await ctx.send(f"Cleared error channel.")
+        await ctx.send("Cleared error channel.")
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):

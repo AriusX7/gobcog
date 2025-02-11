@@ -133,7 +133,7 @@ class WeeklyScoreboardSource(menus.ListPageSource):
             players.append(data)
 
         embed = discord.Embed(
-            title=f"Adventure Weekly Scoreboard",
+            title="Adventure Weekly Scoreboard",
             color=await menu.ctx.embed_color(),
             description="```md\n{}``` ```md\n{}```".format(header, "\n".join(players),),
         )
