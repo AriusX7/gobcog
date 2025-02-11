@@ -13,7 +13,7 @@ from typing import Dict, List, Mapping, MutableMapping, Optional, Set, Tuple
 
 import discord
 from discord.ext.commands import check
-from discord.ext.commands.converter import Converter
+from discord.ext.commands.converter import Converter, run_converters
 from discord.ext.commands.errors import BadArgument
 from redbot.core import Config, commands
 from redbot.core.i18n import Translator
@@ -1888,8 +1888,9 @@ class ArgumentConverter(Converter):
                     final = True
                 else:
                     try:
-                        final = await ctx.command.do_conversion(ctx, self.types[name], val, name)
-                    except commands.BadArgument:
+                        final = await run_converters(ctx, self.types[name], val, name)
+                    except commands.BadArgument as e:
+                        log.debug(e)
                         continue
 
                 if name in self.allow_multiple:
@@ -1905,20 +1906,16 @@ class ArgumentConverter(Converter):
             ctx.view.previous = 0
             ctx.view.skip_string(command.qualified_name) # advance to get the root command
 
-            command.params = OrderedDict((
-                ('self', command.params['self']),
-                ('ctx', command.params['ctx'])
-            ))
-
+            command.params = OrderedDict()
             items = self.types.items()
             n = 0
             for k, v in items:
                 if k not in self.block_simple:
                     if n == len(items) - 1:
-                        kind = inspect.Parameter.KEYWORD_ONLY
+                        kind = commands.Parameter.KEYWORD_ONLY
                     else:
-                        kind = inspect.Parameter.POSITIONAL_OR_KEYWORD
-                    command.params[k] = inspect.Parameter(
+                        kind = commands.Parameter.POSITIONAL_OR_KEYWORD
+                    command.params[k] = commands.Parameter(
                         k, kind,
                         default=None, annotation=Optional[v]
                     )
