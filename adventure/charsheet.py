@@ -1883,7 +1883,7 @@ class ArgumentConverter(Converter):
                         name = t
 
             if name in self.types.keys():
-                if isinstance(self.types[name], bool):
+                if self.types[name] is bool:
                     final = True
                 else:
                     try:
