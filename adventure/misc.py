@@ -2013,7 +2013,7 @@ class MiscMixin(commands.Cog):
                     if not deleted:
                         await message_adv.delete()
                     break
-                elif not deleted and int(sremain) % 5 == 0:
+                elif not deleted and ((int(sremain) % 5 == 0 and int(sremain) <= 20) or int(sremain) % 10 == 0):
                     try:
                         await message_adv.edit(content=f"⏳ [{title}] {timer}s")
                     except discord.NotFound:
