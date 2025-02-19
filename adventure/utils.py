@@ -337,7 +337,7 @@ class FilterInt:
         raise BadArgument(_('{} is not a valid filter number.').format(argument))
 
     def is_valid(self, x):
-        return (self.sign == '+' and x > self.val) or (self.sign == '-' and x < self.val) or (self.sign == None and x == self.val)
+        return (self.sign == '+' and x > self.val) or (self.sign == '-' and x < self.val) or (self.sign is None and x == self.val)
 
 
 class FilterStr:

@@ -3423,11 +3423,19 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
         This allows a Berserker to add substantial attack bonuses for one battle.
         """
+
+        start = time.perf_counter()
         async with self.get_lock(ctx.author):
+            print(f"acquired lock in {time.perf_counter() - start:.6f} secs")
+
             c = await self.get_character_from_json(ctx.author)
+            print(f"loaded char in {time.perf_counter() - start:.6f} secs")
+
             c.heroclass["ability"] = True
 
             await self.config.user(ctx.author).set(await c.to_json(self.config))
+            print(f"updated char in {time.perf_counter() - start:.6f} secs")
+
             await smart_embed(
                 ctx,
                 _("{skill} **{c}** has a rotating yellow circle beneath their feet...  {skill}").format(
@@ -3435,6 +3443,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 ),
                 success=True
             )
+            print(f"sent embed in {time.perf_counter() - start:.6f} secs")
 
     @can_use_ability()
     @commands.command()
@@ -3464,11 +3473,19 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
 
         This allows a Tilter to add substantial diplomacy bonuses for one battle.
         """
+
+        start = time.perf_counter()
         async with self.get_lock(ctx.author):
+            print(f"acquired lock in {time.perf_counter() - start:.6f} secs")
+
             c = await self.get_character_from_json(ctx.author)
+            print(f"loaded char in {time.perf_counter() - start:.6f} secs")
+
             c.heroclass["ability"] = True
 
             await self.config.user(ctx.author).set(await c.to_json(self.config))
+            print(f"updated char in {time.perf_counter() - start:.6f} secs")
+
             await smart_embed(
                 ctx,
                 _("{skill1} **{c}** is ready with a barrage of emotes... {skill2}").format(
@@ -3476,6 +3493,7 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
                 ),
                 success=True
             )
+            print(f"sent embed in {time.perf_counter() - start:.6f} secs")
 
     @commands.command()
     @commands.cooldown(rate=1, per=2, type=commands.BucketType.user)
