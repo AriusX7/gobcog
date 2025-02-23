@@ -2288,22 +2288,12 @@ class MiscMixin(commands.Cog):
                     del raw_accounts[acc]
         raw_accounts_new = {}
         async for (k, v) in AsyncIter(raw_accounts.items(), steps=200):
-            user_data = {}
-            for item in ["weekly_score"]:
-                if item not in v:
-                    if item == "weekly_score":
-                        v.update({item: {keyword: 0, "rebirths": 0}})
+            if "weekly_score" not in v:
+                v["weekly_score"] = {keyword: 0, "rebirths": 0}
 
-            for (vk, vi) in v.items():
-                if vk in ["weekly_score"]:
-                    if vi.get("week", -1) == current_week:
-                        for (s, sv) in vi.items():
-                            if s in [keyword]:
-                                user_data.update(vi)
-
-            if user_data:
-                user_data = {k: user_data}
-            raw_accounts_new.update(user_data)
+            if v["weekly_score"].get("week", -1) == current_week and keyword in v["weekly_score"]:
+                user_data = {k: v["weekly_score"]}
+                raw_accounts_new.update(user_data)
 
         sorted_acc = sorted(
             raw_accounts_new.items(), key=lambda x: (x[1].get(keyword, 0), x[1].get("rebirths", 0)), reverse=True,
