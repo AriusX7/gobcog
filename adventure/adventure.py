@@ -4420,6 +4420,9 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
     async def _maintenance(self, ctx: commands.Context, on: bool = True):
         """Turns maintenance mode on/off"""
 
+        if self._sessions:
+            return await ctx.send(_("There is an adventure in progress, try again later."))
+
         await self.config.maintenance.set(on)
         self.maintenance = on
 
