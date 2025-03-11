@@ -281,7 +281,9 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             "from_conversion_rate": 11,
             "max_allowed_withdraw": 50000,
             "disallow_withdraw": False,
+            "maintenance": False,
         }
+
         self.RAISINS: list = None
         self.THREATEE: list = None
         self.TR_GEAR_SET: dict = None
@@ -301,6 +303,8 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
         self._init_task = self.bot.loop.create_task(self.initialize())
         self._timed_roles_task = self.timed_roles_task.start()
         self._ready_event = asyncio.Event()
+
+        self.maintenance = False
 
     @commands.command()
     @commands.bot_has_permissions(add_reactions=True)
@@ -4410,3 +4414,13 @@ class Adventure(MiscMixin, RoleMixin, commands.Cog):
             await menu(ctx, pages, MENU_CONTROLS)
         else:
             await ctx.send(embed=pages[0])
+
+    @commands.command(name="maintenance", aliases=["maint"])
+    @commands.is_owner()
+    async def _maintenance(self, ctx: commands.Context, on: bool = True):
+        """Turns maintenance mode on/off"""
+
+        await self.config.maintenance.set(on)
+        self.maintenance = on
+
+        await ctx.send(_("Turned maintenance {}.".format("on" if on else "off")))

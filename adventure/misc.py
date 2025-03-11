@@ -48,6 +48,8 @@ class MiscMixin(commands.Cog):
 
         self.config: Config
 
+        self.maintenance: bool
+
     @staticmethod
     def is_dev(user: Union[discord.User, discord.Member]):
         return user.id in DEV_LIST
@@ -2988,6 +2990,10 @@ class MiscMixin(commands.Cog):
 
     async def cog_check(self, ctx: Context):
         await self._ready_event.wait()
+
+        if self.maintenance and not await ctx.bot.is_owner(ctx.author):
+            raise AdventureCheckFailure("The bot is currently under maintenance.")
+
         if ctx.author.id in self.locks and self.locks[ctx.author.id].locked():
             raise AdventureCheckFailure(f"Another operation is currently executing for {ctx.author.mention}. Try again later.")
 
